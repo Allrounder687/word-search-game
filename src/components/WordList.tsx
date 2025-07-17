@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { WordPlacement } from '../types/game';
 import { Check, Search, Star, Sparkles, Info, BookOpen, MapPin, Globe } from 'lucide-react';
 import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
@@ -242,64 +242,73 @@ const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, k
 export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptions = true, kidsMode = false, isMobileLayout = false }) => {
     const [selectedWord, setSelectedWord] = useState<string | null>(null);
     
-    // Check if a word has a description
-    const hasDescription = (word: string) => {
-        return FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word];
-    };
-    
-    const foundCount = words.filter(w => w.found).length;
-    const totalCount = words.length;
+    // Memoize expensive calculations
+    const { foundCount, totalCount, hasDescription } = useMemo(() => {
+        const foundCount = words.filter(w => w.found).length;
+        const totalCount = words.length;
+        const hasDescription = (word: string) => {
+            return FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word];
+        };
+        
+        return { foundCount, totalCount, hasDescription };
+    }, [words]);
+
+    // Memoize completion percentage
+    const completionPercentage = useMemo(() => {
+        return totalCount > 0 ? (foundCount / totalCount) * 100 : 0;
+    }, [foundCount, totalCount]);
 
     // Optimize for mobile layout at the top of the screen
     if (isMobileLayout) {
         return (
             <div
                 style={{ 
-                    padding: '12px',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px -12px rgba(0, 0, 0, 0.25)',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.15)',
                     width: '100%',
                     boxSizing: 'border-box',
-                    backgroundColor: theme.gridBg,
-                    marginBottom: '8px'
+                    backgroundColor: `${theme.gridBg}90`,
+                    backdropFilter: 'blur(8px)',
+                    border: `1px solid ${theme.accent}20`
                 }}
             >
                 <div style={{ 
                     display: 'flex', 
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '8px' 
+                    marginBottom: '6px' 
                 }}>
                     <div style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: '6px'
+                        gap: '4px'
                     }}>
-                        <Search size={16} style={{ color: theme.secondary }} />
+                        <Search size={14} style={{ color: theme.secondary }} />
                         <h3 style={{ 
-                            fontSize: '16px', 
+                            fontSize: '14px', 
                             fontWeight: '600', 
                             margin: 0,
                             color: theme.primary 
                         }}>
-                            Words: {foundCount}/{totalCount}
+                            {foundCount}/{totalCount}
                         </h3>
                     </div>
                     
-                    {/* Progress bar */}
+                    {/* Compact progress bar */}
                     <div style={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: '8px',
+                        gap: '6px',
                         flexGrow: 1,
-                        marginLeft: '12px',
-                        maxWidth: '120px'
+                        marginLeft: '8px',
+                        maxWidth: '100px'
                     }}>
                         <div
                             style={{ 
                                 flexGrow: 1, 
-                                height: '6px', 
-                                borderRadius: '3px', 
+                                height: '4px', 
+                                borderRadius: '2px', 
                                 overflow: 'hidden',
                                 backgroundColor: 'rgba(255, 255, 255, 0.1)' 
                             }}
@@ -308,11 +317,18 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                                 className="animate-rainbow"
                                 style={{
                                     height: '100%',
-                                    width: `${(foundCount / totalCount) * 100}%`,
+                                    width: `${completionPercentage}%`,
                                     transition: 'all 0.5s ease-out'
                                 }}
                             />
                         </div>
+                        <span style={{
+                            fontSize: '12px',
+                            color: theme.primary,
+                            opacity: 0.8
+                        }}>
+                            {Math.round(completionPercentage)}%
+                        </span>
                     </div>
                 </div>
 
@@ -320,10 +336,10 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                 <div style={{ 
                     display: 'flex',
                     flexDirection: 'row',
-                    gap: '8px',
+                    gap: '6px',
                     overflowX: 'auto',
                     overflowY: 'hidden',
-                    padding: '4px 0',
+                    padding: '2px 0',
                     WebkitOverflowScrolling: 'touch',
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none'

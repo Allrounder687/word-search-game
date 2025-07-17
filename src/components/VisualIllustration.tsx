@@ -1,4 +1,4 @@
-import { Image } from 'lucide-react';
+import React from 'react';
 import { getIllustration } from '../types/kidsMode';
 
 interface VisualIllustrationProps {
@@ -7,59 +7,58 @@ interface VisualIllustrationProps {
   theme: any;
 }
 
-export const VisualIllustration: React.FC<VisualIllustrationProps> = ({ word, kidsMode, theme }) => {
+export const VisualIllustration: React.FC<VisualIllustrationProps> = ({ 
+  word, 
+  kidsMode, 
+  theme 
+}) => {
   // Don't render if kids mode is disabled or no illustration exists
   if (!kidsMode || !getIllustration(word)) return null;
   
-  // In a real implementation, this would show the actual illustration
-  // For now, we'll just show a placeholder
-  
-  // Determine if we're on a mobile device
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isSmallScreen = window.innerWidth < 480;
+  const illustrationPath = getIllustration(word);
   
   return (
     <div style={{
       marginTop: '12px',
-      padding: isSmallScreen ? '12px' : '16px',
-      borderRadius: '8px',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      marginBottom: '12px',
       display: 'flex',
-      flexDirection: 'column',
+      justifyContent: 'center',
       alignItems: 'center',
-      gap: '8px',
-      maxWidth: '100%',
-      boxSizing: 'border-box'
+      padding: '16px',
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      borderRadius: '8px',
+      border: `1px solid ${theme.secondary}40`
     }}>
+      {/* Placeholder for illustration - in a real app, this would load the actual image */}
       <div style={{
-        width: isSmallScreen ? '100px' : '120px',
-        height: isSmallScreen ? '100px' : '120px',
+        width: '120px',
+        height: '120px',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
         borderRadius: '8px',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        border: `1px dashed ${theme.secondary}80`,
-        boxShadow: isMobile ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none'
+        color: theme.secondary,
+        fontSize: '48px',
+        border: `2px dashed ${theme.secondary}40`
       }}>
-        <Image 
-          size={isSmallScreen ? 36 : 48} 
-          style={{ 
-            color: theme.secondary, 
-            opacity: 0.7,
-            animation: 'pulse-glow 2s ease-in-out infinite'
-          }} 
-        />
+        {/* This would be replaced with an actual image in production */}
+        🖼️
       </div>
       
+      {/* Image caption */}
       <div style={{
-        fontSize: isSmallScreen ? '11px' : '12px',
+        marginLeft: '16px',
         color: theme.primary,
+        fontSize: '14px',
         opacity: 0.8,
-        textAlign: 'center',
-        fontWeight: '500'
+        fontStyle: 'italic'
       }}>
         Visual illustration for {word}
+        <br />
+        <span style={{ fontSize: '12px', opacity: 0.6 }}>
+          Image: {illustrationPath}
+        </span>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { WordGrid } from './components/WordGrid';
 import { WordList } from './components/WordList';
 import { GameHeader } from './components/GameHeader';
@@ -11,8 +11,9 @@ import { KidsAchievements } from './components/KidsAchievements';
 import { OrientationWarning } from './components/OrientationWarning';
 import { WordSearchGenerator, calculateScore } from './utils/gameLogic';
 import { initializeMobileOptimizations } from './utils/mobileOptimizations';
-// Import only what we need from responsiveLayout
 import { setupMobileViewport } from './utils/responsiveLayout';
+import { useResponsive } from './hooks/useResponsive';
+import { getLayoutConfig } from './utils/layoutConfig';
 import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
 import { Sparkles, Trophy, Info, Clock } from 'lucide-react';
@@ -43,9 +44,19 @@ function App() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
 
-  // No refs needed as we're using the window object
-
-  const currentTheme = THEMES[gameState.settings.theme] || THEMES.midnight;
+  // Use responsive hook for better performance and maintainability
+  const breakpoints = useResponsive();
+  
+  // Memoize theme and layout calculations
+  const currentTheme = useMemo(() => 
+    THEMES[gameState.settings.theme] || THEMES.midnight, 
+    [gameState.settings.theme]
+  );
+  
+  const layoutConfig = useMemo(() => 
+    getLayoutConfig(breakpoints, currentTheme), 
+    [breakpoints, currentTheme]
+  );
 
   // Initialize timer based on settings
   useEffect(() => {
@@ -102,7 +113,7 @@ function App() {
     return () => clearInterval(timer);
   }, [gameState.isComplete, gameState.settings.timerMode, gameOver]);
 
-  // Initialize game
+  // Initialize game - memoized with proper dependencies
   const initializeGame = useCallback((settings?: GameSettings) => {
     const gameSettings = settings || gameState.settings;
     const gridSize = gameSettings.difficulty === 'custom'
@@ -134,7 +145,7 @@ function App() {
     } else {
       setTimeRemaining(null);
     }
-  }, []);
+  }, [gameState.settings]); // Add dependency to prevent stale closure
 
   // Initialize game and mobile optimizations on mount
   useEffect(() => {
@@ -312,11 +323,11 @@ function App() {
         />
 
         {/* Mobile WordList - Displayed at the top on mobile devices */}
-        {window.innerWidth < 1024 && (
+        {!breakpoints.isDesktop && (
           <div style={{
             width: '100%',
-            marginTop: '16px',
-            marginBottom: '16px'
+            marginTop: layoutConfig.spacing.marginTop,
+            marginBottom: layoutConfig.spacing.marginBottom
           }}>
             <WordList
               words={gameState.words}
@@ -330,14 +341,19 @@ function App() {
 
         <div style={{
           display: 'flex',
-          flexDirection: window.innerWidth >= 1024 ? 'row' : 'column',
-          gap: window.innerWidth >= 768 ? '24px' : '16px',
+          flexDirection: breakpoints.isDesktop ? 'row' : 'column',
+          gap: layoutConfig.spacing.gap,
           alignItems: 'center',
           justifyContent: 'center',
-          marginTop: window.innerWidth >= 768 ? '24px' : '16px',
-          padding: window.innerWidth >= 768 ? '0' : '0 8px'
+          marginTop: layoutConfig.spacing.marginTop,
+          padding: layoutConfig.spacing.padding
         }}>
-          <div style={{ flexShrink: 0 }}>
+          <div style={{ 
+            flexShrink: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            ...layoutConfig.wordGrid
+          }}>
             <WordGrid
               grid={gameState.grid}
               words={gameState.words}
@@ -355,7 +371,7 @@ function App() {
             gap: '16px'
           }}>
             {/* Desktop WordList - Only displayed on desktop */}
-            {window.innerWidth >= 1024 && (
+            {breakpoints.isDesktop && (
               <WordList
                 words={gameState.words}
                 theme={currentTheme}
@@ -368,13 +384,13 @@ function App() {
             {/* Game Controls */}
             <div
               style={{
-                padding: window.innerWidth >= 768 ? '16px' : '12px',
+                padding: breakpoints.isTablet || breakpoints.isDesktop ? '16px' : '12px',
                 borderRadius: '12px',
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                 display: 'flex',
-                flexWrap: window.innerWidth >= 480 ? 'nowrap' : 'wrap',
+                flexWrap: breakpoints.width >= 480 ? 'nowrap' : 'wrap',
                 alignItems: 'center',
-                justifyContent: window.innerWidth >= 480 ? 'space-between' : 'center',
+                justifyContent: breakpoints.width >= 480 ? 'space-between' : 'center',
                 gap: '10px',
                 backgroundColor: currentTheme.gridBg
               }}

@@ -10,6 +10,7 @@ export const WordListCompletion: React.FC<WordListCompletionProps> = ({
   foundCount,
   totalCount
 }) => {
+  // Only show completion message when all words are found
   if (foundCount !== totalCount) return null;
 
   return (

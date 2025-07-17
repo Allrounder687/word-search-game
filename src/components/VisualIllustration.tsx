@@ -12,53 +12,53 @@ export const VisualIllustration: React.FC<VisualIllustrationProps> = ({
   kidsMode, 
   theme 
 }) => {
-  // Don't render if kids mode is disabled or no illustration exists
-  if (!kidsMode || !getIllustration(word)) return null;
+  // Don't render if kids mode is disabled
+  if (!kidsMode) return null;
   
-  const illustrationPath = getIllustration(word);
+  const illustrationFile = getIllustration(word);
+  
+  // Don't render if no illustration exists for this word
+  if (!illustrationFile) return null;
   
   return (
     <div style={{
       marginTop: '12px',
-      marginBottom: '12px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
       padding: '16px',
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
       borderRadius: '8px',
-      border: `1px solid ${theme.secondary}40`
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      textAlign: 'center'
     }}>
       {/* Placeholder for illustration - in a real app, this would load the actual image */}
       <div style={{
         width: '120px',
         height: '120px',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        margin: '0 auto',
         borderRadius: '8px',
+        backgroundColor: theme.secondary + '20',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: theme.secondary,
         fontSize: '48px',
-        border: `2px dashed ${theme.secondary}40`
+        marginBottom: '8px'
       }}>
-        {/* This would be replaced with an actual image in production */}
-        🖼️
+        {/* Simple emoji representation based on word */}
+        {word === 'SHAHADA' && '☪️'}
+        {word === 'SALAT' && '🕌'}
+        {word === 'ZAKAT' && '💰'}
+        {word === 'SAWM' && '🌙'}
+        {word === 'HAJJ' && '🕋'}
+        {word === 'MASJID' && '🕌'}
+        {word === 'KAABA' && '🕋'}
+        {word === 'QURAN' && '📖'}
+        {word === 'WUDU' && '💧'}
+        {!['SHAHADA', 'SALAT', 'ZAKAT', 'SAWM', 'HAJJ', 'MASJID', 'KAABA', 'QURAN', 'WUDU'].includes(word) && '📚'}
       </div>
-      
-      {/* Image caption */}
       <div style={{
-        marginLeft: '16px',
-        color: theme.primary,
-        fontSize: '14px',
-        opacity: 0.8,
+        fontSize: '12px',
+        color: 'rgba(255, 255, 255, 0.7)',
         fontStyle: 'italic'
       }}>
         Visual illustration for {word}
-        <br />
-        <span style={{ fontSize: '12px', opacity: 0.6 }}>
-          Image: {illustrationPath}
-        </span>
       </div>
     </div>
   );

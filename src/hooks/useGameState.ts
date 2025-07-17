@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { WordSearchGenerator, calculateScore } from '../utils/gameLogic';
 import type { GameState, GameSettings, WordPlacement } from '../types/game';
 

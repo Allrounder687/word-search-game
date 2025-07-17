@@ -1,19 +1,66 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Check, Star, Sparkles, Info } from 'lucide-react';
 import type { WordPlacement } from '../types/game';
+
+interface ThemeColors {
+  primary: string;
+  secondary: string;
+  cellBg: string;
+  [key: string]: string;
+}
 
 interface WordListItemProps {
   word: WordPlacement;
   index: number;
   isFound: boolean;
-  theme: any;
+  theme: ThemeColors;
   showDescriptions: boolean;
   hasDescription: (word: string) => boolean;
   onWordClick: (word: string) => void;
   isMobile?: boolean;
 }
 
-export const WordListItem: React.FC<WordListItemProps> = ({
+// Static styles to avoid recreation
+const STATIC_STYLES = {
+  display: 'flex',
+  alignItems: 'center',
+  borderRadius: '8px',
+  transition: 'all 0.3s',
+  position: 'relative' as const,
+  overflow: 'hidden' as const,
+  touchAction: 'manipulation' as const
+};
+
+// Custom hook for hover effects
+const useHoverEffect = (isFound: boolean) => {
+  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFound) {
+      e.currentTarget.style.transform = 'scale(1.05)';
+    }
+  }, [isFound]);
+
+  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isFound) {
+      e.currentTarget.style.transform = 'scale(1)';
+    }
+  }, [isFound]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isFound) {
+      e.currentTarget.style.transform = 'scale(1.05)';
+    }
+  }, [isFound]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isFound) {
+      e.currentTarget.style.transform = 'scale(1)';
+    }
+  }, [isFound]);
+
+  return { handleMouseEnter, handleMouseLeave, handleTouchStart, handleTouchEnd };
+};
+
+const WordListItemComponent: React.FC<WordListItemProps> = ({
   word,
   index,
   isFound,
@@ -23,59 +70,53 @@ export const WordListItem: React.FC<WordListItemProps> = ({
   onWordClick,
   isMobile = false
 }) => {
-  // Memoize the random icon selection to prevent re-renders
-  const iconType = useMemo(() => Math.random() > 0.5 ? 'star' : 'sparkles', [word.word]);
+  // Memoize the icon selection based on word hash for consistency
+  const iconType = useMemo(() => {
+    const hash = word.word.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return hash % 2 === 0 ? 'star' : 'sparkles';
+  }, [word.word]);
 
-  const baseStyles = {
-    display: 'flex',
-    alignItems: 'center',
+  // Memoize dynamic styles to prevent recreation on every render
+  const baseStyles = useMemo(() => ({
+    ...STATIC_STYLES,
     gap: isMobile ? '8px' : '12px',
     padding: isMobile ? '8px 12px' : '12px',
-    borderRadius: '8px',
-    transition: 'all 0.3s',
     backgroundColor: isFound ? word.color + '20' : theme.cellBg,
-    borderLeft: !isMobile && isFound ? `4px solid ${word.color}` : undefined,
-    borderBottom: isMobile && isFound ? `2px solid ${word.color}` : '2px solid transparent',
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
+    ...(isMobile 
+      ? { borderBottom: isFound ? `2px solid ${word.color}` : '2px solid transparent' }
+      : { borderLeft: isFound ? `4px solid ${word.color}` : '4px solid transparent' }
+    ),
     boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
     minHeight: isMobile ? '36px' : '44px',
     minWidth: isMobile ? 'fit-content' : undefined,
     flexShrink: isMobile ? 0 : undefined,
-    touchAction: 'manipulation' as const
-  };
+  }), [isMobile, isFound, word.color, theme.cellBg]);
 
-  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1.05)';
-    }
-  };
+  // Use the custom hook for hover effects
+  const { handleMouseEnter, handleMouseLeave, handleTouchStart, handleTouchEnd } = useHoverEffect(isFound);
 
-  const handleMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1)';
+  // Memoize keyboard handler for accessibility
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (isFound && hasDescription(word.word)) {
+        onWordClick(word.word);
+      }
     }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1.05)';
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1)';
-    }
-  };
+  }, [isFound, hasDescription, word.word, onWordClick]);
 
   return (
     <div
+      role="listitem"
+      aria-label={`Word: ${word.word}, ${isFound ? 'found' : 'not found'}`}
+      aria-describedby={showDescriptions && hasDescription(word.word) ? `desc-${word.word}` : undefined}
+      tabIndex={0}
       style={baseStyles}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      onKeyDown={handleKeyDown}
     >
       {/* Animated background for found words */}
       {isFound && (
@@ -198,3 +239,20 @@ export const WordListItem: React.FC<WordListItemProps> = ({
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const WordListItem = React.memo(WordListItemComponent, (prevProps, nextProps) => {
+  // Custom comparison for better memoization
+  return (
+    prevProps.word.word === nextProps.word.word &&
+    prevProps.word.color === nextProps.word.color &&
+    prevProps.isFound === nextProps.isFound &&
+    prevProps.index === nextProps.index &&
+    prevProps.isMobile === nextProps.isMobile &&
+    prevProps.showDescriptions === nextProps.showDescriptions &&
+    // Shallow comparison for theme object
+    prevProps.theme.primary === nextProps.theme.primary &&
+    prevProps.theme.secondary === nextProps.theme.secondary &&
+    prevProps.theme.cellBg === nextProps.theme.cellBg
+  );
+});

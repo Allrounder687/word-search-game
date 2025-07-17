@@ -28,7 +28,7 @@ interface ResponsiveSizes<T> {
  */
 export function getResponsiveValue<T>(values: ResponsiveSizes<T>): T {
   const width = window.innerWidth;
-  
+
   if (width < BREAKPOINTS.xs) return values.xs;
   if (width < BREAKPOINTS.sm) return values.sm;
   if (width < BREAKPOINTS.md) return values.md;
@@ -44,7 +44,7 @@ export function getResponsiveValue<T>(values: ResponsiveSizes<T>): T {
  */
 export function getResponsiveFontSize(baseSize: number, scaleFactor: number = 0.8): string {
   const width = window.innerWidth;
-  
+
   if (width < BREAKPOINTS.xs) return `${baseSize * scaleFactor * 0.8}px`;
   if (width < BREAKPOINTS.sm) return `${baseSize * scaleFactor}px`;
   if (width < BREAKPOINTS.md) return `${baseSize * 0.9}px`;
@@ -115,18 +115,18 @@ export function isTablet(): boolean {
 export function setupMobileViewport(): void {
   // Find existing viewport meta tag
   let viewportMeta = document.querySelector('meta[name="viewport"]');
-  
+
   // Create one if it doesn't exist
   if (!viewportMeta) {
     viewportMeta = document.createElement('meta');
     viewportMeta.setAttribute('name', 'viewport');
     document.head.appendChild(viewportMeta);
   }
-  
+
   // Set appropriate viewport content
-  viewportMeta.setAttribute('content', 
+  viewportMeta.setAttribute('content',
     'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-  
+
   // Add other mobile-specific meta tags
   const metaTags = [
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
@@ -134,7 +134,7 @@ export function setupMobileViewport(): void {
     { name: 'format-detection', content: 'telephone=no' },
     { name: 'mobile-web-app-capable', content: 'yes' }
   ];
-  
+
   metaTags.forEach(meta => {
     if (!document.querySelector(`meta[name="${meta.name}"]`)) {
       const metaTag = document.createElement('meta');

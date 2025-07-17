@@ -5,7 +5,7 @@ import { Sparkles, BookOpen, MapPin, Globe } from 'lucide-react';
 import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
 import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
-import { configureWordGridTouchBehavior } from '../utils/touchGestures';
+// No need to import configureWordGridTouchBehavior as we're handling touch directly
 import { AudioPronunciation } from './AudioPronunciation';
 import { VisualIllustration } from './VisualIllustration';
 
@@ -113,12 +113,9 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   }, [isSelecting, handleMouseUp]);
 
   // Touch support
-  const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
-    // Only prevent default if needed to avoid interfering with touch events
-    if (e.cancelable) {
-      e.preventDefault();
-    }
-
+  const handleTouchStart = useCallback((row: number, col: number, _e: React.TouchEvent) => {
+    // Don't prevent default here to allow the touch event to be registered
+    
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
     setHighlightedCells(new Set([getCellKey(row, col)]));
@@ -132,10 +129,8 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
 
-    // Only prevent default if needed to avoid interfering with touch events
-    if (e.cancelable) {
-      e.preventDefault();
-    }
+    // Prevent default to stop screen dragging but only during selection
+    e.preventDefault();
 
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -161,12 +156,9 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     }
   }, [isSelecting, currentSelection, highlightedCells]);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    // Only prevent default if needed to avoid interfering with touch events
-    if (e.cancelable) {
-      e.preventDefault();
-    }
-
+  const handleTouchEnd = useCallback((_e: React.TouchEvent) => {
+    // Don't prevent default here to allow the touch event to complete normally
+    
     handleMouseUp();
   }, [handleMouseUp]);
 
@@ -242,9 +234,17 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   // Apply touch optimizations when component mounts
   useEffect(() => {
     if (isMobile && gridContainerRef.current) {
-      // Use our enhanced touch behavior configuration for word grid
-      configureWordGridTouchBehavior(gridContainerRef.current);
-
+      // Set basic touch properties directly
+      const gridElement = gridContainerRef.current;
+      
+      // Prevent context menu on long press
+      const preventContextMenu = (e: Event) => {
+        e.preventDefault();
+        return false;
+      };
+      
+      gridElement.addEventListener('contextmenu', preventContextMenu);
+      
       // Add meta viewport tag to prevent zooming on double tap
       const viewportMeta = document.querySelector('meta[name=viewport]');
       if (viewportMeta) {
@@ -252,18 +252,10 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
       }
 
-      // Only prevent body scrolling when actively selecting words
-      const handleBodyTouchMove = (e: TouchEvent) => {
-        if (isSelecting) {
-          e.preventDefault();
-        }
-      };
-
-      document.body.addEventListener('touchmove', handleBodyTouchMove, { passive: false });
-
       return () => {
-        document.body.removeEventListener('touchmove', handleBodyTouchMove);
-
+        // Clean up event listeners
+        gridElement.removeEventListener('contextmenu', preventContextMenu);
+        
         // Restore viewport meta when component unmounts
         if (viewportMeta) {
           viewportMeta.setAttribute('content',
@@ -271,7 +263,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
         }
       };
     }
-  }, [isMobile, isSelecting]);
+  }, [isMobile]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -284,7 +276,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           borderRadius: '12px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           backgroundColor: theme.gridBg,
-          touchAction: isMobile ? 'manipulation' : 'auto' // Allow touch manipulation but prevent browser actions
+          touchAction: 'auto' // Let the touch events be handled by our handlers
         }}
       >
         <div
@@ -326,14 +318,14 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                   onTouchStart={(e) => handleTouchStart(rowIndex, colIndex, e)}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  onMouseOver={(e) => {
+                  onMouseOver={(event) => {
                     if (!isSelecting) {
-                      e.currentTarget.style.transform = 'scale(1.05)';
+                      event.currentTarget.style.transform = 'scale(1.05)';
                     }
                   }}
-                  onMouseOut={(e) => {
+                  onMouseOut={(event) => {
                     if (!isSelecting && !highlightedCells.has(getCellKey(rowIndex, colIndex))) {
-                      e.currentTarget.style.transform = 'scale(1)';
+                      event.currentTarget.style.transform = 'scale(1)';
                     }
                   }}
                 >

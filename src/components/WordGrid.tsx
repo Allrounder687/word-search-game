@@ -114,9 +114,10 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
 
   // Touch support
   const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
-    // Prevent default to avoid scrolling while selecting
-    e.preventDefault();
-    e.stopPropagation();
+    // Only prevent default if needed to avoid interfering with touch events
+    if (e.cancelable) {
+      e.preventDefault();
+    }
 
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
@@ -131,9 +132,10 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
 
-    // Prevent default to avoid scrolling while selecting
-    e.preventDefault();
-    e.stopPropagation();
+    // Only prevent default if needed to avoid interfering with touch events
+    if (e.cancelable) {
+      e.preventDefault();
+    }
 
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -160,9 +162,10 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   }, [isSelecting, currentSelection, highlightedCells]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    // Prevent default to avoid any unwanted browser behavior
-    e.preventDefault();
-    e.stopPropagation();
+    // Only prevent default if needed to avoid interfering with touch events
+    if (e.cancelable) {
+      e.preventDefault();
+    }
 
     handleMouseUp();
   }, [handleMouseUp]);
@@ -249,7 +252,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
       }
 
-      // Prevent body scrolling when interacting with the grid
+      // Only prevent body scrolling when actively selecting words
       const handleBodyTouchMove = (e: TouchEvent) => {
         if (isSelecting) {
           e.preventDefault();
@@ -281,7 +284,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           borderRadius: '12px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           backgroundColor: theme.gridBg,
-          touchAction: isMobile ? 'none' : 'auto' // Disable browser touch actions on mobile
+          touchAction: isMobile ? 'manipulation' : 'auto' // Allow touch manipulation but prevent browser actions
         }}
       >
         <div

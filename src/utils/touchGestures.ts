@@ -160,26 +160,22 @@ export const preventDefaultTouchBehavior = (element: HTMLElement): void => {
  * @param element - The HTML element (word grid) to configure touch behavior for
  */
 export const configureWordGridTouchBehavior = (element: HTMLElement): void => {
-  // Apply CSS to prevent touch actions
-  element.style.touchAction = 'none';
-
-  // Prevent scrolling and zooming
-  const preventTouchAction = (e: TouchEvent) => {
-    // Always prevent default to stop screen dragging
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  // Add event listeners with passive: false to ensure preventDefault works
-  element.addEventListener('touchstart', preventTouchAction, { passive: false });
-  element.addEventListener('touchmove', preventTouchAction, { passive: false });
-  element.addEventListener('touchend', preventTouchAction, { passive: false });
-
-  // Add additional CSS to the element
-  element.style.webkitUserSelect = 'none';
+  // Apply minimal CSS to prevent unwanted behaviors but allow touch events
+  element.style.touchAction = 'pan-x pan-y';
   element.style.userSelect = 'none';
-  // Use type assertion for non-standard CSS property
   (element.style as any)['-webkit-touch-callout'] = 'none';
+  
+  // We can't easily clean up existing listeners, but we can ensure we don't add duplicates
+  // by using a named function that we can reference later if needed
+  const preventDrag = (e: TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Only prevent default when dragging with one finger to allow pinch zoom
+      e.preventDefault();
+    }
+  };
+  
+  // Add a single touchmove listener to prevent screen dragging
+  element.addEventListener('touchmove', preventDrag, { passive: false });
 };
 
 /**

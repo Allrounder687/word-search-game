@@ -1,0 +1,734 @@
+import { useState, useEffect, useCallback } from 'react';
+import { WordGrid } from './components/WordGrid';
+import { WordList } from './components/WordList';
+import { GameHeader } from './components/GameHeader';
+import { SettingsModal } from './components/SettingsModal';
+import { HintSystem } from './components/HintSystem';
+import { AchievementSystem } from './components/AchievementSystem';
+import { LeaderboardSystem } from './components/LeaderboardSystem';
+import { LevelSystem } from './components/LevelSystem';
+import { KidsAchievements } from './components/KidsAchievements';
+import { OrientationWarning } from './components/OrientationWarning';
+import { WordSearchGenerator, calculateScore } from './utils/gameLogic';
+import { initializeMobileOptimizations } from './utils/mobileOptimizations';
+// Import only what we need from responsiveLayout
+import { setupMobileViewport } from './utils/responsiveLayout';
+import type { GameState, GameSettings, WordPlacement } from './types/game';
+import { THEMES } from './types/game';
+import { Sparkles, Trophy, Info, Clock } from 'lucide-react';
+
+function App() {
+  const [gameState, setGameState] = useState<GameState>({
+    grid: [],
+    words: [],
+    foundWords: new Set(),
+    score: 0,
+    timeElapsed: 0,
+    isComplete: false,
+    currentSelection: [],
+    settings: {
+      difficulty: 'easy',
+      theme: 'midnight',
+      gridSize: 10,
+      wordCategory: 'fivePillars',
+      showDescriptions: true // Enable descriptions by default
+    }
+  });
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [hintsRemaining, setHintsRemaining] = useState(3);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [gameOver, setGameOver] = useState(false);
+
+  // No refs needed as we're using the window object
+
+  const currentTheme = THEMES[gameState.settings.theme] || THEMES.midnight;
+
+  // Initialize timer based on settings
+  useEffect(() => {
+    if (gameState.settings.timerMode === 'countdown' && gameState.settings.timerDuration) {
+      setTimeRemaining(gameState.settings.timerDuration);
+    } else {
+      setTimeRemaining(null);
+    }
+    setGameOver(false);
+  }, [gameState.settings.timerMode, gameState.settings.timerDuration]);
+
+  // Timer effect
+  useEffect(() => {
+    if (gameState.isComplete || gameOver) return;
+
+    const timer = setInterval(() => {
+      // Count up timer (default or explicitly set)
+      if (gameState.settings.timerMode !== 'countdown') {
+        setGameState(prev => ({
+          ...prev,
+          timeElapsed: prev.timeElapsed + 1
+        }));
+      }
+      // Countdown timer
+      else if (timeRemaining !== null) {
+        setTimeRemaining(prev => {
+          // Handle the case where prev might be null
+          const currentTime = prev ?? 0;
+          if (currentTime <= 1) {
+            // Time's up!
+            clearInterval(timer);
+            setGameOver(true);
+            return 0;
+          }
+          return currentTime - 1;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [gameState.isComplete, gameState.settings.timerMode, timeRemaining, gameOver]);
+
+  // Initialize game
+  const initializeGame = useCallback((settings?: GameSettings) => {
+    const gameSettings = settings || gameState.settings;
+    const gridSize = gameSettings.difficulty === 'custom'
+      ? gameSettings.gridSize
+      : gameSettings.difficulty === 'easy' ? 10
+        : gameSettings.difficulty === 'medium' ? 12 : 15;
+
+    const generator = new WordSearchGenerator(gridSize);
+    const { grid, words } = generator.generateGame(gameSettings);
+
+    setGameState({
+      grid,
+      words,
+      foundWords: new Set(),
+      score: 0,
+      timeElapsed: 0,
+      isComplete: false,
+      currentSelection: [],
+      settings: gameSettings
+    });
+  }, [gameState.settings]);
+
+  // Initialize game and mobile optimizations on mount
+  useEffect(() => {
+    // Initialize the game
+    initializeGame();
+
+    // Initialize mobile optimizations
+    initializeMobileOptimizations();
+    
+    // Setup mobile viewport for better mobile experience
+    setupMobileViewport();
+  }, []);
+
+  const handleWordFound = useCallback((word: WordPlacement) => {
+    setGameState(prev => {
+      const newFoundWords = new Set(prev.foundWords);
+      newFoundWords.add(word.word);
+
+      const updatedWords = prev.words.map(w =>
+        w.word === word.word ? { ...w, found: true } : w
+      );
+
+      const newScore = calculateScore(
+        newFoundWords,
+        prev.timeElapsed,
+        prev.settings.difficulty
+      );
+
+      const isComplete = newFoundWords.size === prev.words.length;
+
+      if (isComplete) {
+        // Show celebration animation
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 3000);
+
+        // Unlock achievements
+        if (window.achievementSystem) {
+          // First win achievement
+          window.achievementSystem.unlockAchievement('first_win');
+
+          // Speed demon achievement (complete easy puzzle in under 60 seconds)
+          if (prev.settings.difficulty === 'easy' && prev.timeElapsed < 60) {
+            window.achievementSystem.unlockAchievement('speed_demon');
+          }
+
+          // Word master achievement (complete hard puzzle without hints)
+          if (prev.settings.difficulty === 'hard' && hintsUsed === 0) {
+            window.achievementSystem.unlockAchievement('word_master');
+          }
+
+          // High scorer achievement (score over 1000 points)
+          if (newScore > 1000) {
+            window.achievementSystem.unlockAchievement('high_scorer');
+          }
+
+          // Time challenge achievement (complete countdown mode)
+          if (prev.settings.timerMode === 'countdown') {
+            window.achievementSystem.unlockAchievement('time_challenge');
+          }
+
+          // Update word collector progress
+          window.achievementSystem.updateAchievementProgress('word_collector',
+            newFoundWords.size);
+
+          // Update theme explorer if this is a different theme
+          if (window.localStorage.getItem(`theme_used_${prev.settings.theme}`) !== 'true') {
+            window.localStorage.setItem(`theme_used_${prev.settings.theme}`, 'true');
+            const themesUsed = Object.keys(window.localStorage)
+              .filter(key => key.startsWith('theme_used_')).length;
+            window.achievementSystem.updateAchievementProgress('theme_explorer', themesUsed);
+          }
+
+          // Update perfect streak
+          const currentStreak = parseInt(window.localStorage.getItem('win_streak') || '0');
+          window.localStorage.setItem('win_streak', (currentStreak + 1).toString());
+          window.achievementSystem.updateAchievementProgress('perfect_streak', currentStreak + 1);
+        }
+
+        // Add to leaderboard
+        if (window.leaderboardSystem) {
+          window.leaderboardSystem.addLeaderboardEntry({
+            score: newScore,
+            difficulty: prev.settings.difficulty,
+            timeElapsed: prev.timeElapsed,
+            wordsFound: newFoundWords.size,
+            totalWords: prev.words.length,
+            hintsUsed: hintsUsed
+          });
+        }
+      }
+
+      return {
+        ...prev,
+        words: updatedWords,
+        foundWords: newFoundWords,
+        score: newScore,
+        isComplete
+      };
+    });
+  }, [hintsUsed]);
+
+  const handleSettingsChange = useCallback((newSettings: GameSettings) => {
+    initializeGame(newSettings);
+  }, [initializeGame]);
+
+  const handleReset = useCallback(() => {
+    initializeGame();
+  }, [initializeGame]);
+
+  // Apply theme to body
+  useEffect(() => {
+    document.body.style.background = currentTheme.background;
+  }, [currentTheme]);
+
+  // Handle hint usage
+  const handleHintUsed = useCallback((word: WordPlacement) => {
+    if (hintsRemaining > 0) {
+      setHintsRemaining(prev => prev - 1);
+
+      // Highlight the first letter of the word
+      const firstLetterPos = word.start;
+      const cellKey = `${firstLetterPos.row},${firstLetterPos.col}`;
+      const cell = document.querySelector(`[data-cell="${cellKey}"]`);
+
+      if (cell) {
+        cell.classList.add('animate-pulse-glow');
+        setTimeout(() => {
+          cell.classList.remove('animate-pulse-glow');
+        }, 3000);
+      }
+    }
+  }, [hintsRemaining]);
+
+  // Reset hints when starting a new game
+  useEffect(() => {
+    // If hintsCount is explicitly set in settings, use that value
+    if (gameState.settings.hintsCount !== undefined) {
+      setHintsRemaining(gameState.settings.hintsCount);
+    } else {
+      // Otherwise use default values based on difficulty
+      const difficultyHints = {
+        'easy': 3,
+        'medium': 2,
+        'hard': 1,
+        'custom': 2
+      };
+      setHintsRemaining(difficultyHints[gameState.settings.difficulty] || 3);
+    }
+  }, [gameState.settings.difficulty, gameState.settings.hintsCount]);
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        padding: '16px',
+        fontFamily: currentTheme.font || 'Inter, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}
+    >
+      <div style={{
+        maxWidth: '1280px',
+        width: '100%',
+        margin: '0 auto'
+      }}>
+        <GameHeader
+          score={gameState.score}
+          timeElapsed={gameState.timeElapsed}
+          foundWords={gameState.foundWords.size}
+          totalWords={gameState.words.length}
+          onReset={handleReset}
+          onSettings={() => setShowSettings(true)}
+          theme={currentTheme}
+        />
+
+        <div style={{
+          display: 'flex',
+          flexDirection: window.innerWidth >= 1024 ? 'row' : 'column',
+          gap: window.innerWidth >= 768 ? '24px' : '16px',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: window.innerWidth >= 768 ? '24px' : '16px',
+          padding: window.innerWidth >= 768 ? '0' : '0 8px'
+        }}>
+          <div style={{ flexShrink: 0 }}>
+            <WordGrid
+              grid={gameState.grid}
+              words={gameState.words}
+              onWordFound={handleWordFound}
+              theme={currentTheme}
+              showDescriptions={gameState.settings.showDescriptions}
+              kidsMode={gameState.settings.kidsMode}
+            />
+          </div>
+
+          <div style={{
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <WordList
+              words={gameState.words}
+              theme={currentTheme}
+              showDescriptions={gameState.settings.showDescriptions}
+              kidsMode={gameState.settings.kidsMode}
+            />
+
+            {/* Game Controls */}
+            <div
+              style={{
+                padding: window.innerWidth >= 768 ? '16px' : '12px',
+                borderRadius: '12px',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                flexWrap: window.innerWidth >= 480 ? 'nowrap' : 'wrap',
+                alignItems: 'center',
+                justifyContent: window.innerWidth >= 480 ? 'space-between' : 'center',
+                gap: '10px',
+                backgroundColor: currentTheme.gridBg
+              }}
+            >
+              {/* Hint System */}
+              <HintSystem
+                words={gameState.words}
+                onHintUsed={(word) => {
+                  handleHintUsed(word);
+                  setHintsUsed(prev => prev + 1);
+                }}
+                theme={currentTheme}
+                hintsRemaining={hintsRemaining}
+              />
+
+              {/* Timer Display (for countdown mode) */}
+              {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
+                  color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
+                  border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
+                  animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
+                }}>
+                  <Clock size={20} style={{
+                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
+                  }} />
+                  <span style={{
+                    fontWeight: 'bold',
+                    fontSize: '16px'
+                  }}>
+                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              )}
+
+              {/* Achievement System */}
+              <AchievementSystem
+                theme={currentTheme}
+              />
+
+              {/* Kids Achievements System */}
+              {gameState.settings.kidsMode && (
+                <KidsAchievements
+                  theme={currentTheme}
+                  foundWords={Array.from(gameState.foundWords)}
+                  kidsMode={gameState.settings.kidsMode}
+                />
+              )}
+
+              {/* Leaderboard System */}
+              <LeaderboardSystem
+                theme={currentTheme}
+              />
+
+              {/* Level System */}
+              <LevelSystem
+                theme={currentTheme}
+                onStartLevel={(currentLevel, settings) => {
+                  // Update settings with level-specific words
+                  const levelSettings = {
+                    ...settings,
+                    // Set categories based on current word category
+                    wordCategory: gameState.settings.wordCategory,
+                    // Keep user preferences
+                    theme: gameState.settings.theme,
+                    showDescriptions: gameState.settings.showDescriptions,
+                    timerMode: gameState.settings.timerMode,
+                    timerDuration: gameState.settings.timerDuration
+                  };
+
+                  // Log the current level (using the parameter to avoid the warning)
+                  console.log(`Starting level ${currentLevel}`);
+
+                  // Initialize game with the level settings
+                  initializeGame(levelSettings);
+                }}
+                currentSettings={gameState.settings}
+              />
+
+              {/* Info Button */}
+              <button
+                onClick={() => setShowInfo(!showInfo)}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  border: `1px solid ${currentTheme.secondary}40`,
+                  backgroundColor: currentTheme.cellBg,
+                  color: currentTheme.primary
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Info size={20} />
+              </button>
+            </div>
+
+            {/* Game Info Panel */}
+            {showInfo && (
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  backgroundColor: currentTheme.gridBg
+                }}
+              >
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  marginBottom: '8px',
+                  color: currentTheme.primary
+                }}>
+                  How to Play
+                </h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: currentTheme.primary,
+                  fontSize: '14px'
+                }}>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ marginTop: '4px' }}>•</span>
+                    <span>Find all words hidden in the grid</span>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ marginTop: '4px' }}>•</span>
+                    <span>Click and drag to select letters</span>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ marginTop: '4px' }}>•</span>
+                    <span>Words can be horizontal, vertical, or diagonal</span>
+                  </li>
+                  <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span style={{ marginTop: '4px' }}>•</span>
+                    <span>Use hints if you get stuck (limited per game)</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Game Complete Celebration */}
+        {gameState.isComplete && (
+          <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none">
+            <div className="text-center animate-float p-8 rounded-xl shadow-2xl"
+              style={{
+                backgroundColor: `${currentTheme.gridBg}CC`,
+                backdropFilter: 'blur(8px)',
+                border: `2px solid ${currentTheme.accent}40`
+              }}
+            >
+              <div className="text-6xl mb-4 flex justify-center">
+                <div className="animate-bounce">🎉</div>
+                <div className="animate-float" style={{ animationDelay: '0.2s' }}>🏆</div>
+                <div className="animate-bounce" style={{ animationDelay: '0.4s' }}>🎉</div>
+              </div>
+              <div
+                className="text-4xl font-bold mb-2 animate-rainbow bg-clip-text text-transparent"
+                style={{
+                  background: 'linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4)',
+                  backgroundSize: '400% 400%',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontFamily: currentTheme.font
+                }}
+              >
+                Congratulations!
+              </div>
+              <div className="text-xl opacity-90 mb-2" style={{ color: currentTheme.primary }}>
+                All words found in {Math.floor(gameState.timeElapsed / 60)}:{(gameState.timeElapsed % 60).toString().padStart(2, '0')}
+              </div>
+
+              {/* Difficulty Badge */}
+              <div className="flex justify-center mb-4">
+                <div className="px-3 py-1 rounded-full text-sm font-semibold"
+                  style={{
+                    backgroundColor:
+                      gameState.settings.difficulty === 'easy' ? '#10b981' :
+                        gameState.settings.difficulty === 'medium' ? '#f59e0b' :
+                          gameState.settings.difficulty === 'hard' ? '#ef4444' :
+                            '#8b5cf6',
+                    color: '#ffffff'
+                  }}
+                >
+                  {gameState.settings.difficulty.charAt(0).toUpperCase() + gameState.settings.difficulty.slice(1)} Mode
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 mt-4">
+                <div className="flex items-center gap-2 p-3 rounded-lg"
+                  style={{
+                    backgroundColor: currentTheme.cellBg,
+                    boxShadow: `0 0 20px ${currentTheme.accent}40`
+                  }}
+                >
+                  <Trophy className="animate-pulse" style={{ color: currentTheme.accent }} />
+                  <span style={{ color: currentTheme.primary, fontWeight: 'bold', fontSize: '1.25rem' }}>
+                    {gameState.score.toLocaleString()} points
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleReset}
+                className="mt-6 px-6 py-3 rounded-lg transition-all duration-200 hover:scale-105 pointer-events-auto"
+                style={{
+                  backgroundColor: currentTheme.secondary,
+                  color: 'white',
+                  fontWeight: 'bold'
+                }}
+              >
+                Play Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Celebration Particles */}
+        {showCelebration && (
+          <div className="fixed inset-0 pointer-events-none z-30">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute animate-float"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`
+                }}
+              >
+                <Sparkles
+                  size={16 + Math.random() * 16}
+                  style={{ color: currentTheme.accent }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Game Over Modal (for countdown timer) */}
+        {gameOver && !gameState.isComplete && (
+          <div className="fixed inset-0 flex items-center justify-center z-40">
+            <div className="text-center p-8 rounded-xl shadow-2xl"
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                backdropFilter: 'blur(8px)',
+                border: '2px solid #ef4444',
+                maxWidth: '400px',
+                width: '90%'
+              }}
+            >
+              <div style={{
+                fontSize: '48px',
+                marginBottom: '16px',
+                animation: 'shake 0.5s'
+              }}>
+                ⏱️
+              </div>
+              <div style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#ef4444',
+                marginBottom: '16px'
+              }}>
+                Time's Up!
+              </div>
+              <div style={{
+                fontSize: '16px',
+                marginBottom: '24px',
+                color: '#ffffff'
+              }}>
+                You found {gameState.foundWords.size} out of {gameState.words.length} words.
+              </div>
+
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '16px'
+              }}>
+                <button
+                  onClick={handleReset}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    backgroundColor: currentTheme.secondary,
+                    color: 'white',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  Try Again
+                </button>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    backgroundColor: 'transparent',
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                    border: `1px solid ${currentTheme.secondary}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={gameState.settings}
+          onSettingsChange={handleSettingsChange}
+          theme={currentTheme}
+        />
+
+        {/* CSS Animations */}
+        <style>
+          {`
+            @keyframes pulse {
+              0% { opacity: 1; }
+              50% { opacity: 0.5; }
+              100% { opacity: 1; }
+            }
+            
+            @keyframes shake {
+              0% { transform: translateX(0); }
+              25% { transform: translateX(-5px); }
+              50% { transform: translateX(5px); }
+              75% { transform: translateX(-5px); }
+              100% { transform: translateX(0); }
+            }
+            
+            @keyframes float {
+              0% { transform: translateY(0px); }
+              50% { transform: translateY(-10px); }
+              100% { transform: translateY(0px); }
+            }
+            
+            @keyframes rainbow {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+            
+            .animate-pulse {
+              animation: pulse 1s infinite;
+            }
+            
+            .animate-float {
+              animation: float 3s ease-in-out infinite;
+            }
+            
+            .animate-rainbow {
+              animation: rainbow 6s linear infinite;
+            }
+            
+            .animate-bounce {
+              animation: float 1s ease-in-out infinite;
+            }
+          `}
+        </style>
+      </div>
+      
+      {/* Orientation Warning for Mobile */}
+      <OrientationWarning theme={currentTheme} />
+    </div>
+  );
+}
+
+export default App;

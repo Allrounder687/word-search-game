@@ -1,0 +1,85 @@
+/* Additional game-specific styles */
+.word-grid-cell {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.word-grid-cell:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+.word-grid-cell.selected {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.word-grid-cell.found {
+  animation: word-found-pulse 0.6s ease-out;
+}
+
+@keyframes word-found-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+/* Smooth scrolling for the word list */
+.word-list-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .word-grid-cell {
+    font-size: 0.875rem;
+  }
+  
+  .game-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .game-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .word-grid-cell {
+    border-width: 2px;
+  }
+  
+  .word-list-item {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-glow,
+  .animate-word-found,
+  .animate-rainbow,
+  .animate-float {
+    animation: none;
+  }
+  
+  .word-grid-cell {
+    transition: none;
+  }
+}

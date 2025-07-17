@@ -49,28 +49,41 @@ function App() {
 
   // Initialize timer based on settings
   useEffect(() => {
+    // Reset game over state
+    setGameOver(false);
+    
+    // Handle countdown timer initialization
     if (gameState.settings.timerMode === 'countdown' && gameState.settings.timerDuration) {
       setTimeRemaining(gameState.settings.timerDuration);
     } else {
       setTimeRemaining(null);
     }
-    setGameOver(false);
+    
+    // Reset timeElapsed for countup mode or when no timer is set
+    if (gameState.settings.timerMode !== 'countdown') {
+      setGameState(prev => ({
+        ...prev,
+        timeElapsed: 0
+      }));
+    }
   }, [gameState.settings.timerMode, gameState.settings.timerDuration]);
 
   // Timer effect
   useEffect(() => {
+    // Don't run timer if game is complete or game over
     if (gameState.isComplete || gameOver) return;
 
+    // Create timer interval
     const timer = setInterval(() => {
-      // Count up timer (default or explicitly set)
-      if (gameState.settings.timerMode !== 'countdown') {
+      // Count up timer (default or explicitly set to countup)
+      if (gameState.settings.timerMode === 'countup' || gameState.settings.timerMode === undefined || gameState.settings.timerMode === 'none') {
         setGameState(prev => ({
           ...prev,
           timeElapsed: prev.timeElapsed + 1
         }));
       }
       // Countdown timer
-      else if (timeRemaining !== null) {
+      else if (gameState.settings.timerMode === 'countdown' && timeRemaining !== null) {
         setTimeRemaining(prev => {
           // Handle the case where prev might be null
           const currentTime = prev ?? 0;
@@ -85,8 +98,9 @@ function App() {
       }
     }, 1000);
 
+    // Cleanup timer on unmount or when dependencies change
     return () => clearInterval(timer);
-  }, [gameState.isComplete, gameState.settings.timerMode, timeRemaining, gameOver]);
+  }, [gameState.isComplete, gameState.settings.timerMode, gameOver]);
 
   // Initialize game
   const initializeGame = useCallback((settings?: GameSettings) => {
@@ -99,6 +113,7 @@ function App() {
     const generator = new WordSearchGenerator(gridSize);
     const { grid, words } = generator.generateGame(gameSettings);
 
+    // Reset game state
     setGameState({
       grid,
       words,
@@ -109,7 +124,17 @@ function App() {
       currentSelection: [],
       settings: gameSettings
     });
-  }, [gameState.settings]);
+    
+    // Reset game over state
+    setGameOver(false);
+    
+    // Reset timer based on mode
+    if (gameSettings.timerMode === 'countdown' && gameSettings.timerDuration) {
+      setTimeRemaining(gameSettings.timerDuration);
+    } else {
+      setTimeRemaining(null);
+    }
+  }, []);
 
   // Initialize game and mobile optimizations on mount
   useEffect(() => {

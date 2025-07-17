@@ -210,6 +210,16 @@ body {
   /* Improve mobile layout */
   body {
     overscroll-behavior: none; /* Prevent pull-to-refresh */
+    touch-action: manipulation; /* Improve touch response */
+  }
+  
+  /* Prevent screen dragging on word grid */
+  .word-grid-container {
+    touch-action: none !important;
+    -ms-touch-action: none !important;
+    -webkit-touch-action: none !important;
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
   }
 }
 

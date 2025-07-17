@@ -25,7 +25,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSettingsChange,
   theme
 }) => {
-  const [localSettings, setLocalSettings] = useState<GameSettings>(settings);
+  // Initialize local settings with default values for timer
+  const [localSettings, setLocalSettings] = useState<GameSettings>({
+    ...settings,
+    timerMode: settings.timerMode || 'none',
+    timerDuration: settings.timerDuration || 180
+  });
   const [customWord, setCustomWord] = useState('');
   const [showCustomTheme, setShowCustomTheme] = useState(false);
   const [showSaveListModal, setShowSaveListModal] = useState(false);

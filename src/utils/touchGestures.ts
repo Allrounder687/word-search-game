@@ -35,7 +35,7 @@ export const addTouchGestureHandlers = (
   let startTime = 0;
   let longPressTimer: number | null = null;
   let initialDistance = 0;
-  
+
   // Touch start handler
   const handleTouchStart = (e: TouchEvent) => {
     if (e.touches.length === 1) {
@@ -43,7 +43,7 @@ export const addTouchGestureHandlers = (
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       startTime = Date.now();
-      
+
       // Set long press timer
       if (handlers.onLongPress) {
         longPressTimer = window.setTimeout(() => {
@@ -59,27 +59,30 @@ export const addTouchGestureHandlers = (
       );
     }
   };
-  
+
   // Touch move handler
   const handleTouchMove = (e: TouchEvent) => {
+    // Prevent default to stop screen dragging
+    e.preventDefault();
+
     // Cancel long press if finger moves
     if (longPressTimer !== null) {
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
-    
+
     if (e.touches.length === 2 && handlers.onPinch && initialDistance > 0) {
       // Handle pinch gesture
       const currentDistance = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
-      
+
       const scale = currentDistance / initialDistance;
       handlers.onPinch(scale);
     }
   };
-  
+
   // Touch end handler
   const handleTouchEnd = (e: TouchEvent) => {
     // Cancel long press timer
@@ -87,23 +90,23 @@ export const addTouchGestureHandlers = (
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
-    
+
     // Calculate touch duration
     const touchDuration = Date.now() - startTime;
-    
+
     // Handle tap
     if (touchDuration < LONG_PRESS_THRESHOLD && handlers.onTap) {
       handlers.onTap({ x: startX, y: startY });
     }
-    
+
     // Handle swipe if we have a handler
     if (handlers.onSwipe) {
       const endX = e.changedTouches[0].clientX;
       const endY = e.changedTouches[0].clientY;
-      
+
       const deltaX = endX - startX;
       const deltaY = endY - startY;
-      
+
       // Check if the movement is significant enough to be a swipe
       if (Math.abs(deltaX) > SWIPE_THRESHOLD || Math.abs(deltaY) > SWIPE_THRESHOLD) {
         // Determine swipe direction
@@ -119,18 +122,18 @@ export const addTouchGestureHandlers = (
       }
     }
   };
-  
+
   // Add event listeners
   element.addEventListener('touchstart', handleTouchStart, { passive: false });
   element.addEventListener('touchmove', handleTouchMove, { passive: false });
   element.addEventListener('touchend', handleTouchEnd, { passive: false });
-  
+
   // Return cleanup function
   return () => {
     element.removeEventListener('touchstart', handleTouchStart);
     element.removeEventListener('touchmove', handleTouchMove);
     element.removeEventListener('touchend', handleTouchEnd);
-    
+
     if (longPressTimer !== null) {
       clearTimeout(longPressTimer);
     }
@@ -144,11 +147,39 @@ export const addTouchGestureHandlers = (
 export const preventDefaultTouchBehavior = (element: HTMLElement): void => {
   const preventDefault = (e: TouchEvent) => {
     e.preventDefault();
+    e.stopPropagation();
   };
-  
+
   element.addEventListener('touchstart', preventDefault, { passive: false });
   element.addEventListener('touchmove', preventDefault, { passive: false });
   element.addEventListener('touchend', preventDefault, { passive: false });
+};
+
+/**
+ * Configure touch behavior specifically for word grid
+ * @param element - The HTML element (word grid) to configure touch behavior for
+ */
+export const configureWordGridTouchBehavior = (element: HTMLElement): void => {
+  // Apply CSS to prevent touch actions
+  element.style.touchAction = 'none';
+
+  // Prevent scrolling and zooming
+  const preventTouchAction = (e: TouchEvent) => {
+    // Always prevent default to stop screen dragging
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // Add event listeners with passive: false to ensure preventDefault works
+  element.addEventListener('touchstart', preventTouchAction, { passive: false });
+  element.addEventListener('touchmove', preventTouchAction, { passive: false });
+  element.addEventListener('touchend', preventTouchAction, { passive: false });
+
+  // Add additional CSS to the element
+  element.style.webkitUserSelect = 'none';
+  element.style.userSelect = 'none';
+  // Use type assertion for non-standard CSS property
+  (element.style as any)['-webkit-touch-callout'] = 'none';
 };
 
 /**

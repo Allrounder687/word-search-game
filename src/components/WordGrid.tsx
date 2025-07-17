@@ -5,7 +5,7 @@ import { Sparkles, BookOpen, MapPin, Globe } from 'lucide-react';
 import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
 import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
-import { preventDefaultTouchBehavior } from '../utils/touchGestures';
+import { configureWordGridTouchBehavior } from '../utils/touchGestures';
 import { AudioPronunciation } from './AudioPronunciation';
 import { VisualIllustration } from './VisualIllustration';
 
@@ -25,7 +25,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const [lastFoundWord, setLastFoundWord] = useState<WordPlacement | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Detect if we're on a mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -57,7 +57,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
             // Use simplified description for kids
             foundWord.description = getKidsDescription(foundWord.word);
             foundWord.descriptionType = 'kidsMode';
-          } 
+          }
           // Otherwise use standard descriptions
           else if (FIVE_PILLARS_DESCRIPTIONS[foundWord.word]) {
             // Add the description to the word
@@ -73,11 +73,11 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
             foundWord.descriptionType = 'islamicPlaces';
           }
         }
-        
+
         onWordFound(foundWord);
         setLastFoundWord(foundWord);
         setShowCelebration(true);
-        
+
         // Add celebration effect
         const wordCells = getSelectionPath(foundWord.start, foundWord.end);
         wordCells.forEach(pos => {
@@ -87,7 +87,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
             setTimeout(() => cell.classList.remove('animate-word-found'), 600);
           }
         });
-        
+
         // Hide celebration after a longer delay if we have a description
         setTimeout(() => {
           setShowCelebration(false);
@@ -95,7 +95,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
         }, foundWord.description ? 5000 : 2000);
       }
     }
-    
+
     setIsSelecting(false);
     setCurrentSelection([]);
     setHighlightedCells(new Set());
@@ -117,11 +117,11 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     // Prevent default to avoid scrolling while selecting
     e.preventDefault();
     e.stopPropagation();
-    
+
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
     setHighlightedCells(new Set([getCellKey(row, col)]));
-    
+
     // Add haptic feedback if available
     if (navigator.vibrate) {
       navigator.vibrate(10); // Short vibration
@@ -130,25 +130,26 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
-    
+
     // Prevent default to avoid scrolling while selecting
     e.preventDefault();
-    
+    e.stopPropagation();
+
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    
+
     if (element && element.hasAttribute('data-cell')) {
       const cellKey = element.getAttribute('data-cell');
       if (cellKey) {
         const [row, col] = cellKey.split(',').map(Number);
-        
+
         // Only update if we're on a different cell
         if (!highlightedCells.has(cellKey)) {
           const start = currentSelection[0];
           const newSelection = getSelectionPath(start, { row, col });
           setCurrentSelection(newSelection);
           setHighlightedCells(new Set(newSelection.map(pos => getCellKey(pos.row, pos.col))));
-          
+
           // Add haptic feedback for iOS and Android if available
           if (window.navigator && window.navigator.vibrate) {
             window.navigator.vibrate(10); // Short vibration
@@ -158,7 +159,11 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     }
   }, [isSelecting, currentSelection, highlightedCells]);
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Prevent default to avoid any unwanted browser behavior
+    e.preventDefault();
+    e.stopPropagation();
+
     handleMouseUp();
   }, [handleMouseUp]);
 
@@ -166,16 +171,16 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     const path: Position[] = [];
     const rowDiff = end.row - start.row;
     const colDiff = end.col - start.col;
-    
+
     // Determine if it's a valid direction (horizontal, vertical, or diagonal)
     const absRowDiff = Math.abs(rowDiff);
     const absColDiff = Math.abs(colDiff);
-    
+
     if (absRowDiff === 0 || absColDiff === 0 || absRowDiff === absColDiff) {
       const steps = Math.max(absRowDiff, absColDiff);
       const rowStep = steps === 0 ? 0 : rowDiff / steps;
       const colStep = steps === 0 ? 0 : colDiff / steps;
-      
+
       for (let i = 0; i <= steps; i++) {
         path.push({
           row: start.row + Math.round(rowStep * i),
@@ -185,16 +190,16 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     } else {
       path.push(start);
     }
-    
+
     return path;
   };
 
   const getCellStyle = (row: number, col: number, _cell: Cell) => {
     const cellKey = getCellKey(row, col);
     const isHighlighted = highlightedCells.has(cellKey);
-    
+
     // Find if this cell is part of a found word
-    const foundWord = words.find(w => w.found && 
+    const foundWord = words.find(w => w.found &&
       getSelectionPath(w.start, w.end).some(pos => pos.row === row && pos.col === col)
     );
 
@@ -208,7 +213,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       backgroundColor = foundWord.color + '40'; // Add transparency
       borderColor = foundWord.color;
       color = '#ffffff';
-      
+
       // If this is part of the last found word, add extra effects
       if (lastFoundWord && lastFoundWord.word === foundWord.word) {
         boxShadow = `0 0 15px ${foundWord.color}80`;
@@ -234,16 +239,43 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   // Apply touch optimizations when component mounts
   useEffect(() => {
     if (isMobile && gridContainerRef.current) {
-      // Prevent default touch behavior to avoid scrolling while playing
-      preventDefaultTouchBehavior(gridContainerRef.current);
+      // Use our enhanced touch behavior configuration for word grid
+      configureWordGridTouchBehavior(gridContainerRef.current);
+
+      // Add meta viewport tag to prevent zooming on double tap
+      const viewportMeta = document.querySelector('meta[name=viewport]');
+      if (viewportMeta) {
+        viewportMeta.setAttribute('content',
+          'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+      }
+
+      // Prevent body scrolling when interacting with the grid
+      const handleBodyTouchMove = (e: TouchEvent) => {
+        if (isSelecting) {
+          e.preventDefault();
+        }
+      };
+
+      document.body.addEventListener('touchmove', handleBodyTouchMove, { passive: false });
+
+      return () => {
+        document.body.removeEventListener('touchmove', handleBodyTouchMove);
+
+        // Restore viewport meta when component unmounts
+        if (viewportMeta) {
+          viewportMeta.setAttribute('content',
+            'width=device-width, initial-scale=1.0');
+        }
+      };
     }
-  }, [isMobile]);
+  }, [isMobile, isSelecting]);
 
   return (
     <div style={{ position: 'relative' }}>
-      <div 
+      <div
         ref={gridContainerRef}
-        style={{ 
+        className={isMobile ? 'word-grid-container' : ''}
+        style={{
           display: 'inline-block',
           padding: '16px',
           borderRadius: '12px',
@@ -252,8 +284,8 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           touchAction: isMobile ? 'none' : 'auto' // Disable browser touch actions on mobile
         }}
       >
-        <div 
-          style={{ 
+        <div
+          style={{
             display: 'grid',
             gap: '4px',
             gridTemplateColumns: `repeat(${grid.length}, minmax(0, 1fr))`,
@@ -268,12 +300,12 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                   key={getCellKey(rowIndex, colIndex)}
                   data-cell={getCellKey(rowIndex, colIndex)}
                   style={{
-                    width: window.innerWidth >= 768 ? '40px' : 
-                           window.innerWidth >= 480 ? '32px' : 
-                           window.innerWidth >= 360 ? '28px' : '24px',
-                    height: window.innerWidth >= 768 ? '40px' : 
-                            window.innerWidth >= 480 ? '32px' : 
-                            window.innerWidth >= 360 ? '28px' : '24px',
+                    width: window.innerWidth >= 768 ? '40px' :
+                      window.innerWidth >= 480 ? '32px' :
+                        window.innerWidth >= 360 ? '28px' : '24px',
+                    height: window.innerWidth >= 768 ? '40px' :
+                      window.innerWidth >= 480 ? '32px' :
+                        window.innerWidth >= 360 ? '28px' : '24px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -281,8 +313,8 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                     borderRadius: window.innerWidth >= 480 ? '8px' : '6px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: window.innerWidth >= 768 ? '16px' : 
-                             window.innerWidth >= 480 ? '14px' : '12px',
+                    fontSize: window.innerWidth >= 768 ? '16px' :
+                      window.innerWidth >= 480 ? '14px' : '12px',
                     // Apply baseStyle which includes: backgroundColor, color, borderColor, boxShadow, transition, transform, fontFamily
                     ...baseStyle
                   }}
@@ -309,7 +341,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           )}
         </div>
       </div>
-      
+
       {/* Word found celebration */}
       {showCelebration && lastFoundWord && (
         <div style={{
@@ -343,50 +375,50 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                 marginBottom: '12px'
               }}>
                 {lastFoundWord.descriptionType === 'islamicPlaces' ? (
-                  <MapPin 
-                    size={24} 
-                    style={{ 
+                  <MapPin
+                    size={24}
+                    style={{
                       color: lastFoundWord.color,
                       marginRight: '8px'
-                    }} 
+                    }}
                   />
                 ) : lastFoundWord.descriptionType === 'kidsMode' ? (
-                  <BookOpen 
-                    size={24} 
-                    style={{ 
+                  <BookOpen
+                    size={24}
+                    style={{
                       color: lastFoundWord.color,
                       marginRight: '8px'
-                    }} 
+                    }}
                   />
                 ) : (
-                  <BookOpen 
-                    size={24} 
-                    style={{ 
+                  <BookOpen
+                    size={24}
+                    style={{
                       color: lastFoundWord.color,
                       marginRight: '8px'
-                    }} 
+                    }}
                   />
                 )}
-                <div style={{ 
+                <div style={{
                   fontSize: '24px',
                   fontWeight: 'bold',
                   color: lastFoundWord.color
                 }}>
                   {lastFoundWord.word}
                 </div>
-                
+
                 {/* Audio pronunciation for Kids Mode */}
                 {kidsMode && (
                   <div style={{ marginLeft: '8px' }}>
-                    <AudioPronunciation 
-                      word={lastFoundWord.word} 
-                      color={lastFoundWord.color} 
-                      kidsMode={kidsMode} 
+                    <AudioPronunciation
+                      word={lastFoundWord.word}
+                      color={lastFoundWord.color}
+                      kidsMode={kidsMode}
                     />
                   </div>
                 )}
               </div>
-              
+
               {/* English description */}
               <div style={{
                 color: '#ffffff',
@@ -400,7 +432,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
               }}>
                 {lastFoundWord.description}
               </div>
-              
+
               {/* Urdu description (only for Islamic Places) */}
               {lastFoundWord.urduDescription && (
                 <div style={{
@@ -418,29 +450,29 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                   {lastFoundWord.urduDescription}
                 </div>
               )}
-              
+
               {/* Visual illustration for Kids Mode */}
               {kidsMode && lastFoundWord.descriptionType === 'kidsMode' && (
-                <VisualIllustration 
-                  word={lastFoundWord.word} 
-                  kidsMode={kidsMode} 
-                  theme={theme} 
+                <VisualIllustration
+                  word={lastFoundWord.word}
+                  kidsMode={kidsMode}
+                  theme={theme}
                 />
               )}
-              
+
               <div style={{
                 fontSize: '12px',
                 color: 'rgba(255, 255, 255, 0.7)',
                 fontStyle: 'italic',
                 marginTop: '12px'
               }}>
-                {lastFoundWord.descriptionType === 'islamicPlaces' 
-                  ? 'Sacred Place in Islam' 
+                {lastFoundWord.descriptionType === 'islamicPlaces'
+                  ? 'Sacred Place in Islam'
                   : lastFoundWord.descriptionType === 'kidsMode'
-                  ? 'Islamic Term for Kids'
-                  : 'One of the Five Pillars of Islam'}
+                    ? 'Islamic Term for Kids'
+                    : 'One of the Five Pillars of Islam'}
               </div>
-              
+
               {/* Decorative elements */}
               <div style={{
                 position: 'absolute',
@@ -475,7 +507,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
               textAlign: 'center',
               animation: 'bounce-in 0.6s ease-out forwards'
             }}>
-              <div style={{ 
+              <div style={{
                 fontSize: '24px',
                 fontWeight: 'bold',
                 marginBottom: '4px',
@@ -484,17 +516,17 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                 {lastFoundWord.word}
               </div>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <Sparkles 
-                  size={24} 
-                  style={{ 
+                <Sparkles
+                  size={24}
+                  style={{
                     color: lastFoundWord.color,
                     animation: 'pulse-glow 2s ease-in-out infinite'
-                  }} 
+                  }}
                 />
               </div>
             </div>
           )}
-          
+
           {/* Particle effects */}
           {[...Array(10)].map((_, i) => (
             <div
@@ -516,7 +548,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           ))}
         </div>
       )}
-      
+
       {/* CSS Animations */}
       <style>
         {`

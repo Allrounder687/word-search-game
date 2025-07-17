@@ -1,0 +1,21 @@
+{
+  "name": "Code Quality Analyzer",
+  "description": "Analyzes modified code for potential improvements, including code smells, design patterns, and best practices",
+  "triggers": [
+    {
+      "type": "fileChange",
+      "pattern": "src/**/*.{ts,tsx,js,jsx}",
+      "debounceMs": 1000
+    }
+  ],
+  "action": {
+    "type": "agent",
+    "prompt": "Analyze the following code changes for potential improvements. Focus on:\n\n1. Code smells and anti-patterns\n2. Opportunities to apply design patterns\n3. Performance optimizations\n4. Readability and maintainability improvements\n5. TypeScript best practices\n6. React component optimization (if applicable)\n\nProvide specific, actionable suggestions that maintain the existing functionality while improving code quality. Include code examples where appropriate.\n\nModified file: {{filePath}}\n\nCode changes:\n```{{fileContent}}```"
+  },
+  "presentation": {
+    "type": "notification",
+    "title": "Code Quality Analysis",
+    "showButton": true,
+    "buttonText": "View Suggestions"
+  }
+}

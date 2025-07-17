@@ -248,8 +248,8 @@ export const WordList: React.FC<WordListProps> = ({
     const { foundCount, totalCount, hasDescription, completionPercentage } = useMemo(() => {
         const foundCount = words.filter(w => w.found).length;
         const totalCount = words.length;
-        const hasDescription = (word: string) => {
-            return FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word];
+        const hasDescription = (word: string): boolean => {
+            return Boolean(FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word]);
         };
         const completionPercentage = totalCount > 0 ? (foundCount / totalCount) * 100 : 0;
 

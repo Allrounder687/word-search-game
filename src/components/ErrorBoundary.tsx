@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -58,21 +59,20 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             Refresh Game
           </button>
-          {process.env.NODE_ENV === 'development' && (
-            <details style={{ marginTop: '20px', textAlign: 'left' }}>
-              <summary>Error Details (Development)</summary>
-              <pre style={{ 
-                background: '#f3f4f6', 
-                padding: '10px', 
-                borderRadius: '4px',
-                fontSize: '12px',
-                overflow: 'auto',
-                maxWidth: '100%'
-              }}>
-                {this.state.error?.stack}
-              </pre>
-            </details>
-          )}
+          {/* Show error details in development mode */}
+          <details style={{ marginTop: '20px', textAlign: 'left' }}>
+            <summary>Error Details</summary>
+            <pre style={{ 
+              background: '#f3f4f6', 
+              padding: '10px', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              overflow: 'auto',
+              maxWidth: '100%'
+            }}>
+              {this.state.error?.stack}
+            </pre>
+          </details>
         </div>
       );
     }

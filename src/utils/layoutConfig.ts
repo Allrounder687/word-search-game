@@ -1,4 +1,12 @@
-import type { ResponsiveBreakpoints } from '../hooks/useResponsive';
+// Import the ResponsiveBreakpoints interface
+interface ResponsiveBreakpoints {
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+  isLargeDesktop: boolean;
+  width: number;
+  height: number;
+}
 
 export interface LayoutConfig {
   spacing: {

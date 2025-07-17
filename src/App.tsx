@@ -311,6 +311,23 @@ function App() {
           theme={currentTheme}
         />
 
+        {/* Mobile WordList - Displayed at the top on mobile devices */}
+        {window.innerWidth < 1024 && (
+          <div style={{
+            width: '100%',
+            marginTop: '16px',
+            marginBottom: '16px'
+          }}>
+            <WordList
+              words={gameState.words}
+              theme={currentTheme}
+              showDescriptions={gameState.settings.showDescriptions}
+              kidsMode={gameState.settings.kidsMode}
+              isMobileLayout={true}
+            />
+          </div>
+        )}
+
         <div style={{
           display: 'flex',
           flexDirection: window.innerWidth >= 1024 ? 'row' : 'column',
@@ -337,12 +354,16 @@ function App() {
             flexDirection: 'column',
             gap: '16px'
           }}>
-            <WordList
-              words={gameState.words}
-              theme={currentTheme}
-              showDescriptions={gameState.settings.showDescriptions}
-              kidsMode={gameState.settings.kidsMode}
-            />
+            {/* Desktop WordList - Only displayed on desktop */}
+            {window.innerWidth >= 1024 && (
+              <WordList
+                words={gameState.words}
+                theme={currentTheme}
+                showDescriptions={gameState.settings.showDescriptions}
+                kidsMode={gameState.settings.kidsMode}
+                isMobileLayout={false}
+              />
+            )}
 
             {/* Game Controls */}
             <div

@@ -344,11 +344,11 @@ function App() {
         {breakpoints.isDesktop && showCategoryDropdown && (
           <div style={{
             position: 'absolute',
-            top: '80px',
-            right: '70px',
+            top: '90px',
+            right: '110px',
             width: '200px',
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
+            backgroundColor: `${currentTheme.gridBg.replace('0.1', '0.4')}`,
+            backdropFilter: 'blur(10px)',
             borderRadius: '8px',
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
             zIndex: 100,
@@ -436,11 +436,11 @@ function App() {
         {breakpoints.isDesktop && showThemeDropdown && (
           <div style={{
             position: 'absolute',
-            top: '80px',
-            right: '30px',
+            top: '90px',
+            right: '70px',
             width: '200px',
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(8px)',
+            backgroundColor: `${currentTheme.gridBg.replace('0.1', '0.4')}`,
+            backdropFilter: 'blur(10px)',
             borderRadius: '8px',
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
             zIndex: 100,

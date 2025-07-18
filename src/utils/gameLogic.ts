@@ -51,7 +51,8 @@ export class WordSearchGenerator {
 
         // If a specific category is selected, use that category's word list
         if (settings.wordCategory && settings.wordCategory !== 'custom') {
-            const categoryLists = CATEGORY_WORD_LISTS[settings.wordCategory];
+            // Use type assertion to handle all WordCategory types
+            const categoryLists = CATEGORY_WORD_LISTS[settings.wordCategory as keyof typeof CATEGORY_WORD_LISTS];
             if (categoryLists) {
                 return categoryLists[settings.difficulty as keyof typeof categoryLists] || categoryLists.easy;
             }

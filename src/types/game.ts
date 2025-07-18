@@ -29,7 +29,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 
 export type Theme = 'midnight' | 'royal' | 'pink' | 'pure' | 'darkRoyal' | 'darkPink' | 'ocean' | 'sunset' | 'neon' | 'forest' | 'galaxy' | 'desert' | 'cyber' | 'custom';
 
-export type WordCategory = 'general' | 'animals' | 'islamicPlaces' | 'islamicProphets' | 'fivePillars' | 'islamicTerms' | 'islamicMonths' | 'muslimScientists' | 'quranicSurahs' | 'islamicValues' | 'custom';
+export type WordCategory = 'general' | 'animals' | 'islamicPlaces' | 'islamicProphets' | 'fivePillars' | 'islamicTerms' | 'islamicMonths' | 'muslimScientists' | 'quranicSurahs' | 'islamicValues' | 'islamicAngels' | 'islamicBooks' | 'islamicEvents' | 'islamicVirtues' | 'custom';
 
 export type TimerMode = 'none' | 'countdown' | 'countup';
 
@@ -233,6 +233,54 @@ export const CATEGORY_WORD_LISTS = {
     hard: [
       'MUHASABAH', 'TADABBUR', 'TAFKIR', 'TADABBUR', 'TADABBUR', 'TADABBUR',
       'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR'
+    ]
+  },
+  // Islamic Angels
+  islamicAngels: {
+    easy: [
+      'JIBREEL', 'MIKAEEL', 'ISRAFEEL', 'IZRAEEL', 'MUNKAR', 'NAKIR'
+    ],
+    medium: [
+      'RAQEEB', 'ATEED', 'RIDWAN', 'MALIK', 'HARUT', 'MARUT'
+    ],
+    hard: [
+      'KIRAMAN', 'KATIBIN', 'MAALIK', 'ZABANIYAH', 'HAFAZA', 'MUAQQIBAT'
+    ]
+  },
+  // Islamic Books
+  islamicBooks: {
+    easy: [
+      'QURAN', 'TAWRAT', 'INJEEL', 'ZABUR', 'SUHUF', 'HADITH'
+    ],
+    medium: [
+      'SAHIH BUKHARI', 'SAHIH MUSLIM', 'MUWATTA', 'TAFSIR', 'SUNAN', 'MUSNAD'
+    ],
+    hard: [
+      'RIYADUSSALIHIN', 'BULUGHULMARAM', 'MISHKATUL', 'MASABIH', 'IHYA', 'ULUMUDDIN'
+    ]
+  },
+  // Islamic Events
+  islamicEvents: {
+    easy: [
+      'ISRA MIRAJ', 'BADR', 'UHUD', 'KHANDAQ', 'HUDAIBIYAH', 'FATH MAKKAH'
+    ],
+    medium: [
+      'HIJRAH', 'GHADEER', 'MUBAHALA', 'ASHURA', 'TABUK', 'HUNAIN'
+    ],
+    hard: [
+      'YARMUK', 'QADISIYYAH', 'NAHAWAND', 'SIFFIN', 'KARBALA', 'TAIF'
+    ]
+  },
+  // Islamic Virtues
+  islamicVirtues: {
+    easy: [
+      'TAQWA', 'IHSAN', 'RAHMAH', 'ADAALAH', 'ISTIQAMAH', 'ZUHD'
+    ],
+    medium: [
+      'KHUSHOO', 'MUJAHADAH', 'SHUKR', 'TAWBAH', 'WARA', 'QANAAH'
+    ],
+    hard: [
+      'MURAQABAH', 'MUHASABAH', 'IKHBAT', 'YAQEEN', 'TASLEEM', 'RIDHA'
     ]
   }
 };

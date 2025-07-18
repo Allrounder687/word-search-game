@@ -7,6 +7,12 @@ import {
   QURANIC_SURAHS_DESCRIPTIONS,
   ISLAMIC_VALUES_DESCRIPTIONS
 } from './islamicDescriptions';
+import {
+  ISLAMIC_ANGELS_DESCRIPTIONS,
+  ISLAMIC_BOOKS_DESCRIPTIONS,
+  ISLAMIC_EVENTS_DESCRIPTIONS,
+  ISLAMIC_VIRTUES_DESCRIPTIONS
+} from './islamicNewCategories';
 
 export type IslamicCategory = {
   key: string;
@@ -75,5 +81,37 @@ export const ISLAMIC_CATEGORIES: IslamicCategory[] = [
       'SABR', 'SHUKR', 'ADAB', 'IKHLAAS', 'AMANAH', 'SIDQ', 'TAWAKKUL', 'HIYA'
     ],
     descriptions: ISLAMIC_VALUES_DESCRIPTIONS
+  },
+  {
+    key: 'islamic-angels',
+    name: 'Islamic Angels',
+    words: [
+      'JIBREEL', 'MIKAEEL', 'ISRAFEEL', 'IZRAEEL', 'MUNKAR', 'NAKIR', 'RAQEEB', 'ATEED', 'RIDWAN', 'MALIK'
+    ],
+    descriptions: ISLAMIC_ANGELS_DESCRIPTIONS
+  },
+  {
+    key: 'islamic-books',
+    name: 'Islamic Books',
+    words: [
+      'QURAN', 'TAWRAT', 'INJEEL', 'ZABUR', 'SUHUF', 'HADITH', 'SAHIH BUKHARI', 'SAHIH MUSLIM', 'MUWATTA', 'TAFSIR'
+    ],
+    descriptions: ISLAMIC_BOOKS_DESCRIPTIONS
+  },
+  {
+    key: 'islamic-events',
+    name: 'Islamic Events',
+    words: [
+      'ISRA MIRAJ', 'BADR', 'UHUD', 'KHANDAQ', 'HUDAIBIYAH', 'FATH MAKKAH', 'HIJRAH', 'GHADEER', 'MUBAHALA', 'ASHURA'
+    ],
+    descriptions: ISLAMIC_EVENTS_DESCRIPTIONS
+  },
+  {
+    key: 'islamic-virtues',
+    name: 'Islamic Virtues',
+    words: [
+      'TAQWA', 'IHSAN', 'RAHMAH', 'ADAALAH', 'ISTIQAMAH', 'ZUHD', 'KHUSHOO', 'MUJAHADAH', 'SHUKR', 'TAWBAH'
+    ],
+    descriptions: ISLAMIC_VIRTUES_DESCRIPTIONS
   }
 ];

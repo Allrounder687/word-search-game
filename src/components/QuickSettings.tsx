@@ -55,7 +55,11 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
     'muslim-scientists': 'muslimScientists',
     'islamic-landmarks': 'islamicPlaces',
     'quranic-surahs': 'quranicSurahs',
-    'islamic-values': 'islamicValues'
+    'islamic-values': 'islamicValues',
+    'islamic-angels': 'islamicAngels',
+    'islamic-books': 'islamicBooks',
+    'islamic-events': 'islamicEvents',
+    'islamic-virtues': 'islamicVirtues'
   };
 
   // Build dynamic category list for dropdowns

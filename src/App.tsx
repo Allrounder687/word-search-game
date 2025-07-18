@@ -17,7 +17,7 @@ import { useResponsive } from './hooks/useResponsive';
 import { getLayoutConfig } from './utils/layoutConfig';
 import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
-import { 
+import {
   FIVE_PILLARS_DESCRIPTIONS,
   ISLAMIC_MONTHS_DESCRIPTIONS,
   MUSLIM_SCIENTISTS_DESCRIPTIONS,
@@ -25,6 +25,12 @@ import {
   QURANIC_SURAHS_DESCRIPTIONS,
   ISLAMIC_VALUES_DESCRIPTIONS
 } from './types/islamicDescriptions';
+import {
+  ISLAMIC_ANGELS_DESCRIPTIONS,
+  ISLAMIC_BOOKS_DESCRIPTIONS,
+  ISLAMIC_EVENTS_DESCRIPTIONS,
+  ISLAMIC_VIRTUES_DESCRIPTIONS
+} from './types/islamicNewCategories';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from './types/islamicPlacesDescriptions';
 import { Sparkles, Trophy, Info, Clock } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
@@ -300,12 +306,12 @@ function App() {
       setHintsRemaining(difficultyHints[gameState.settings.difficulty] || 3);
     }
   }, [gameState.settings.difficulty, gameState.settings.hintsCount]);
-  
+
   // Handle zoom toggle
   const onToggleZoom = useCallback(() => {
     setIsZoomed(prev => !prev);
   }, []);
-  
+
   // Handle click mode toggle
   const handleToggleClickMode = useCallback(() => {
     const newMode = selectionMode === 'drag' ? 'click-start-end' : 'drag';
@@ -354,6 +360,77 @@ function App() {
           marginTop: layoutConfig.spacing.marginTop,
           padding: layoutConfig.spacing.padding
         }}>
+          {/* For mobile layout, show QuickSettings and Game Controls before WordGrid */}
+          {!breakpoints.isDesktop && (
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              marginBottom: '16px'
+            }}>
+              {/* Quick Settings for Category and Theme Selection */}
+              <QuickSettings
+                settings={gameState.settings}
+                onSettingsChange={handleSettingsChange}
+                theme={currentTheme}
+                onReset={handleReset}
+                onToggleZoom={onToggleZoom}
+                onToggleClickMode={handleToggleClickMode}
+                isZoomed={isZoomed}
+                isClickMode={isClickMode}
+              />
+
+              {/* Game Controls for mobile - moved to top */}
+              <div
+                style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  backgroundColor: currentTheme.gridBg
+                }}
+              >
+                {/* Hint System */}
+                <HintSystem
+                  words={gameState.words}
+                  onHintUsed={handleHintUsed}
+                  theme={currentTheme}
+                  hintsRemaining={hintsRemaining}
+                />
+
+                {/* Timer Display (for countdown mode) */}
+                {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
+                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
+                    border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
+                    animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
+                  }}>
+                    <Clock size={20} style={{
+                      color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
+                    }} />
+                    <span style={{
+                      fontWeight: 'bold',
+                      fontSize: '16px'
+                    }}>
+                      {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div style={{
             flexShrink: 0,
             display: 'flex',
@@ -379,23 +456,25 @@ function App() {
             flexDirection: 'column',
             gap: '16px'
           }}>
-            {/* Quick Settings for Category and Theme Selection */}
-            <QuickSettings
-              settings={gameState.settings}
-              onSettingsChange={handleSettingsChange}
-              theme={currentTheme}
-              onReset={handleReset}
-              onToggleZoom={onToggleZoom}
-              onToggleClickMode={handleToggleClickMode}
-              isZoomed={isZoomed}
-              isClickMode={isClickMode}
-            />
+            {/* Quick Settings for Category and Theme Selection - Desktop only */}
+            {breakpoints.isDesktop && (
+              <QuickSettings
+                settings={gameState.settings}
+                onSettingsChange={handleSettingsChange}
+                theme={currentTheme}
+                onReset={handleReset}
+                onToggleZoom={onToggleZoom}
+                onToggleClickMode={handleToggleClickMode}
+                isZoomed={isZoomed}
+                isClickMode={isClickMode}
+              />
+            )}
 
             {/* Get descriptions based on the current category */}
             {useMemo(() => {
               const category = gameState.settings.wordCategory;
               let descriptions: Record<string, string> = {};
-              
+
               // Import descriptions based on the selected category
               if (category === 'fivePillars') {
                 descriptions = FIVE_PILLARS_DESCRIPTIONS;
@@ -414,11 +493,19 @@ function App() {
                 descriptions = QURANIC_SURAHS_DESCRIPTIONS;
               } else if (category === 'islamicValues') {
                 descriptions = ISLAMIC_VALUES_DESCRIPTIONS;
+              } else if (category === 'islamicAngels') {
+                descriptions = ISLAMIC_ANGELS_DESCRIPTIONS;
+              } else if (category === 'islamicBooks') {
+                descriptions = ISLAMIC_BOOKS_DESCRIPTIONS;
+              } else if (category === 'islamicEvents') {
+                descriptions = ISLAMIC_EVENTS_DESCRIPTIONS;
+              } else if (category === 'islamicVirtues') {
+                descriptions = ISLAMIC_VIRTUES_DESCRIPTIONS;
               }
-              
+
               // Determine which WordList to render based on screen size
               const isMobileLayout = !breakpoints.isDesktop;
-              
+
               return (
                 <>
                   {/* Conditionally render either desktop or mobile WordList */}
@@ -455,119 +542,121 @@ function App() {
               );
             }, [breakpoints.isDesktop, currentTheme, gameState.settings.kidsMode, gameState.settings.showDescriptions, gameState.settings.wordCategory, gameState.words, layoutConfig.spacing.marginBottom, layoutConfig.spacing.marginTop])}
 
-            {/* Game Controls */}
-            <div
-              style={{
-                padding: breakpoints.isTablet || breakpoints.isDesktop ? '16px' : '12px',
-                borderRadius: '12px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                display: 'flex',
-                flexWrap: breakpoints.width >= 480 ? 'nowrap' : 'wrap',
-                alignItems: 'center',
-                justifyContent: breakpoints.width >= 480 ? 'space-between' : 'center',
-                gap: '10px',
-                backgroundColor: currentTheme.gridBg
-              }}
-            >
-              {/* Hint System */}
-              <HintSystem
-                words={gameState.words}
-                onHintUsed={handleHintUsed}
-                theme={currentTheme}
-                hintsRemaining={hintsRemaining}
-              />
-
-              {/* Timer Display (for countdown mode) */}
-              {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                  color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                  border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
-                  animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                }}>
-                  <Clock size={20} style={{
-                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                  }} />
-                  <span style={{
-                    fontWeight: 'bold',
-                    fontSize: '16px'
-                  }}>
-                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-              )}
-
-              {/* Achievement System */}
-              <AchievementSystem
-                theme={currentTheme}
-              />
-
-              {/* Kids Achievements System */}
-              {gameState.settings.kidsMode && (
-                <KidsAchievements
-                  theme={currentTheme}
-                  foundWords={Array.from(gameState.foundWords)}
-                  kidsMode={gameState.settings.kidsMode}
-                />
-              )}
-
-              {/* Leaderboard System */}
-              <LeaderboardSystem
-                theme={currentTheme}
-              />
-
-              {/* Level System */}
-              <LevelSystem
-                theme={currentTheme}
-                onStartLevel={(currentLevel, settings) => {
-                  // Update settings with level-specific words
-                  const levelSettings = {
-                    ...settings,
-                    // Set categories based on current word category
-                    wordCategory: gameState.settings.wordCategory,
-                    // Keep user preferences
-                    theme: gameState.settings.theme,
-                    showDescriptions: gameState.settings.showDescriptions,
-                    timerMode: gameState.settings.timerMode,
-                    timerDuration: gameState.settings.timerDuration
-                  };
-
-                  // Log the current level (using the parameter to avoid the warning)
-                  console.log(`Starting level ${currentLevel}`);
-
-                  // Initialize game with the level settings
-                  initializeGame(levelSettings);
-                }}
-                currentSettings={gameState.settings}
-              />
-
-              {/* Info Button */}
-              <button
-                onClick={() => setShowInfo(!showInfo)}
+            {/* Game Controls - Desktop only */}
+            {breakpoints.isDesktop && (
+              <div
                 style={{
-                  padding: '12px',
-                  borderRadius: '8px',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer',
-                  border: `1px solid ${currentTheme.secondary}40`,
-                  backgroundColor: currentTheme.cellBg,
-                  color: currentTheme.primary
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
+                  padding: '16px',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  backgroundColor: currentTheme.gridBg
                 }}
               >
-                <Info size={20} />
-              </button>
-            </div>
+                {/* Hint System */}
+                <HintSystem
+                  words={gameState.words}
+                  onHintUsed={handleHintUsed}
+                  theme={currentTheme}
+                  hintsRemaining={hintsRemaining}
+                />
+
+                {/* Timer Display (for countdown mode) */}
+                {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
+                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
+                    border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
+                    animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
+                  }}>
+                    <Clock size={20} style={{
+                      color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
+                    }} />
+                    <span style={{
+                      fontWeight: 'bold',
+                      fontSize: '16px'
+                    }}>
+                      {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Achievement System */}
+                <AchievementSystem
+                  theme={currentTheme}
+                />
+
+                {/* Kids Achievements System */}
+                {gameState.settings.kidsMode && (
+                  <KidsAchievements
+                    theme={currentTheme}
+                    foundWords={Array.from(gameState.foundWords)}
+                    kidsMode={gameState.settings.kidsMode}
+                  />
+                )}
+
+                {/* Leaderboard System */}
+                <LeaderboardSystem
+                  theme={currentTheme}
+                />
+
+                {/* Level System */}
+                <LevelSystem
+                  theme={currentTheme}
+                  onStartLevel={(currentLevel, settings) => {
+                    // Update settings with level-specific words
+                    const levelSettings = {
+                      ...settings,
+                      // Set categories based on current word category
+                      wordCategory: gameState.settings.wordCategory,
+                      // Keep user preferences
+                      theme: gameState.settings.theme,
+                      showDescriptions: gameState.settings.showDescriptions,
+                      timerMode: gameState.settings.timerMode,
+                      timerDuration: gameState.settings.timerDuration
+                    };
+
+                    // Log the current level (using the parameter to avoid the warning)
+                    console.log(`Starting level ${currentLevel}`);
+
+                    // Initialize game with the level settings
+                    initializeGame(levelSettings);
+                  }}
+                  currentSettings={gameState.settings}
+                />
+
+                {/* Info Button */}
+                <button
+                  onClick={() => setShowInfo(!showInfo)}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                    border: `1px solid ${currentTheme.secondary}40`,
+                    backgroundColor: currentTheme.cellBg,
+                    color: currentTheme.primary
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <Info size={20} />
+                </button>
+              </div>
+            )}
 
             {/* Game Info Panel */}
             {showInfo && (

@@ -241,7 +241,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   ];
 
-  // Font options
+  // Font options - all fonts are now imported in index.css
   const fonts = [
     { value: "'Inter', sans-serif", label: "Inter (Default)" },
     { value: "'Roboto', sans-serif", label: "Roboto" },

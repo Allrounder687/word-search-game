@@ -27,7 +27,7 @@ export type Direction = 'horizontal' | 'vertical' | 'diagonal-down' | 'diagonal-
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 
-export type Theme = 'midnight' | 'royal' | 'pink' | 'pure' | 'darkRoyal' | 'darkPink' | 'ocean' | 'sunset' | 'neon' | 'custom';
+export type Theme = 'midnight' | 'royal' | 'pink' | 'pure' | 'darkRoyal' | 'darkPink' | 'ocean' | 'sunset' | 'neon' | 'forest' | 'galaxy' | 'desert' | 'cyber' | 'custom';
 
 export type WordCategory = 'general' | 'animals' | 'islamicPlaces' | 'islamicProphets' | 'fivePillars' | 'islamicTerms' | 'custom';
 
@@ -256,6 +256,46 @@ export const THEMES = {
     cellBg: 'rgba(0, 255, 136, 0.05)',
     cellHover: 'rgba(0, 255, 136, 0.2)',
     font: "'Orbitron', sans-serif"
+  },
+  forest: {
+    background: 'linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #40916c 100%)',
+    primary: '#ffffff',
+    secondary: '#74c69d',
+    accent: '#f9c74f',
+    gridBg: 'rgba(255, 255, 255, 0.1)',
+    cellBg: 'rgba(255, 255, 255, 0.05)',
+    cellHover: 'rgba(255, 255, 255, 0.2)',
+    font: "'Nunito', sans-serif"
+  },
+  galaxy: {
+    background: 'linear-gradient(135deg, #0f0e17 0%, #232946 50%, #121063 100%)',
+    primary: '#fffffe',
+    secondary: '#7f5af0',
+    accent: '#2cb67d',
+    gridBg: 'rgba(255, 255, 255, 0.1)',
+    cellBg: 'rgba(255, 255, 255, 0.05)',
+    cellHover: 'rgba(255, 255, 255, 0.2)',
+    font: "'Space Grotesk', sans-serif"
+  },
+  desert: {
+    background: 'linear-gradient(135deg, #7f5539 0%, #a68a64 50%, #dda15e 100%)',
+    primary: '#ffffff',
+    secondary: '#bc6c25',
+    accent: '#606c38',
+    gridBg: 'rgba(255, 255, 255, 0.1)',
+    cellBg: 'rgba(255, 255, 255, 0.05)',
+    cellHover: 'rgba(255, 255, 255, 0.2)',
+    font: "'Quicksand', sans-serif"
+  },
+  cyber: {
+    background: 'linear-gradient(135deg, #240046 0%, #3c096c 50%, #5a189a 100%)',
+    primary: '#e0aaff',
+    secondary: '#7b2cbf',
+    accent: '#10002b',
+    gridBg: 'rgba(224, 170, 255, 0.1)',
+    cellBg: 'rgba(224, 170, 255, 0.05)',
+    cellHover: 'rgba(224, 170, 255, 0.2)',
+    font: "'Rajdhani', sans-serif"
   },
   custom: {
     background: 'linear-gradient(135deg, #000000 0%, #1e1b4b 50%, #000000 100%)',

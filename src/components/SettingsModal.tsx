@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen } from 'lucide-react';
 import type { GameSettings, Difficulty, Theme, TimerMode } from '../types/game';
+import { THEMES } from '../types/game';
 
 // Interface for saved word lists
 interface SavedWordList {
@@ -67,6 +68,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const updatedSettings = { ...localSettings };
     if (updatedSettings.theme === 'custom') {
       updatedSettings.customColors = customColors;
+      
+      // Update the custom theme in THEMES object
+      // We're using the imported THEMES object directly
+      THEMES.custom = {
+        background: customColors.background,
+        primary: customColors.primary,
+        secondary: customColors.secondary,
+        accent: customColors.accent,
+        gridBg: 'rgba(255, 255, 255, 0.1)',
+        cellBg: 'rgba(255, 255, 255, 0.05)',
+        cellHover: 'rgba(255, 255, 255, 0.2)',
+        font: "'Inter', sans-serif"
+      };
     }
 
     onSettingsChange(updatedSettings);

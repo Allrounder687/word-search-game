@@ -57,38 +57,65 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
   }, []);
   
   const handlePlayAudio = () => {
-    // Use the browser's speech synthesis API
-    if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
-      
-      // Create a new utterance
-      const utterance = new SpeechSynthesisUtterance(word);
-      
-      // Configure the utterance
-      utterance.rate = 0.8; // Slightly slower for clearer pronunciation
-      utterance.volume = 1.0; // Maximum volume
-      utterance.pitch = 1.0; // Normal pitch
-      
-      // Add vibration feedback for mobile devices
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
+    try {
+      // First try to use the browser's speech synthesis API
+      if ('speechSynthesis' in window) {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        
+        // Create a new utterance
+        const utterance = new SpeechSynthesisUtterance(word);
+        
+        // Configure the utterance
+        utterance.rate = 0.8; // Slightly slower for clearer pronunciation
+        utterance.volume = 1.0; // Maximum volume
+        utterance.pitch = 1.0; // Normal pitch
+        
+        // Add vibration feedback for mobile devices
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+        
+        // Log for debugging
+        console.log(`Playing audio for ${word}`);
+        
+        // Speak the word
+        window.speechSynthesis.speak(utterance);
+        
+        // iOS requires user interaction to play audio
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+        if (isIOS) {
+          initializeAudioForIOS();
+        }
+      } else {
+        // Fallback to Audio API
+        const audio = new Audio();
+        audio.src = `data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV`;
+        audio.volume = 1.0;
+        
+        // Play the audio
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error('Audio playback failed:', error);
+            
+            // Try one more fallback - create a beep sound using Web Audio API
+            try {
+              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              oscillator.type = 'sine';
+              oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
+              oscillator.connect(audioContext.destination);
+              oscillator.start();
+              oscillator.stop(audioContext.currentTime + 0.2); // Short beep
+            } catch (err) {
+              console.error('Web Audio API failed:', err);
+            }
+          });
+        }
       }
-      
-      // Log for debugging
-      console.log(`Playing audio for ${word}`);
-      
-      // Speak the word
-      window.speechSynthesis.speak(utterance);
-      
-      // iOS requires user interaction to play audio
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      if (isIOS) {
-        initializeAudioForIOS();
-      }
-    } else {
-      console.error('Speech synthesis not supported in this browser');
-      alert('Audio pronunciation is not supported in your browser');
+    } catch (error) {
+      console.error('Audio playback error:', error);
     }
   };
   

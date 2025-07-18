@@ -17,7 +17,7 @@ import { useResponsive } from './hooks/useResponsive';
 import { getLayoutConfig } from './utils/layoutConfig';
 import type { GameState, GameSettings, WordPlacement, Theme } from './types/game';
 import { THEMES } from './types/game';
-import { Sparkles, Trophy, Info, Clock, X } from 'lucide-react';
+import { Sparkles, Trophy, Info, X } from 'lucide-react';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -329,6 +329,7 @@ function App() {
           isZoomed={isZoomed}
           theme={currentTheme}
           isDesktop={breakpoints.isDesktop}
+          timeRemaining={gameState.settings.timerMode === 'countdown' ? timeRemaining : null}
         />
 
         {/* Quick Settings for Category and Theme Selection - Only show on mobile */}
@@ -491,6 +492,10 @@ function App() {
                 { value: 'ocean', label: 'Ocean' },
                 { value: 'sunset', label: 'Sunset' },
                 { value: 'neon', label: 'Neon' },
+                { value: 'forest', label: 'Forest' },
+                { value: 'galaxy', label: 'Galaxy' },
+                { value: 'desert', label: 'Desert' },
+                { value: 'cyber', label: 'Cyber' },
                 { value: 'custom', label: 'Custom Theme' }
               ].map((themeOption) => {
                 const themeColors = THEMES[themeOption.value as keyof typeof THEMES] || THEMES.midnight;
@@ -627,30 +632,7 @@ function App() {
                 hintsRemaining={hintsRemaining}
               />
 
-              {/* Timer Display (for countdown mode) */}
-              {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                  color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                  border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
-                  animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                }}>
-                  <Clock size={20} style={{
-                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                  }} />
-                  <span style={{
-                    fontWeight: 'bold',
-                    fontSize: '16px'
-                  }}>
-                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                  </span>
-                </div>
-              )}
+              {/* Timer display has been moved to the GameHeader component */}
 
               {/* Achievement System */}
               <AchievementSystem

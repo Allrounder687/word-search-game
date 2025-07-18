@@ -43,13 +43,19 @@ export const HintSystem: React.FC<HintSystemProps> = ({
       <button
         onClick={() => setShowHintMenu(!showHintMenu)}
         disabled={hintsRemaining === 0}
-        className={`p-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
+        className={`rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
           hintsRemaining === 0 ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         style={{
           backgroundColor: theme.cellBg,
           color: theme.primary,
-          border: `1px solid ${theme.secondary}40`
+          border: `1px solid ${theme.secondary}40`,
+          padding: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '44px',
+          height: '44px'
         }}
         title={`Hints remaining: ${hintsRemaining}`}
       >

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Palette, Sparkles, X } from 'lucide-react';
+import { Palette, Sparkles, X, ChevronDown } from 'lucide-react';
 import type { GameSettings, Theme, WordCategory } from '../types/game';
 import { THEMES } from '../types/game';
+import { getResponsiveIconSize } from '../utils/responsiveLayout';
 
 interface QuickSettingsProps {
   settings: GameSettings;
@@ -16,6 +17,13 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
 }) => {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+  const [showDropdownMenu, setShowDropdownMenu] = useState(false);
+  
+  // Get responsive icon size
+  const iconSize = getResponsiveIconSize(16);
+  
+  // Check if we're on a mobile device
+  const isMobile = window.innerWidth < 480;
 
   const wordCategories: { value: WordCategory; label: string }[] = [
     { value: 'general', label: 'General' },
@@ -46,6 +54,7 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
       wordCategory: category
     });
     setShowCategoryDropdown(false);
+    setShowDropdownMenu(false);
   };
 
   const handleThemeChange = (newTheme: Theme) => {
@@ -54,16 +63,208 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
       theme: newTheme
     });
     setShowThemeDropdown(false);
+    setShowDropdownMenu(false);
   };
 
   const getCurrentCategoryLabel = () => {
-    return 'Categories';
+    const currentCategory = wordCategories.find(c => c.value === settings.wordCategory);
+    return isMobile ? currentCategory?.label || 'Category' : 'Categories';
   };
 
   const getCurrentThemeLabel = () => {
-    return 'Themes';
+    const currentTheme = themes.find(t => t.value === settings.theme);
+    return isMobile ? currentTheme?.label || 'Theme' : 'Themes';
   };
+  
+  // For very small screens, use a single dropdown menu
+  if (isMobile) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '8px',
+        marginBottom: '12px',
+        width: '100%',
+        justifyContent: 'center'
+      }}>
+        {/* Combined dropdown button */}
+        <button
+          onClick={() => setShowDropdownMenu(!showDropdownMenu)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '8px 10px',
+            borderRadius: '8px',
+            backgroundColor: theme.gridBg,
+            color: theme.primary,
+            border: `1px solid ${theme.secondary}40`,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontSize: '13px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Sparkles size={iconSize} style={{ color: theme.secondary }} />
+            <span>Game Options</span>
+          </div>
+          <ChevronDown size={iconSize} style={{ color: theme.primary }} />
+        </button>
 
+        {/* Combined dropdown menu */}
+        {showDropdownMenu && (
+          <div style={{
+            position: 'absolute',
+            top: '120px', // Position below header
+            left: '16px',
+            right: '16px',
+            backgroundColor: theme.gridBg,
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+            zIndex: 100,
+            padding: '12px',
+            border: `1px solid ${theme.secondary}20`,
+            animation: 'fadeIn 0.2s ease'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+              paddingBottom: '8px',
+              borderBottom: `1px solid ${theme.secondary}20`
+            }}>
+              <span style={{ fontWeight: 'bold', fontSize: '16px', color: theme.primary }}>
+                Game Options
+              </span>
+              <button
+                onClick={() => setShowDropdownMenu(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: theme.primary
+                }}
+              >
+                <X size={iconSize} />
+              </button>
+            </div>
+            
+            {/* Category section */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ 
+                fontWeight: 'bold', 
+                fontSize: '14px', 
+                color: theme.secondary,
+                marginBottom: '8px' 
+              }}>
+                Word Category
+              </div>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: '6px',
+                maxHeight: '150px',
+                overflowY: 'auto'
+              }}>
+                {wordCategories.map((category) => (
+                  <button
+                    key={category.value}
+                    onClick={() => handleCategoryChange(category.value)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: settings.wordCategory === category.value
+                        ? `${theme.secondary}20`
+                        : 'transparent',
+                      color: settings.wordCategory === category.value
+                        ? theme.secondary
+                        : theme.primary,
+                      border: `1px solid ${settings.wordCategory === category.value ? theme.secondary : theme.secondary + '20'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'center',
+                      fontSize: '13px'
+                    }}
+                  >
+                    {category.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Theme section */}
+            <div>
+              <div style={{ 
+                fontWeight: 'bold', 
+                fontSize: '14px', 
+                color: theme.secondary,
+                marginBottom: '8px' 
+              }}>
+                Theme
+              </div>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: '6px',
+                maxHeight: '150px',
+                overflowY: 'auto'
+              }}>
+                {themes.map((themeOption) => {
+                  const themeColors = THEMES[themeOption.value as keyof typeof THEMES] || THEMES.midnight;
+
+                  return (
+                    <button
+                      key={themeOption.value}
+                      onClick={() => handleThemeChange(themeOption.value)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: settings.theme === themeOption.value
+                          ? `${theme.secondary}20`
+                          : 'transparent',
+                        color: settings.theme === themeOption.value
+                          ? theme.secondary
+                          : theme.primary,
+                        border: `1px solid ${settings.theme === themeOption.value ? theme.secondary : theme.secondary + '20'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        textAlign: 'center',
+                        fontSize: '13px'
+                      }}
+                    >
+                      <div style={{
+                        width: '12px',
+                        height: '12px',
+                        borderRadius: '3px',
+                        background: `linear-gradient(135deg, ${themeColors.background} 0%, ${themeColors.gridBg} 100%)`,
+                        border: `1px solid ${themeColors.secondary}40`
+                      }} />
+                      {themeOption.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Standard layout for larger screens
   return (
     <div style={{
       display: 'flex',

@@ -82,6 +82,36 @@ export function getResponsiveGridSize(baseSize: number): number {
 }
 
 /**
+ * Get compact padding for mobile layouts
+ * @param basePadding - Base padding in pixels
+ * @returns Compact padding for mobile layouts
+ */
+export function getCompactMobilePadding(basePadding: number): string {
+  return getResponsiveValue({
+    xs: `${basePadding * 0.3}px`,
+    sm: `${basePadding * 0.4}px`,
+    md: `${basePadding * 0.5}px`,
+    lg: `${basePadding * 0.75}px`,
+    xl: `${basePadding}px`
+  });
+}
+
+/**
+ * Get responsive icon size for mobile layouts
+ * @param baseSize - Base icon size in pixels
+ * @returns Icon size for the current screen size
+ */
+export function getResponsiveIconSize(baseSize: number): number {
+  return parseInt(getResponsiveValue({
+    xs: `${baseSize * 0.7}`,
+    sm: `${baseSize * 0.8}`,
+    md: `${baseSize * 0.9}`,
+    lg: `${baseSize}`,
+    xl: `${baseSize}`
+  }));
+}
+
+/**
  * Check if the device is in landscape orientation
  * @returns True if the device is in landscape orientation
  */
@@ -143,4 +173,101 @@ export function setupMobileViewport(): void {
       document.head.appendChild(metaTag);
     }
   });
+}
+
+/**
+ * Lock screen orientation for mobile devices
+ * @param orientation - The orientation to lock to ('portrait' or 'landscape')
+ */
+export function lockScreenOrientation(orientation: 'portrait' | 'landscape'): void {
+  try {
+    // Use the Screen Orientation API if available
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock(orientation).catch(err => {
+        console.warn('Screen orientation lock not supported:', err);
+      });
+    } 
+    // Fallback for older browsers
+    else if (screen.msLockOrientation) {
+      screen.msLockOrientation(orientation);
+    } else if (screen.mozLockOrientation) {
+      screen.mozLockOrientation(orientation);
+    }
+  } catch (e) {
+    console.warn('Screen orientation lock not supported');
+  }
+}
+
+/**
+ * Create a mini-map indicator for grid navigation
+ * @param gridElement - The grid element to create a mini-map for
+ * @param containerElement - The container element to append the mini-map to
+ * @param theme - The current theme
+ */
+export function createGridMiniMap(gridElement: HTMLElement, containerElement: HTMLElement, theme: any): void {
+  // Remove any existing mini-map
+  const existingMiniMap = document.getElementById('grid-mini-map');
+  if (existingMiniMap) {
+    existingMiniMap.remove();
+  }
+
+  // Create mini-map container
+  const miniMap = document.createElement('div');
+  miniMap.id = 'grid-mini-map';
+  miniMap.style.position = 'absolute';
+  miniMap.style.right = '8px';
+  miniMap.style.top = '50%';
+  miniMap.style.transform = 'translateY(-50%)';
+  miniMap.style.width = '30px';
+  miniMap.style.height = '60px';
+  miniMap.style.backgroundColor = `${theme.gridBg}80`;
+  miniMap.style.borderRadius = '15px';
+  miniMap.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+  miniMap.style.zIndex = '10';
+  miniMap.style.display = 'flex';
+  miniMap.style.flexDirection = 'column';
+  miniMap.style.justifyContent = 'space-between';
+  miniMap.style.padding = '5px';
+  miniMap.style.opacity = '0.7';
+  miniMap.style.transition = 'opacity 0.3s';
+
+  // Create indicator
+  const indicator = document.createElement('div');
+  indicator.style.width = '20px';
+  indicator.style.height = '20px';
+  indicator.style.backgroundColor = theme.secondary;
+  indicator.style.borderRadius = '50%';
+  indicator.style.position = 'absolute';
+  indicator.style.left = '5px';
+  indicator.style.top = '5px';
+  indicator.style.transition = 'top 0.3s';
+
+  miniMap.appendChild(indicator);
+  containerElement.appendChild(miniMap);
+
+  // Update indicator position on scroll
+  const updateIndicatorPosition = () => {
+    const gridHeight = gridElement.scrollHeight;
+    const containerHeight = containerElement.clientHeight;
+    const scrollTop = containerElement.scrollTop;
+    const scrollRatio = scrollTop / (gridHeight - containerHeight);
+    const indicatorTop = 5 + scrollRatio * (50 - 5); // 50px is the height of the mini-map minus padding
+    indicator.style.top = `${indicatorTop}px`;
+  };
+
+  // Add scroll event listener
+  containerElement.addEventListener('scroll', updateIndicatorPosition);
+
+  // Show mini-map on scroll and hide after a delay
+  let hideTimeout: number;
+  containerElement.addEventListener('scroll', () => {
+    miniMap.style.opacity = '0.7';
+    clearTimeout(hideTimeout);
+    hideTimeout = window.setTimeout(() => {
+      miniMap.style.opacity = '0';
+    }, 2000);
+  });
+
+  // Initial position
+  updateIndicatorPosition();
 }

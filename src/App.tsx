@@ -390,21 +390,89 @@ function App() {
         <div style={{
           display: 'flex',
           flexDirection: breakpoints.isDesktop ? 'row' : 'column',
-          gap: layoutConfig.spacing.gap,
+          gap: breakpoints.isDesktop ? layoutConfig.spacing.gap : '8px',
           alignItems: 'center',
           justifyContent: 'center',
-          marginTop: layoutConfig.spacing.marginTop,
-          padding: layoutConfig.spacing.padding
+          marginTop: breakpoints.isDesktop ? layoutConfig.spacing.marginTop : '8px',
+          padding: breakpoints.isDesktop ? layoutConfig.spacing.padding : '8px'
         }}>
           {/* Create descriptions object outside of JSX */}
           
-          {/* For mobile layout, show WordList at the top first */}
+          {/* For mobile layout, use a more compact design */}
           {!breakpoints.isDesktop && (
             <>
-              {/* WordList for mobile - moved to the very top */}
+              {/* Mobile Layout - Compact Controls Bar */}
               <div style={{
                 width: '100%',
-                marginBottom: '16px'
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '8px',
+                gap: '8px'
+              }}>
+                {/* Left side: Quick Settings dropdown */}
+                <div style={{ flex: '1' }}>
+                  <QuickSettings
+                    settings={gameState.settings}
+                    onSettingsChange={handleSettingsChange}
+                    theme={currentTheme}
+                    onReset={handleReset}
+                    onToggleZoom={onToggleZoom}
+                    onToggleClickMode={handleToggleClickMode}
+                    isZoomed={isZoomed}
+                    isClickMode={isClickMode}
+                  />
+                </div>
+                
+                {/* Right side: Hint System */}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '8px'
+                }}>
+                  {/* Timer Display (for countdown mode) - more compact */}
+                  {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
+                      color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                      borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
+                      animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
+                    }}>
+                      <Clock size={14} style={{
+                        color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
+                      }} />
+                      <span style={{
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                      }}>
+                        {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Hint System - more compact */}
+                  <HintSystem
+                    words={gameState.words}
+                    onHintUsed={handleHintUsed}
+                    theme={currentTheme}
+                    hintsRemaining={hintsRemaining}
+                  />
+                </div>
+              </div>
+              
+              {/* WordList - Horizontal scrolling for mobile */}
+              <div style={{
+                width: '100%',
+                marginBottom: '8px'
               }}>
                 <WordList
                   words={gameState.words}
@@ -417,77 +485,6 @@ function App() {
                   setSelectedWord={setSelectedDescriptionWord}
                 />
               </div>
-              
-              {/* Quick Settings and Game Controls */}
-              <div style={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '16px',
-                marginBottom: '16px'
-              }}>
-                {/* Quick Settings for Category and Theme Selection */}
-                <QuickSettings
-                  settings={gameState.settings}
-                  onSettingsChange={handleSettingsChange}
-                  theme={currentTheme}
-                  onReset={handleReset}
-                  onToggleZoom={onToggleZoom}
-                  onToggleClickMode={handleToggleClickMode}
-                  isZoomed={isZoomed}
-                  isClickMode={isClickMode}
-                />
-
-                {/* Game Controls for mobile */}
-                <div
-                  style={{
-                    padding: '12px',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    backgroundColor: currentTheme.gridBg
-                  }}
-                >
-                  {/* Hint System */}
-                  <HintSystem
-                    words={gameState.words}
-                    onHintUsed={handleHintUsed}
-                    theme={currentTheme}
-                    hintsRemaining={hintsRemaining}
-                  />
-
-                  {/* Timer Display (for countdown mode) */}
-                  {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                      color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                      borderWidth: '1px',
-                      borderStyle: 'solid',
-                      borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
-                      animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                    }}>
-                      <Clock size={20} style={{
-                        color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                      }} />
-                      <span style={{
-                        fontWeight: 'bold',
-                        fontSize: '16px'
-                      }}>
-                        {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
             </>
           )}
 
@@ -495,7 +492,10 @@ function App() {
             flexShrink: 0,
             display: 'flex',
             justifyContent: 'center',
-            ...layoutConfig.wordGrid
+            width: '100%',
+            maxWidth: breakpoints.isDesktop ? '600px' : '100%',
+            maxHeight: 'calc(100vh - 220px)',
+            overflow: 'hidden'
           }}>
             <WordGrid
               grid={gameState.grid}

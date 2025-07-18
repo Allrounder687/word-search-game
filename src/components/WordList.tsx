@@ -112,9 +112,9 @@ export const WordList: React.FC<WordListProps> = ({
     return (
       <div
         style={{ 
-          padding: '8px 12px',
+          padding: '6px 8px',
           borderRadius: '8px',
-          boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.15)',
+          boxShadow: '0 2px 8px -2px rgba(0, 0, 0, 0.15)',
           width: '100%',
           boxSizing: 'border-box',
           backgroundColor: `${theme.gridBg}90`,
@@ -128,16 +128,16 @@ export const WordList: React.FC<WordListProps> = ({
           display: 'flex', 
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '6px' 
+          marginBottom: '4px' 
         }}>
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: '4px'
           }}>
-            <Search size={14} style={{ color: theme.secondary }} />
+            <Search size={12} style={{ color: theme.secondary }} />
             <h3 style={{ 
-              fontSize: '14px', 
+              fontSize: '12px', 
               fontWeight: '600', 
               margin: 0,
               color: theme.primary 
@@ -150,16 +150,16 @@ export const WordList: React.FC<WordListProps> = ({
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: '6px',
+            gap: '4px',
             flexGrow: 1,
-            marginLeft: '8px',
-            maxWidth: '100px'
+            marginLeft: '6px',
+            maxWidth: '80px'
           }}>
             <div
               style={{ 
                 flexGrow: 1, 
-                height: '4px', 
-                borderRadius: '2px', 
+                height: '3px', 
+                borderRadius: '1.5px', 
                 overflow: 'hidden',
                 backgroundColor: 'rgba(255, 255, 255, 0.1)' 
               }}
@@ -174,7 +174,7 @@ export const WordList: React.FC<WordListProps> = ({
               />
             </div>
             <span style={{
-              fontSize: '12px',
+              fontSize: '10px',
               color: theme.primary,
               opacity: 0.8
             }}>
@@ -183,17 +183,18 @@ export const WordList: React.FC<WordListProps> = ({
           </div>
         </div>
 
-        {/* Horizontal scrolling word list for mobile */}
+        {/* Horizontal scrolling word list for mobile - more compact */}
         <div style={{ 
           display: 'flex',
           flexDirection: 'row',
-          gap: '6px',
+          gap: '4px',
           overflowX: 'auto',
           overflowY: 'hidden',
           padding: '2px 0',
           WebkitOverflowScrolling: 'touch',
           scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
+          msOverflowStyle: 'none',
+          maxWidth: '100%'
         }}>
           {words.map((word, index) => (
             <WordListItem

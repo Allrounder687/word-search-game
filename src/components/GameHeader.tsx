@@ -48,10 +48,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
     <div
       style={{
         width: '100%',
-        padding: isMobile ? '8px' : '24px',
+        padding: isMobile ? '6px' : '24px',
         borderRadius: '12px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        marginBottom: isMobile ? '12px' : '24px',
+        boxShadow: '0 15px 30px -12px rgba(0, 0, 0, 0.2)',
+        marginBottom: isMobile ? '8px' : '24px',
         backgroundColor: theme.gridBg,
         boxSizing: 'border-box',
         overflow: 'hidden'

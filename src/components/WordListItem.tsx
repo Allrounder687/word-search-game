@@ -43,9 +43,9 @@ export const WordListItem: React.FC<WordListItemProps> = ({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: isMobileLayout ? '8px' : '12px',
-        padding: isMobileLayout ? '8px 12px' : '12px',
-        borderRadius: '8px',
+        gap: isMobileLayout ? '4px' : '12px',
+        padding: isMobileLayout ? '6px 8px' : '12px',
+        borderRadius: '6px',
         transition: 'all 0.3s',
         backgroundColor: isFound ? word.color + '20' : theme.cellBg,
         borderBottom: isFound ? `2px solid ${word.color}` : '2px solid transparent',
@@ -53,8 +53,9 @@ export const WordListItem: React.FC<WordListItemProps> = ({
         position: 'relative',
         overflow: 'hidden',
         boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
-        minHeight: isMobileLayout ? '36px' : '44px',
+        minHeight: isMobileLayout ? '30px' : '44px',
         minWidth: isMobileLayout ? 'fit-content' : undefined,
+        maxWidth: isMobileLayout ? '120px' : undefined,
         flexShrink: isMobileLayout ? 0 : undefined,
         touchAction: 'manipulation'
       }}
@@ -95,8 +96,8 @@ export const WordListItem: React.FC<WordListItemProps> = ({
 
       <div
         style={{
-          width: isMobileLayout ? '24px' : '24px',
-          height: isMobileLayout ? '24px' : '24px',
+          width: isMobileLayout ? '18px' : '24px',
+          height: isMobileLayout ? '18px' : '24px',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -109,9 +110,9 @@ export const WordListItem: React.FC<WordListItemProps> = ({
         }}
       >
         {isFound ? (
-          <Check size={isMobileLayout ? 14 : 14} style={{ animation: 'bounce 1s infinite' }} />
+          <Check size={isMobileLayout ? 10 : 14} style={{ animation: 'bounce 1s infinite' }} />
         ) : (
-          <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{index + 1}</span>
+          <span style={{ fontSize: isMobileLayout ? '10px' : '12px', fontWeight: 'bold' }}>{index + 1}</span>
         )}
       </div>
 
@@ -128,7 +129,12 @@ export const WordListItem: React.FC<WordListItemProps> = ({
             transition: 'all 0.3s',
             textDecoration: isFound ? 'line-through' : 'none',
             color: isFound ? word.color : theme.primary,
-            textShadow: isFound ? `0 0 10px ${word.color}40` : 'none'
+            textShadow: isFound ? `0 0 10px ${word.color}40` : 'none',
+            fontSize: isMobileLayout ? '11px' : '14px',
+            whiteSpace: isMobileLayout ? 'nowrap' : 'normal',
+            overflow: isMobileLayout ? 'hidden' : 'visible',
+            textOverflow: isMobileLayout ? 'ellipsis' : 'clip',
+            maxWidth: isMobileLayout ? '80px' : 'none'
           }}
         >
           {word.word}

@@ -50,18 +50,18 @@ export const HintSystem: React.FC<HintSystemProps> = ({
           backgroundColor: theme.cellBg,
           color: theme.primary,
           border: `1px solid ${theme.secondary}40`,
-          padding: '12px',
+          padding: window.innerWidth < 480 ? '6px' : '12px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '44px',
-          height: '44px'
+          width: window.innerWidth < 480 ? '32px' : '44px',
+          height: window.innerWidth < 480 ? '32px' : '44px'
         }}
         title={`Hints remaining: ${hintsRemaining}`}
       >
-        <div className="flex items-center gap-2">
-          <Lightbulb size={20} />
-          <span className="text-sm font-bold">{hintsRemaining}</span>
+        <div className="flex items-center gap-1">
+          <Lightbulb size={window.innerWidth < 480 ? 14 : 20} />
+          <span className={`${window.innerWidth < 480 ? 'text-xs' : 'text-sm'} font-bold`}>{hintsRemaining}</span>
         </div>
       </button>
 

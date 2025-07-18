@@ -323,8 +323,7 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
-          onToggleCategory={() => setShowCategoryDropdown(!showCategoryDropdown)}
-          onToggleTheme={() => setShowThemeDropdown(!showThemeDropdown)}
+          /* Category and theme toggles are now handled in QuickSettings */
           onToggleZoom={() => setIsZoomed(!isZoomed)}
           isZoomed={isZoomed}
           theme={currentTheme}

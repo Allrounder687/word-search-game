@@ -1,4 +1,4 @@
-import { Clock, Trophy, Zap, Settings, RotateCcw, Palette, Sparkles, ZoomIn } from 'lucide-react';
+import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn } from 'lucide-react';
 import { getResponsiveIconSize, getCompactMobilePadding } from '../utils/responsiveLayout';
 
 interface GameHeaderProps {
@@ -8,8 +8,6 @@ interface GameHeaderProps {
   totalWords: number;
   onReset: () => void;
   onSettings: () => void;
-  onToggleCategory?: () => void;
-  onToggleTheme?: () => void;
   onToggleZoom?: () => void;
   isZoomed?: boolean;
   theme: any;
@@ -24,8 +22,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   totalWords,
   onReset,
   onSettings,
-  onToggleCategory,
-  onToggleTheme,
   onToggleZoom,
   isZoomed,
   theme,

@@ -7,9 +7,6 @@ interface OrientationWarningProps {
 }
 
 export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme }) => {
-  // We track portrait state even though we don't directly use the variable
-  // because we need to update it with setIsPortrait for the component to work correctly
-  const [isPortrait, setIsPortrait] = useState(true);
   const [showWarning, setShowWarning] = useState(false);
   const [orientationLocked, setOrientationLocked] = useState(false);
   
@@ -21,9 +18,9 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
   
   // Check if orientation lock is supported
   const isOrientationLockSupported = 
-    (screen.orientation && screen.orientation.lock) || 
-    (screen.msLockOrientation) || 
-    (screen.mozLockOrientation);
+    (screen.orientation && typeof (screen.orientation as any).lock === 'function') || 
+    (typeof (screen as any).msLockOrientation === 'function') || 
+    (typeof (screen as any).mozLockOrientation === 'function');
   
   useEffect(() => {
     // Only run this on mobile phones
@@ -31,7 +28,6 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
     
     const checkOrientation = () => {
       const isPortraitMode = window.innerHeight > window.innerWidth;
-      setIsPortrait(isPortraitMode);
       
       // Only show warning if not in portrait mode and not locked
       if (!isPortraitMode && !orientationLocked) {
@@ -77,7 +73,9 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
       
       // Remove success message after 3 seconds
       setTimeout(() => {
-        document.body.removeChild(successMessage);
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
       }, 3000);
     } catch (e) {
       console.error('Failed to lock orientation:', e);
@@ -90,6 +88,10 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
       // Unlock orientation
       if (screen.orientation && screen.orientation.unlock) {
         screen.orientation.unlock();
+      } else if (screen.msUnlockOrientation) {
+        screen.msUnlockOrientation();
+      } else if (screen.mozUnlockOrientation) {
+        screen.mozUnlockOrientation();
       }
       setOrientationLocked(false);
       
@@ -109,7 +111,9 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
       
       // Remove success message after 3 seconds
       setTimeout(() => {
-        document.body.removeChild(successMessage);
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
       }, 3000);
     } catch (e) {
       console.error('Failed to unlock orientation:', e);

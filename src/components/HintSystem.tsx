@@ -23,7 +23,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
   
   // Use responsive hook for better device detection
   const breakpoints = useResponsive();
-  const { isMobile, isTablet, isDesktop } = breakpoints;
+  const { isMobile, isTablet } = breakpoints;
   
   const unFoundWords = words.filter(w => !w.found);
 

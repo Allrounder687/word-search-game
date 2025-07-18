@@ -126,8 +126,19 @@ export const WordGrid: React.FC<WordGridProps> = ({
         }
 
         onWordFound(foundWord);
-        setLastFoundWord(foundWord);
-        setShowCelebration(true);
+        
+        // Only show celebration in WordGrid if descriptions are disabled
+        // This prevents duplicate popups when WordList also shows descriptions
+        if (!showDescriptions) {
+          setLastFoundWord(foundWord);
+          setShowCelebration(true);
+          
+          // Hide celebration after a delay
+          setTimeout(() => {
+            setShowCelebration(false);
+            setLastFoundWord(null);
+          }, 2000);
+        }
 
         // Show path animation
         const wordCells = getSelectionPath(foundWord.start, foundWord.end);
@@ -156,12 +167,6 @@ export const WordGrid: React.FC<WordGridProps> = ({
         setTimeout(() => {
           setShowPathAnimation(false);
         }, 1500);
-
-        // Hide celebration after a longer delay if we have a description
-        setTimeout(() => {
-          setShowCelebration(false);
-          setLastFoundWord(null);
-        }, foundWord.description ? 5000 : 2000);
       } else {
         // Provide error feedback for incorrect selection
         if (isMobile) {

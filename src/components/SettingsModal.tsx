@@ -46,6 +46,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     accent: localSettings.customColors?.accent || '#ec4899'
   });
 
+  // Update local settings when settings prop changes
+  useEffect(() => {
+    setLocalSettings({
+      ...settings,
+      timerMode: settings.timerMode || 'none',
+      timerDuration: settings.timerDuration || 180
+    });
+    
+    // Update selected font when settings change
+    setSelectedFont(settings.customFont || "'Inter', sans-serif");
+    
+    // Update custom colors when settings change
+    if (settings.customColors) {
+      setCustomColors({
+        background: settings.customColors.background || '#000000',
+        primary: settings.customColors.primary || '#ffffff',
+        secondary: settings.customColors.secondary || '#a855f7',
+        accent: settings.customColors.accent || '#ec4899'
+      });
+    }
+  }, [settings]);
+
   // Load saved lists from localStorage when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -235,7 +257,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   ];
 
   // Selected font
-  const [selectedFont, setSelectedFont] = useState(localSettings.customFont || "'Inter', sans-serif");
+  const [selectedFont, setSelectedFont] = useState<string>(settings.customFont || "'Inter', sans-serif");
 
   // Special handling for white theme
   const isWhiteTheme = theme.primary === '#000000';

@@ -347,12 +347,13 @@ function App() {
             top: '100px',
             right: '120px',
             width: '200px',
-            backgroundColor: currentTheme.gridBg,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
             borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
             zIndex: 100,
             padding: '12px',
-            border: `1px solid ${currentTheme.secondary}20`
+            border: `1px solid ${currentTheme.secondary}40`
           }}>
             <div style={{
               display: 'flex',
@@ -438,12 +439,13 @@ function App() {
             top: '100px',
             right: '70px',
             width: '200px',
-            backgroundColor: currentTheme.gridBg,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
             borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
             zIndex: 100,
             padding: '12px',
-            border: `1px solid ${currentTheme.secondary}20`
+            border: `1px solid ${currentTheme.secondary}40`
           }}>
             <div style={{
               display: 'flex',

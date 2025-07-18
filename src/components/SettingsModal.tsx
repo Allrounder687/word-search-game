@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen } from 'lucide-react';
+import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen, Type } from 'lucide-react';
 import type { GameSettings, Difficulty, Theme, TimerMode } from '../types/game';
 import { THEMES } from '../types/game';
 
@@ -66,9 +66,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSave = () => {
     // If custom theme is selected, save custom colors
     const updatedSettings = { ...localSettings };
+
+    // Save custom font selection
+    updatedSettings.customFont = selectedFont;
+
     if (updatedSettings.theme === 'custom') {
       updatedSettings.customColors = customColors;
-      
+
       // Update the custom theme in THEMES object
       // We're using the imported THEMES object directly
       THEMES.custom = {
@@ -201,6 +205,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { value: 'ocean', label: 'Ocean', colors: ['#0c4a6e', '#0369a1', '#06b6d4', '#0891b2'] },
     { value: 'sunset', label: 'Sunset', colors: ['#7c2d12', '#ea580c', '#f97316', '#eab308'] },
     { value: 'neon', label: 'Neon', colors: ['#1a1a2e', '#16213e', '#00ff88', '#ff0080'] },
+    { value: 'forest', label: 'Forest', colors: ['#1b4332', '#2d6a4f', '#74c69d', '#f9c74f'] },
+    { value: 'galaxy', label: 'Galaxy', colors: ['#0f0e17', '#232946', '#7f5af0', '#2cb67d'] },
+    { value: 'desert', label: 'Desert', colors: ['#7f5539', '#a68a64', '#bc6c25', '#606c38'] },
+    { value: 'cyber', label: 'Cyber', colors: ['#240046', '#3c096c', '#7b2cbf', '#e0aaff'] },
     {
       value: 'custom', label: 'Custom Theme', colors: [
         customColors.background,
@@ -210,6 +218,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ]
     }
   ];
+
+  // Font options
+  const fonts = [
+    { value: "'Inter', sans-serif", label: "Inter (Default)" },
+    { value: "'Roboto', sans-serif", label: "Roboto" },
+    { value: "'Open Sans', sans-serif", label: "Open Sans" },
+    { value: "'Montserrat', sans-serif", label: "Montserrat" },
+    { value: "'Poppins', sans-serif", label: "Poppins" },
+    { value: "'Quicksand', sans-serif", label: "Quicksand" },
+    { value: "'Nunito', sans-serif", label: "Nunito" },
+    { value: "'Space Grotesk', sans-serif", label: "Space Grotesk" },
+    { value: "'Orbitron', sans-serif", label: "Orbitron" },
+    { value: "'Rajdhani', sans-serif", label: "Rajdhani" },
+    { value: "'JetBrains Mono', monospace", label: "JetBrains Mono" }
+  ];
+
+  // Selected font
+  const [selectedFont, setSelectedFont] = useState(localSettings.customFont || "'Inter', sans-serif");
 
   // Special handling for white theme
   const isWhiteTheme = theme.primary === '#000000';
@@ -1258,6 +1284,88 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Font Selection */}
+          <div>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px',
+              marginTop: '32px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Type size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.secondary }} />
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: isWhiteTheme ? '#ffffff' : theme.primary,
+                  margin: 0
+                }}>
+                  Font
+                </h3>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: window.innerWidth >= 768 ? '1fr 1fr' : '1fr',
+              gap: '12px'
+            }}>
+              {fonts.map((fontOption) => (
+                <button
+                  key={fontOption.value}
+                  onClick={() => setSelectedFont(fontOption.value)}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '8px',
+                    border: `2px solid ${selectedFont === fontOption.value
+                      ? (isWhiteTheme ? '#ffffff' : theme.secondary)
+                      : 'transparent'}`,
+                    backgroundColor: selectedFont === fontOption.value
+                      ? (isWhiteTheme ? 'rgba(255, 255, 255, 0.2)' : theme.secondary + '20')
+                      : (isWhiteTheme ? 'rgba(255, 255, 255, 0.1)' : theme.cellBg),
+                    color: isWhiteTheme ? '#ffffff' : theme.primary,
+                    transition: 'all 0.2s',
+                    transform: selectedFont === fontOption.value ? 'scale(1.05)' : 'scale(1)',
+                    cursor: 'pointer',
+                    fontFamily: fontOption.value
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedFont !== fontOption.value) {
+                      e.currentTarget.style.transform = 'scale(1.02)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedFont !== fontOption.value) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }
+                  }}
+                >
+                  <div style={{ fontWeight: '600' }}>
+                    {fontOption.label}
+                  </div>
+                  <div style={{ fontSize: '14px', opacity: 0.75, marginTop: '4px' }}>
+                    The quick brown fox jumps over the lazy dog
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div style={{
+              padding: '8px',
+              borderRadius: '8px',
+              backgroundColor: theme.cellBg + '80',
+              color: theme.primary + '80',
+              fontSize: '12px',
+              marginTop: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Sparkles size={12} />
+                <span>Tip: Choose a font that's easy to read for better gameplay experience</span>
+              </div>
+            </div>
           </div>
         </div>
 

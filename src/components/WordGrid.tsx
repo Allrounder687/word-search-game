@@ -25,10 +25,9 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const [highlightedCells, setHighlightedCells] = useState<Set<string>>(new Set());
   const [lastFoundWord, setLastFoundWord] = useState<WordPlacement | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end' | 'keyboard'>('drag');
+  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
   const [startCell, setStartCell] = useState<Position | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  const [keyboardFocusPosition, setKeyboardFocusPosition] = useState<Position | null>(null);
 
   // Detect if we're on a mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -497,6 +496,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                     // Apply baseStyle which includes: backgroundColor, color, borderColor, boxShadow, transition, transform, fontFamily
                     ...baseStyle
                   }}
+                  onClick={() => handleCellClick(rowIndex, colIndex)}
                   onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                   onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
                   onTouchStart={(e) => handleTouchStart(rowIndex, colIndex, e)}

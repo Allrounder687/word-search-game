@@ -30,9 +30,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
   showDescriptions = true, 
   kidsMode = false, 
   isZoomed = false,
-  selectionMode: propSelectionMode,
-  onSelectionModeChange
+  selectionMode: propSelectionMode
 }) => {
+  // Detect if we're on a mobile device (moved to top)
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   const [isSelecting, setIsSelecting] = useState(false);
   const [currentSelection, setCurrentSelection] = useState<Position[]>([]);
   const [highlightedCells, setHighlightedCells] = useState<Set<string>>(new Set());
@@ -41,6 +43,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>(
     propSelectionMode || (isMobile ? 'click-start-end' : 'drag')
   );
+  const [startCell, setStartCell] = useState<Position | null>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const [showPathAnimation, setShowPathAnimation] = useState(false);
+  const [pathAnimationCells, setPathAnimationCells] = useState<Position[]>([]);
+  const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
 
   // Update selection mode when prop changes
   useEffect(() => {
@@ -48,14 +55,6 @@ export const WordGrid: React.FC<WordGridProps> = ({
       setSelectionMode(propSelectionMode);
     }
   }, [propSelectionMode]);
-  const [startCell, setStartCell] = useState<Position | null>(null);
-  const gridContainerRef = useRef<HTMLDivElement>(null);
-  const [showPathAnimation, setShowPathAnimation] = useState(false);
-  const [pathAnimationCells, setPathAnimationCells] = useState<Position[]>([]);
-  const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
-
-  // Detect if we're on a mobile device
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const getCellKey = (row: number, col: number) => `${row},${col}`;
 

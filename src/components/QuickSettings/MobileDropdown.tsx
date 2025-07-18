@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { WordCategory, Theme } from '../../types/game';
 import { THEMES } from '../../types/game';
 

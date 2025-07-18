@@ -191,12 +191,15 @@ export function setupMobileViewport(): void {
 }
 
 // Extended Screen interface for better type safety
-interface ExtendedScreen extends Screen {
-  orientation?: {
-    lock?: (orientation: OrientationLockType) => Promise<void>;
-  };
-  msLockOrientation?: (orientation: string) => boolean;
-  mozLockOrientation?: (orientation: string) => boolean;
+interface ExtendedScreenOrientation {
+  lock?: (orientation: string) => Promise<void>;
+  unlock?: () => void;
+}
+
+interface ExtendedScreen extends Omit<Screen, 'orientation'> {
+  orientation?: ExtendedScreenOrientation;
+  msLockOrientation?: (orientation: string | string[]) => boolean;
+  mozLockOrientation?: (orientation: string | string[]) => boolean;
 }
 
 // Result type for orientation lock operations
@@ -246,7 +249,7 @@ export async function lockScreenOrientation(
   try {
     // Use the modern Screen Orientation API if available
     if (extendedScreen.orientation?.lock) {
-      await extendedScreen.orientation.lock(orientation as OrientationLockType);
+      await extendedScreen.orientation.lock(orientation);
       return { success: true, method: 'modern' };
     }
     

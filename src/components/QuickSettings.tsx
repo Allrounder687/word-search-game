@@ -3,7 +3,7 @@ import { Palette, Sparkles, X, ChevronDown } from 'lucide-react';
 import type { GameSettings, Theme, WordCategory } from '../types/game';
 import { THEMES } from '../types/game';
 import { getResponsiveIconSize } from '../utils/responsiveLayout';
-import { DropdownButton } from './QuickSettings/DropdownButton';
+
 import { MobileDropdown } from './QuickSettings/MobileDropdown';
 
 interface ThemeColors {

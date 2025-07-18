@@ -57,13 +57,11 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
   };
 
   const getCurrentCategoryLabel = () => {
-    const category = wordCategories.find(c => c.value === settings.wordCategory);
-    return category ? category.label : 'Select Category';
+    return 'Categories';
   };
 
   const getCurrentThemeLabel = () => {
-    const themeOption = themes.find(t => t.value === settings.theme);
-    return themeOption ? themeOption.label : 'Select Theme';
+    return 'Themes';
   };
 
   return (
@@ -256,7 +254,7 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
               overflowY: 'auto'
             }}>
               {themes.map((themeOption) => {
-                const themeColors = THEMES[themeOption.value] || THEMES.midnight;
+                const themeColors = THEMES[themeOption.value as keyof typeof THEMES] || THEMES.midnight;
 
                 return (
                   <button

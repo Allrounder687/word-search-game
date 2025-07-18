@@ -1,5 +1,5 @@
 
-import { Clock, Trophy, Zap, Settings, RotateCcw } from 'lucide-react';
+import { Clock, Trophy, Zap, Settings, RotateCcw, Palette, Sparkles, ZoomIn } from 'lucide-react';
 
 interface GameHeaderProps {
   score: number;
@@ -8,7 +8,12 @@ interface GameHeaderProps {
   totalWords: number;
   onReset: () => void;
   onSettings: () => void;
+  onToggleCategory?: () => void;
+  onToggleTheme?: () => void;
+  onToggleZoom?: () => void;
+  isZoomed?: boolean;
   theme: any;
+  isDesktop: boolean;
 }
 
 export const GameHeader: React.FC<GameHeaderProps> = ({
@@ -18,7 +23,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   totalWords,
   onReset,
   onSettings,
-  theme
+  onToggleCategory,
+  onToggleTheme,
+  onToggleZoom,
+  isZoomed,
+  theme,
+  isDesktop = false
 }) => {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -142,6 +152,82 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
         {/* Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Category Button (Desktop only) */}
+          {isDesktop && onToggleCategory && (
+            <button
+              onClick={onToggleCategory}
+              style={{ 
+                padding: '12px',
+                borderRadius: '8px',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+                border: `1px solid ${theme.secondary}40`,
+                backgroundColor: theme.cellBg,
+                color: theme.primary
+              }}
+              title="Categories"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <Sparkles size={20} />
+            </button>
+          )}
+          
+          {/* Theme Button (Desktop only) */}
+          {isDesktop && onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              style={{ 
+                padding: '12px',
+                borderRadius: '8px',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+                border: `1px solid ${theme.secondary}40`,
+                backgroundColor: theme.cellBg,
+                color: theme.primary
+              }}
+              title="Themes"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <Palette size={20} />
+            </button>
+          )}
+          
+          {/* Zoom Button (Mobile only) */}
+          {!isDesktop && onToggleZoom && (
+            <button
+              onClick={onToggleZoom}
+              style={{ 
+                padding: '12px',
+                borderRadius: '8px',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+                border: `1px solid ${theme.secondary}40`,
+                backgroundColor: isZoomed ? `${theme.secondary}40` : theme.cellBg,
+                color: isZoomed ? theme.secondary : theme.primary
+              }}
+              title={isZoomed ? "Zoom Out" : "Zoom In"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <ZoomIn size={20} />
+            </button>
+          )}
+          
+          {/* Reset Button */}
           <button
             onClick={onReset}
             style={{ 
@@ -164,6 +250,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <RotateCcw size={20} />
           </button>
           
+          {/* Settings Button */}
           <button
             onClick={onSettings}
             style={{ 

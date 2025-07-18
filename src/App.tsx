@@ -15,9 +15,9 @@ import { initializeMobileOptimizations } from './utils/mobileOptimizations';
 import { setupMobileViewport } from './utils/responsiveLayout';
 import { useResponsive } from './hooks/useResponsive';
 import { getLayoutConfig } from './utils/layoutConfig';
-import type { GameState, GameSettings, WordPlacement } from './types/game';
+import type { GameState, GameSettings, WordPlacement, Theme } from './types/game';
 import { THEMES } from './types/game';
-import { Sparkles, Trophy, Info, Clock } from 'lucide-react';
+import { Sparkles, Trophy, Info, Clock, X } from 'lucide-react';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -44,13 +44,16 @@ function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
 
   // Use responsive hook for better performance and maintainability
   const breakpoints = useResponsive();
 
   // Memoize theme and layout calculations
   const currentTheme = useMemo(() =>
-    THEMES[gameState.settings.theme] || THEMES.midnight,
+    THEMES[gameState.settings.theme as keyof typeof THEMES] || THEMES.midnight,
     [gameState.settings.theme]
   );
 
@@ -320,15 +323,219 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
+          onToggleCategory={() => setShowCategoryDropdown(!showCategoryDropdown)}
+          onToggleTheme={() => setShowThemeDropdown(!showThemeDropdown)}
+          onToggleZoom={() => setIsZoomed(!isZoomed)}
+          isZoomed={isZoomed}
           theme={currentTheme}
+          isDesktop={breakpoints.isDesktop}
         />
 
-        {/* Quick Settings for Category and Theme Selection */}
-        <QuickSettings
-          settings={gameState.settings}
-          onSettingsChange={handleSettingsChange}
-          theme={currentTheme}
-        />
+        {/* Quick Settings for Category and Theme Selection - Only show on mobile */}
+        {!breakpoints.isDesktop && (
+          <QuickSettings
+            settings={gameState.settings}
+            onSettingsChange={handleSettingsChange}
+            theme={currentTheme}
+          />
+        )}
+
+        {/* Category Dropdown for Desktop */}
+        {breakpoints.isDesktop && showCategoryDropdown && (
+          <div style={{
+            position: 'absolute',
+            top: '100px',
+            right: '120px',
+            width: '200px',
+            backgroundColor: currentTheme.gridBg,
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            zIndex: 100,
+            padding: '12px',
+            border: `1px solid ${currentTheme.secondary}20`
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+              paddingBottom: '8px',
+              borderBottom: `1px solid ${currentTheme.secondary}20`
+            }}>
+              <span style={{ fontWeight: 'bold', fontSize: '16px', color: currentTheme.primary }}>
+                Categories
+              </span>
+              <button
+                onClick={() => setShowCategoryDropdown(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: currentTheme.primary
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}>
+              {[
+                { value: 'general', label: 'General' },
+                { value: 'animals', label: 'Animals' },
+                { value: 'islamicPlaces', label: 'Islamic Places' },
+                { value: 'islamicProphets', label: 'Islamic Prophets' },
+                { value: 'fivePillars', label: 'Five Pillars' },
+                { value: 'islamicTerms', label: 'Islamic Terms' },
+                { value: 'custom', label: 'Custom Words' }
+              ].map((category) => (
+                <button
+                  key={category.value}
+                  onClick={() => {
+                    handleSettingsChange({
+                      ...gameState.settings,
+                      wordCategory: category.value as any
+                    });
+                    setShowCategoryDropdown(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '10px 12px',
+                    borderRadius: '6px',
+                    backgroundColor: gameState.settings.wordCategory === category.value
+                      ? `${currentTheme.secondary}20`
+                      : 'transparent',
+                    color: gameState.settings.wordCategory === category.value
+                      ? currentTheme.secondary
+                      : currentTheme.primary,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left',
+                    width: '100%'
+                  }}
+                >
+                  {category.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Theme Dropdown for Desktop */}
+        {breakpoints.isDesktop && showThemeDropdown && (
+          <div style={{
+            position: 'absolute',
+            top: '100px',
+            right: '70px',
+            width: '200px',
+            backgroundColor: currentTheme.gridBg,
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+            zIndex: 100,
+            padding: '12px',
+            border: `1px solid ${currentTheme.secondary}20`
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '12px',
+              paddingBottom: '8px',
+              borderBottom: `1px solid ${currentTheme.secondary}20`
+            }}>
+              <span style={{ fontWeight: 'bold', fontSize: '16px', color: currentTheme.primary }}>
+                Themes
+              </span>
+              <button
+                onClick={() => setShowThemeDropdown(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: currentTheme.primary
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}>
+              {[
+                { value: 'midnight', label: 'Midnight' },
+                { value: 'royal', label: 'Royal Blue' },
+                { value: 'darkRoyal', label: 'Dark Royal' },
+                { value: 'pink', label: 'Pink' },
+                { value: 'darkPink', label: 'Dark Pink' },
+                { value: 'pure', label: 'White' },
+                { value: 'ocean', label: 'Ocean' },
+                { value: 'sunset', label: 'Sunset' },
+                { value: 'neon', label: 'Neon' },
+                { value: 'custom', label: 'Custom Theme' }
+              ].map((themeOption) => {
+                const themeColors = THEMES[themeOption.value as keyof typeof THEMES] || THEMES.midnight;
+
+                return (
+                  <button
+                    key={themeOption.value}
+                    onClick={() => {
+                      handleSettingsChange({
+                        ...gameState.settings,
+                        theme: themeOption.value as Theme
+                      });
+                      setShowThemeDropdown(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: gameState.settings.theme === themeOption.value
+                        ? `${currentTheme.secondary}20`
+                        : 'transparent',
+                      color: gameState.settings.theme === themeOption.value
+                        ? currentTheme.secondary
+                        : currentTheme.primary,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'left',
+                      width: '100%'
+                    }}
+                  >
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '4px',
+                      background: `linear-gradient(135deg, ${themeColors.background} 0%, ${themeColors.gridBg} 100%)`,
+                      border: `1px solid ${themeColors.secondary}40`
+                    }} />
+                    {themeOption.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Mobile WordList - Displayed at the top on mobile devices */}
         {!breakpoints.isDesktop && (
@@ -360,7 +567,10 @@ function App() {
             flexShrink: 0,
             display: 'flex',
             justifyContent: 'center',
-            ...layoutConfig.wordGrid
+            ...layoutConfig.wordGrid,
+            transform: !breakpoints.isDesktop && isZoomed ? 'scale(1.3)' : 'scale(1)',
+            transformOrigin: 'center center',
+            transition: 'transform 0.3s ease'
           }}>
             <WordGrid
               grid={gameState.grid}
@@ -369,6 +579,7 @@ function App() {
               theme={currentTheme}
               showDescriptions={gameState.settings.showDescriptions}
               kidsMode={gameState.settings.kidsMode}
+              isZoomed={isZoomed}
             />
           </div>
 

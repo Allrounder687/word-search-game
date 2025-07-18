@@ -16,9 +16,10 @@ interface WordGridProps {
   theme: any;
   showDescriptions?: boolean;
   kidsMode?: boolean;
+  isZoomed?: boolean;
 }
 
-export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, theme, showDescriptions = true, kidsMode = false }) => {
+export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, theme, showDescriptions = true, kidsMode = false, isZoomed = false }) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [currentSelection, setCurrentSelection] = useState<Position[]>([]);
   const [highlightedCells, setHighlightedCells] = useState<Set<string>>(new Set());
@@ -115,7 +116,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   // Touch support
   const handleTouchStart = useCallback((row: number, col: number, _e: React.TouchEvent) => {
     // Don't prevent default here to allow the touch event to be registered
-    
+
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
     setHighlightedCells(new Set([getCellKey(row, col)]));
@@ -158,7 +159,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
 
   const handleTouchEnd = useCallback((_e: React.TouchEvent) => {
     // Don't prevent default here to allow the touch event to complete normally
-    
+
     handleMouseUp();
   }, [handleMouseUp]);
 
@@ -235,7 +236,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const getCellSize = () => {
     const gridSize = grid.length;
     const screenWidth = window.innerWidth;
-    
+
     // Base size calculations
     let baseSize;
     if (screenWidth >= 1024) {
@@ -254,7 +255,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       // Small mobile
       baseSize = 24;
     }
-    
+
     // Scale down for larger grids
     if (gridSize > 10) {
       // Calculate scaling factor based on grid size
@@ -262,15 +263,20 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       const scaleFactor = Math.min(1, 10 / gridSize);
       baseSize = Math.max(18, Math.floor(baseSize * scaleFactor));
     }
-    
+
+    // Apply zoom factor if isZoomed is true
+    if (isZoomed) {
+      baseSize = Math.floor(baseSize * 1.2); // 20% larger when zoomed
+    }
+
     return `${baseSize}px`;
   };
-  
+
   // Dynamic font size based on cell size
   const getCellFontSize = () => {
     const gridSize = grid.length;
     const screenWidth = window.innerWidth;
-    
+
     // Base font size calculations
     let baseFontSize;
     if (screenWidth >= 768) {
@@ -280,13 +286,13 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     } else {
       baseFontSize = 12;
     }
-    
+
     // Scale down for larger grids
     if (gridSize > 10) {
       const scaleFactor = Math.min(1, 10 / gridSize);
       baseFontSize = Math.max(10, Math.floor(baseFontSize * scaleFactor));
     }
-    
+
     return `${baseFontSize}px`;
   };
 
@@ -295,15 +301,15 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     if (isMobile && gridContainerRef.current) {
       // Set basic touch properties directly
       const gridElement = gridContainerRef.current;
-      
+
       // Prevent context menu on long press
       const preventContextMenu = (e: Event) => {
         e.preventDefault();
         return false;
       };
-      
+
       gridElement.addEventListener('contextmenu', preventContextMenu);
-      
+
       // Add meta viewport tag to prevent zooming on double tap
       const viewportMeta = document.querySelector('meta[name=viewport]');
       if (viewportMeta) {
@@ -314,7 +320,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       return () => {
         // Clean up event listeners
         gridElement.removeEventListener('contextmenu', preventContextMenu);
-        
+
         // Restore viewport meta when component unmounts
         if (viewportMeta) {
           viewportMeta.setAttribute('content',

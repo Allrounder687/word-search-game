@@ -18,15 +18,36 @@ interface WordGridProps {
   showDescriptions?: boolean;
   kidsMode?: boolean;
   isZoomed?: boolean;
+  selectionMode?: 'drag' | 'click-start-end';
+  onSelectionModeChange?: (mode: 'drag' | 'click-start-end') => void;
 }
 
-export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, theme, showDescriptions = true, kidsMode = false, isZoomed = false }) => {
+export const WordGrid: React.FC<WordGridProps> = ({ 
+  grid, 
+  words, 
+  onWordFound, 
+  theme, 
+  showDescriptions = true, 
+  kidsMode = false, 
+  isZoomed = false,
+  selectionMode: propSelectionMode,
+  onSelectionModeChange
+}) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [currentSelection, setCurrentSelection] = useState<Position[]>([]);
   const [highlightedCells, setHighlightedCells] = useState<Set<string>>(new Set());
   const [lastFoundWord, setLastFoundWord] = useState<WordPlacement | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
+  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>(
+    propSelectionMode || (isMobile ? 'click-start-end' : 'drag')
+  );
+
+  // Update selection mode when prop changes
+  useEffect(() => {
+    if (propSelectionMode) {
+      setSelectionMode(propSelectionMode);
+    }
+  }, [propSelectionMode]);
   const [startCell, setStartCell] = useState<Position | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const [showPathAnimation, setShowPathAnimation] = useState(false);
@@ -203,7 +224,12 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     e.preventDefault();
 
     const touch = e.touches[0];
-    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // Apply touch offset to show word above finger (30px up)
+    const offsetY = 30;
+    const adjustedY = touch.clientY - offsetY;
+    
+    const element = document.elementFromPoint(touch.clientX, adjustedY);
 
     if (element && element.hasAttribute('data-cell')) {
       const cellKey = element.getAttribute('data-cell');
@@ -225,6 +251,9 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
           // Add visual feedback
           element.classList.add('cell-tap-feedback');
           setTimeout(() => element.classList.remove('cell-tap-feedback'), 200);
+          
+          // Show floating word preview above finger
+          showFloatingWordPreview(touch.clientX, touch.clientY - 50, newSelection);
         }
       }
     }
@@ -539,6 +568,44 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       }
     }
   }, [selectionMode, startCell, words, onWordFound, showDescriptions, kidsMode, isMobile]);
+
+  // Show floating word preview above finger
+  const showFloatingWordPreview = useCallback((x: number, y: number, selection: Position[]) => {
+    // Remove any existing preview
+    const existingPreview = document.getElementById('floating-word-preview');
+    if (existingPreview) {
+      existingPreview.remove();
+    }
+
+    // Create word from selection
+    const word = selection.map(pos => grid[pos.row][pos.col].letter).join('');
+    
+    // Create floating preview element
+    const preview = document.createElement('div');
+    preview.id = 'floating-word-preview';
+    preview.textContent = word;
+    preview.style.position = 'fixed';
+    preview.style.left = `${x - 20}px`;
+    preview.style.top = `${y}px`;
+    preview.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    preview.style.color = 'white';
+    preview.style.padding = '4px 8px';
+    preview.style.borderRadius = '4px';
+    preview.style.fontSize = '14px';
+    preview.style.fontWeight = 'bold';
+    preview.style.zIndex = '1000';
+    preview.style.pointerEvents = 'none';
+    preview.style.transform = 'translateX(-50%)';
+    
+    document.body.appendChild(preview);
+    
+    // Remove preview after a short delay
+    setTimeout(() => {
+      if (document.getElementById('floating-word-preview')) {
+        document.body.removeChild(preview);
+      }
+    }, 1000);
+  }, [grid]);
 
   // Close the word found popup
   const handleClosePopup = useCallback(() => {

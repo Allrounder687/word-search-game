@@ -1,4 +1,4 @@
-import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn } from 'lucide-react';
+import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
 import { getResponsiveIconSize, getCompactMobilePadding } from '../utils/responsiveLayout';
 
 interface GameHeaderProps {
@@ -9,7 +9,9 @@ interface GameHeaderProps {
   onReset: () => void;
   onSettings: () => void;
   onToggleZoom?: () => void;
+  onToggleClickMode?: () => void;
   isZoomed?: boolean;
+  isClickMode?: boolean;
   theme: any;
   isDesktop: boolean;
   timeRemaining?: number | null;
@@ -23,7 +25,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   onReset,
   onSettings,
   onToggleZoom,
+  onToggleClickMode,
   isZoomed,
+  isClickMode,
   theme,
   isDesktop = false,
   timeRemaining = null
@@ -196,24 +200,55 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: isMobile ? '4px' : '8px', 
+          gap: isMobile ? '3px' : '8px', 
           flexWrap: 'nowrap',
-          flexShrink: 0
+          flexShrink: 0,
+          minWidth: 'fit-content'
         }}>
+          {/* Click Mode Button (Mobile only) */}
+          {isMobile && onToggleClickMode && (
+            <button
+              onClick={onToggleClickMode}
+              style={{ 
+                padding: '6px',
+                borderRadius: '6px',
+                transition: 'all 0.2s',
+                cursor: 'pointer',
+                border: `1px solid ${theme.secondary}40`,
+                backgroundColor: isClickMode ? `${theme.secondary}40` : theme.cellBg,
+                color: isClickMode ? theme.secondary : theme.primary,
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title={isClickMode ? "Drag Mode" : "Click Mode"}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              <MousePointer size={14} />
+            </button>
+          )}
+
           {/* Zoom Button (Mobile only) */}
           {isMobile && onToggleZoom && (
             <button
               onClick={onToggleZoom}
               style={{ 
-                padding: isMobile ? '8px' : '12px',
-                borderRadius: '8px',
+                padding: '6px',
+                borderRadius: '6px',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
                 border: `1px solid ${theme.secondary}40`,
                 backgroundColor: isZoomed ? `${theme.secondary}40` : theme.cellBg,
                 color: isZoomed ? theme.secondary : theme.primary,
-                width: isMobile ? '36px' : '44px',
-                height: isMobile ? '36px' : '44px',
+                width: '32px',
+                height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -226,7 +261,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              <ZoomIn size={iconSize} />
+              <ZoomIn size={14} />
             </button>
           )}
           
@@ -234,15 +269,15 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={onReset}
             style={{ 
-              padding: isMobile ? '8px' : '12px',
-              borderRadius: '8px',
+              padding: isMobile ? '6px' : '12px',
+              borderRadius: isMobile ? '6px' : '8px',
               transition: 'all 0.2s',
               cursor: 'pointer',
               border: `1px solid ${theme.secondary}40`,
               backgroundColor: theme.cellBg,
               color: theme.primary,
-              width: isMobile ? '36px' : '44px',
-              height: isMobile ? '36px' : '44px',
+              width: isMobile ? '32px' : '44px',
+              height: isMobile ? '32px' : '44px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -255,22 +290,22 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            <RotateCcw size={iconSize} />
+            <RotateCcw size={isMobile ? 14 : iconSize} />
           </button>
           
           {/* Settings Button */}
           <button
             onClick={onSettings}
             style={{ 
-              padding: isMobile ? '8px' : '12px',
-              borderRadius: '8px',
+              padding: isMobile ? '6px' : '12px',
+              borderRadius: isMobile ? '6px' : '8px',
               transition: 'all 0.2s',
               cursor: 'pointer',
               border: `1px solid ${theme.secondary}40`,
               backgroundColor: theme.cellBg,
               color: theme.primary,
-              width: isMobile ? '36px' : '44px',
-              height: isMobile ? '36px' : '44px',
+              width: isMobile ? '32px' : '44px',
+              height: isMobile ? '32px' : '44px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -283,7 +318,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            <Settings size={iconSize} />
+            <Settings size={isMobile ? 14 : iconSize} />
           </button>
         </div>
       </div>

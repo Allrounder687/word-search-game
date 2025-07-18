@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { RotateCcw, Lock, Unlock } from 'lucide-react';
-import { lockScreenOrientation } from '../utils/responsiveLayout';
+import { 
+  lockScreenOrientation, 
+  unlockScreenOrientation, 
+  checkOrientationLockSupport 
+} from '../utils/responsiveLayout';
 
 interface OrientationWarningProps {
   theme: any;
@@ -16,11 +20,9 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
   // Only show on phones, not tablets
   const isPhone = isMobile && window.innerWidth < 768;
   
-  // Check if orientation lock is supported
-  const isOrientationLockSupported = 
-    (screen.orientation && typeof (screen.orientation as any).lock === 'function') || 
-    (typeof (screen as any).msLockOrientation === 'function') || 
-    (typeof (screen as any).mozLockOrientation === 'function');
+  // Check if orientation lock is supported using the improved API
+  const orientationSupport = checkOrientationLockSupport();
+  const isOrientationLockSupported = orientationSupport.supported;
   
   useEffect(() => {
     // Only run this on mobile phones
@@ -50,73 +52,107 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
     };
   }, [isPhone, orientationLocked]);
   
-  const handleLockOrientation = () => {
+  // Helper function to show success messages
+  const showSuccessMessage = (message: string) => {
+    const successMessage = document.createElement('div');
+    successMessage.textContent = message;
+    Object.assign(successMessage.style, {
+      position: 'fixed',
+      bottom: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      backgroundColor: theme.secondary,
+      color: 'white',
+      padding: '10px 20px',
+      borderRadius: '8px',
+      zIndex: '1000',
+      fontSize: '14px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+      animation: 'slideUp 0.3s ease-out'
+    });
+    
+    document.body.appendChild(successMessage);
+    
+    setTimeout(() => {
+      if (document.body.contains(successMessage)) {
+        successMessage.style.animation = 'slideDown 0.3s ease-in forwards';
+        setTimeout(() => {
+          if (document.body.contains(successMessage)) {
+            document.body.removeChild(successMessage);
+          }
+        }, 300);
+      }
+    }, 3000);
+  };
+
+  // Helper function to show error messages
+  const showErrorMessage = (message: string) => {
+    const errorMessage = document.createElement('div');
+    errorMessage.textContent = message;
+    Object.assign(errorMessage.style, {
+      position: 'fixed',
+      bottom: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      backgroundColor: '#ef4444',
+      color: 'white',
+      padding: '10px 20px',
+      borderRadius: '8px',
+      zIndex: '1000',
+      fontSize: '14px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+      animation: 'slideUp 0.3s ease-out'
+    });
+    
+    document.body.appendChild(errorMessage);
+    
+    setTimeout(() => {
+      if (document.body.contains(errorMessage)) {
+        errorMessage.style.animation = 'slideDown 0.3s ease-in forwards';
+        setTimeout(() => {
+          if (document.body.contains(errorMessage)) {
+            document.body.removeChild(errorMessage);
+          }
+        }, 300);
+      }
+    }, 4000);
+  };
+
+  const handleLockOrientation = async () => {
     try {
-      // Lock to portrait orientation
-      lockScreenOrientation('portrait');
-      setOrientationLocked(true);
-      setShowWarning(false);
+      // Lock to portrait orientation using the improved API
+      const result = await lockScreenOrientation('portrait');
       
-      // Show success message
-      const successMessage = document.createElement('div');
-      successMessage.textContent = 'Orientation locked to portrait';
-      successMessage.style.position = 'fixed';
-      successMessage.style.bottom = '20px';
-      successMessage.style.left = '50%';
-      successMessage.style.transform = 'translateX(-50%)';
-      successMessage.style.backgroundColor = theme.secondary;
-      successMessage.style.color = 'white';
-      successMessage.style.padding = '10px 20px';
-      successMessage.style.borderRadius = '8px';
-      successMessage.style.zIndex = '1000';
-      document.body.appendChild(successMessage);
-      
-      // Remove success message after 3 seconds
-      setTimeout(() => {
-        if (document.body.contains(successMessage)) {
-          document.body.removeChild(successMessage);
-        }
-      }, 3000);
+      if (result.success) {
+        setOrientationLocked(true);
+        setShowWarning(false);
+        showSuccessMessage(`Orientation locked to portrait (${result.method})`);
+      } else {
+        console.warn('Failed to lock orientation:', result.error);
+        showErrorMessage(result.error || 'Failed to lock orientation');
+      }
     } catch (e) {
       console.error('Failed to lock orientation:', e);
       setOrientationLocked(false);
+      showErrorMessage('Orientation lock not supported on this device');
     }
   };
   
-  const handleUnlockOrientation = () => {
+  const handleUnlockOrientation = async () => {
     try {
-      // Unlock orientation
-      if (screen.orientation && screen.orientation.unlock) {
-        screen.orientation.unlock();
-      } else if (screen.msUnlockOrientation) {
-        screen.msUnlockOrientation();
-      } else if (screen.mozUnlockOrientation) {
-        screen.mozUnlockOrientation();
+      // Unlock orientation using the improved API
+      const result = await unlockScreenOrientation();
+      
+      if (result.success) {
+        setOrientationLocked(false);
+        showSuccessMessage(`Orientation unlocked (${result.method})`);
+      } else {
+        console.warn('Failed to unlock orientation:', result.error);
+        showErrorMessage(result.error || 'Failed to unlock orientation');
       }
-      setOrientationLocked(false);
-      
-      // Show success message
-      const successMessage = document.createElement('div');
-      successMessage.textContent = 'Orientation unlocked';
-      successMessage.style.position = 'fixed';
-      successMessage.style.bottom = '20px';
-      successMessage.style.left = '50%';
-      successMessage.style.transform = 'translateX(-50%)';
-      successMessage.style.backgroundColor = theme.secondary;
-      successMessage.style.color = 'white';
-      successMessage.style.padding = '10px 20px';
-      successMessage.style.borderRadius = '8px';
-      successMessage.style.zIndex = '1000';
-      document.body.appendChild(successMessage);
-      
-      // Remove success message after 3 seconds
-      setTimeout(() => {
-        if (document.body.contains(successMessage)) {
-          document.body.removeChild(successMessage);
-        }
-      }, 3000);
     } catch (e) {
       console.error('Failed to unlock orientation:', e);
+      showErrorMessage('Orientation unlock not supported on this device');
     }
   };
   
@@ -256,6 +292,28 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
             25% { transform: rotate(-90deg); }
             75% { transform: rotate(-90deg); }
             100% { transform: rotate(0deg); }
+          }
+          
+          @keyframes slideUp {
+            from {
+              transform: translateX(-50%) translateY(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(-50%) translateY(0);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes slideDown {
+            from {
+              transform: translateX(-50%) translateY(0);
+              opacity: 1;
+            }
+            to {
+              transform: translateX(-50%) translateY(100%);
+              opacity: 0;
+            }
           }
         `}
       </style>

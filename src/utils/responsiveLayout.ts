@@ -22,18 +22,33 @@ interface ResponsiveSizes<T> {
 }
 
 /**
- * Get responsive value based on current screen width
+ * Get responsive value based on current screen width with caching for performance
  * @param values - Object containing values for different screen sizes
  * @returns The appropriate value for the current screen size
  */
 export function getResponsiveValue<T>(values: ResponsiveSizes<T>): T {
   const width = window.innerWidth;
 
+  // Use a more efficient approach with early returns
   if (width < BREAKPOINTS.xs) return values.xs;
   if (width < BREAKPOINTS.sm) return values.sm;
   if (width < BREAKPOINTS.md) return values.md;
   if (width < BREAKPOINTS.lg) return values.lg;
   return values.xl;
+}
+
+/**
+ * Get current breakpoint name based on screen width
+ * @returns Current breakpoint name
+ */
+export function getCurrentBreakpoint(): keyof typeof BREAKPOINTS {
+  const width = window.innerWidth;
+  
+  if (width < BREAKPOINTS.xs) return 'xs';
+  if (width < BREAKPOINTS.sm) return 'sm';
+  if (width < BREAKPOINTS.md) return 'md';
+  if (width < BREAKPOINTS.lg) return 'lg';
+  return 'xl';
 }
 
 /**
@@ -175,99 +190,298 @@ export function setupMobileViewport(): void {
   });
 }
 
+// Extended Screen interface for better type safety
+interface ExtendedScreen extends Screen {
+  orientation?: {
+    lock?: (orientation: OrientationLockType) => Promise<void>;
+  };
+  msLockOrientation?: (orientation: string) => boolean;
+  mozLockOrientation?: (orientation: string) => boolean;
+}
+
+// Result type for orientation lock operations
+interface OrientationLockResult {
+  success: boolean;
+  method?: 'modern' | 'ms' | 'moz' | 'none';
+  error?: string;
+}
+
 /**
- * Lock screen orientation for mobile devices
- * @param orientation - The orientation to lock to ('portrait' or 'landscape')
+ * Check if screen orientation lock is supported
+ * @returns Object indicating support status and available methods
  */
-export function lockScreenOrientation(orientation: 'portrait' | 'landscape'): void {
+export function checkOrientationLockSupport(): {
+  supported: boolean;
+  methods: Array<'modern' | 'ms' | 'moz'>;
+} {
+  const extendedScreen = screen as ExtendedScreen;
+  const methods: Array<'modern' | 'ms' | 'moz'> = [];
+
+  if (extendedScreen.orientation?.lock) {
+    methods.push('modern');
+  }
+  if (extendedScreen.msLockOrientation) {
+    methods.push('ms');
+  }
+  if (extendedScreen.mozLockOrientation) {
+    methods.push('moz');
+  }
+
+  return {
+    supported: methods.length > 0,
+    methods
+  };
+}
+
+/**
+ * Lock screen orientation for mobile devices with improved error handling
+ * @param orientation - The orientation to lock to ('portrait' or 'landscape')
+ * @returns Promise that resolves with operation result
+ */
+export async function lockScreenOrientation(
+  orientation: 'portrait' | 'landscape'
+): Promise<OrientationLockResult> {
+  const extendedScreen = screen as ExtendedScreen;
+  
   try {
-    // Use the Screen Orientation API if available
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock(orientation).catch(err => {
-        console.warn('Screen orientation lock not supported:', err);
-      });
-    } 
-    // Fallback for older browsers
-    else if (screen.msLockOrientation) {
-      screen.msLockOrientation(orientation);
-    } else if (screen.mozLockOrientation) {
-      screen.mozLockOrientation(orientation);
+    // Use the modern Screen Orientation API if available
+    if (extendedScreen.orientation?.lock) {
+      await extendedScreen.orientation.lock(orientation as OrientationLockType);
+      return { success: true, method: 'modern' };
     }
-  } catch (e) {
-    console.warn('Screen orientation lock not supported');
+    
+    // Fallback for Internet Explorer/Edge
+    if (extendedScreen.msLockOrientation) {
+      const success = extendedScreen.msLockOrientation(orientation);
+      return { success, method: 'ms' };
+    }
+    
+    // Fallback for Firefox
+    if (extendedScreen.mozLockOrientation) {
+      const success = extendedScreen.mozLockOrientation(orientation);
+      return { success, method: 'moz' };
+    }
+    
+    // No orientation lock API available
+    return { 
+      success: false, 
+      method: 'none',
+      error: 'Screen orientation lock API not available' 
+    };
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('Screen orientation lock failed:', errorMessage);
+    return { 
+      success: false, 
+      error: errorMessage 
+    };
   }
 }
 
 /**
- * Create a mini-map indicator for grid navigation
+ * Unlock screen orientation (allow rotation)
+ * @returns Promise that resolves with operation result
+ */
+export async function unlockScreenOrientation(): Promise<OrientationLockResult> {
+  const extendedScreen = screen as ExtendedScreen;
+  
+  try {
+    // Use the modern Screen Orientation API if available
+    if (extendedScreen.orientation?.unlock) {
+      await (extendedScreen.orientation as any).unlock();
+      return { success: true, method: 'modern' };
+    }
+    
+    // Fallback for older browsers
+    if ((extendedScreen as any).msUnlockOrientation) {
+      const success = (extendedScreen as any).msUnlockOrientation();
+      return { success, method: 'ms' };
+    }
+    
+    if ((extendedScreen as any).mozUnlockOrientation) {
+      const success = (extendedScreen as any).mozUnlockOrientation();
+      return { success, method: 'moz' };
+    }
+    
+    return { 
+      success: false, 
+      method: 'none',
+      error: 'Screen orientation unlock API not available' 
+    };
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.warn('Screen orientation unlock failed:', errorMessage);
+    return { 
+      success: false, 
+      error: errorMessage 
+    };
+  }
+}
+
+// Theme interface for better type safety
+interface Theme {
+  gridBg: string;
+  secondary: string;
+  [key: string]: string;
+}
+
+// Mini-map configuration
+interface MiniMapConfig {
+  width: number;
+  height: number;
+  borderRadius: number;
+  padding: number;
+  hideDelay: number;
+  position: {
+    right: string;
+    top: string;
+  };
+}
+
+// Default mini-map configuration
+const DEFAULT_MINIMAP_CONFIG: MiniMapConfig = {
+  width: 30,
+  height: 60,
+  borderRadius: 15,
+  padding: 5,
+  hideDelay: 2000,
+  position: {
+    right: '8px',
+    top: '50%'
+  }
+};
+
+/**
+ * Create a mini-map indicator for grid navigation with improved performance and type safety
  * @param gridElement - The grid element to create a mini-map for
  * @param containerElement - The container element to append the mini-map to
- * @param theme - The current theme
+ * @param theme - The current theme object
+ * @param config - Optional configuration for mini-map appearance
+ * @returns Cleanup function to remove event listeners and mini-map
  */
-export function createGridMiniMap(gridElement: HTMLElement, containerElement: HTMLElement, theme: any): void {
+export function createGridMiniMap(
+  gridElement: HTMLElement, 
+  containerElement: HTMLElement, 
+  theme: Theme,
+  config: Partial<MiniMapConfig> = {}
+): () => void {
+  const finalConfig = { ...DEFAULT_MINIMAP_CONFIG, ...config };
+  
   // Remove any existing mini-map
   const existingMiniMap = document.getElementById('grid-mini-map');
   if (existingMiniMap) {
     existingMiniMap.remove();
   }
 
-  // Create mini-map container
+  // Create mini-map container with improved styling
   const miniMap = document.createElement('div');
   miniMap.id = 'grid-mini-map';
-  miniMap.style.position = 'absolute';
-  miniMap.style.right = '8px';
-  miniMap.style.top = '50%';
-  miniMap.style.transform = 'translateY(-50%)';
-  miniMap.style.width = '30px';
-  miniMap.style.height = '60px';
-  miniMap.style.backgroundColor = `${theme.gridBg}80`;
-  miniMap.style.borderRadius = '15px';
-  miniMap.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
-  miniMap.style.zIndex = '10';
-  miniMap.style.display = 'flex';
-  miniMap.style.flexDirection = 'column';
-  miniMap.style.justifyContent = 'space-between';
-  miniMap.style.padding = '5px';
-  miniMap.style.opacity = '0.7';
-  miniMap.style.transition = 'opacity 0.3s';
+  
+  // Apply styles using Object.assign for better performance
+  Object.assign(miniMap.style, {
+    position: 'absolute',
+    right: finalConfig.position.right,
+    top: finalConfig.position.top,
+    transform: 'translateY(-50%)',
+    width: `${finalConfig.width}px`,
+    height: `${finalConfig.height}px`,
+    backgroundColor: `${theme.gridBg}80`,
+    borderRadius: `${finalConfig.borderRadius}px`,
+    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+    zIndex: '10',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    padding: `${finalConfig.padding}px`,
+    opacity: '0.7',
+    transition: 'opacity 0.3s ease',
+    pointerEvents: 'none' // Prevent interference with user interactions
+  });
 
-  // Create indicator
+  // Create indicator with improved styling
   const indicator = document.createElement('div');
-  indicator.style.width = '20px';
-  indicator.style.height = '20px';
-  indicator.style.backgroundColor = theme.secondary;
-  indicator.style.borderRadius = '50%';
-  indicator.style.position = 'absolute';
-  indicator.style.left = '5px';
-  indicator.style.top = '5px';
-  indicator.style.transition = 'top 0.3s';
+  const indicatorSize = finalConfig.width - (finalConfig.padding * 2);
+  
+  Object.assign(indicator.style, {
+    width: `${indicatorSize}px`,
+    height: `${indicatorSize}px`,
+    backgroundColor: theme.secondary,
+    borderRadius: '50%',
+    position: 'absolute',
+    left: `${finalConfig.padding}px`,
+    top: `${finalConfig.padding}px`,
+    transition: 'top 0.3s ease',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+  });
 
   miniMap.appendChild(indicator);
   containerElement.appendChild(miniMap);
 
-  // Update indicator position on scroll
+  // Throttle scroll updates for better performance
+  let scrollUpdateFrame: number | null = null;
+  
   const updateIndicatorPosition = () => {
-    const gridHeight = gridElement.scrollHeight;
-    const containerHeight = containerElement.clientHeight;
-    const scrollTop = containerElement.scrollTop;
-    const scrollRatio = scrollTop / (gridHeight - containerHeight);
-    const indicatorTop = 5 + scrollRatio * (50 - 5); // 50px is the height of the mini-map minus padding
-    indicator.style.top = `${indicatorTop}px`;
+    if (scrollUpdateFrame) {
+      cancelAnimationFrame(scrollUpdateFrame);
+    }
+    
+    scrollUpdateFrame = requestAnimationFrame(() => {
+      const gridHeight = gridElement.scrollHeight;
+      const containerHeight = containerElement.clientHeight;
+      const scrollTop = containerElement.scrollTop;
+      
+      // Prevent division by zero
+      const scrollableHeight = gridHeight - containerHeight;
+      if (scrollableHeight <= 0) return;
+      
+      const scrollRatio = Math.max(0, Math.min(1, scrollTop / scrollableHeight));
+      const availableSpace = finalConfig.height - (finalConfig.padding * 2) - indicatorSize;
+      const indicatorTop = finalConfig.padding + scrollRatio * availableSpace;
+      
+      indicator.style.top = `${indicatorTop}px`;
+      scrollUpdateFrame = null;
+    });
   };
 
-  // Add scroll event listener
-  containerElement.addEventListener('scroll', updateIndicatorPosition);
-
-  // Show mini-map on scroll and hide after a delay
-  let hideTimeout: number;
-  containerElement.addEventListener('scroll', () => {
+  // Debounce hide functionality for better UX
+  let hideTimeout: number | null = null;
+  
+  const showMiniMap = () => {
     miniMap.style.opacity = '0.7';
-    clearTimeout(hideTimeout);
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+    }
     hideTimeout = window.setTimeout(() => {
       miniMap.style.opacity = '0';
-    }, 2000);
-  });
+      hideTimeout = null;
+    }, finalConfig.hideDelay);
+  };
 
-  // Initial position
+  // Add optimized scroll event listener
+  const handleScroll = () => {
+    updateIndicatorPosition();
+    showMiniMap();
+  };
+
+  containerElement.addEventListener('scroll', handleScroll, { passive: true });
+
+  // Initial position update
   updateIndicatorPosition();
+
+  // Return cleanup function
+  return () => {
+    containerElement.removeEventListener('scroll', handleScroll);
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+    }
+    if (scrollUpdateFrame) {
+      cancelAnimationFrame(scrollUpdateFrame);
+    }
+    const miniMapElement = document.getElementById('grid-mini-map');
+    if (miniMapElement) {
+      miniMapElement.remove();
+    }
+  };
 }

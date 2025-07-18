@@ -1,14 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Palette, Sparkles, X, ChevronDown } from 'lucide-react';
 import type { GameSettings, Theme, WordCategory } from '../types/game';
 import { THEMES } from '../types/game';
 import { getResponsiveIconSize } from '../utils/responsiveLayout';
+import { DropdownButton } from './QuickSettings/DropdownButton';
+import { MobileDropdown } from './QuickSettings/MobileDropdown';
+
+interface ThemeColors {
+  background: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+  gridBg: string;
+  cellBg: string;
+  cellHover: string;
+  font: string;
+}
 
 interface QuickSettingsProps {
   settings: GameSettings;
   onSettingsChange: (settings: GameSettings) => void;
-  theme: any;
+  theme: ThemeColors;
 }
+
+
 
 export const QuickSettings: React.FC<QuickSettingsProps> = ({
   settings,
@@ -22,59 +37,77 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
   // Get responsive icon size
   const iconSize = getResponsiveIconSize(16);
   
-  // Check if we're on a mobile device
-  const isMobile = window.innerWidth < 480;
+  // Responsive mobile detection with resize handling
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 480);
+  
+  // Handle window resize for responsive behavior with error handling
+  React.useEffect(() => {
+    const handleResize = () => {
+      try {
+        setIsMobile(window.innerWidth < 480);
+      } catch (error) {
+        console.warn('Error handling window resize:', error);
+      }
+    };
+    
+    // Check if window is available (SSR compatibility)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
-  const wordCategories: { value: WordCategory; label: string }[] = [
-    { value: 'general', label: 'General' },
-    { value: 'animals', label: 'Animals' },
-    { value: 'islamicPlaces', label: 'Islamic Places' },
-    { value: 'islamicProphets', label: 'Islamic Prophets' },
-    { value: 'fivePillars', label: 'Five Pillars' },
-    { value: 'islamicTerms', label: 'Islamic Terms' },
-    { value: 'custom', label: 'Custom Words' }
-  ];
+  // Memoize static data to prevent recreation on every render
+  const wordCategories = useMemo(() => [
+    { value: 'general' as const, label: 'General' },
+    { value: 'animals' as const, label: 'Animals' },
+    { value: 'islamicPlaces' as const, label: 'Islamic Places' },
+    { value: 'islamicProphets' as const, label: 'Islamic Prophets' },
+    { value: 'fivePillars' as const, label: 'Five Pillars' },
+    { value: 'islamicTerms' as const, label: 'Islamic Terms' },
+    { value: 'custom' as const, label: 'Custom Words' }
+  ], []);
 
-  const themes: { value: Theme; label: string }[] = [
-    { value: 'midnight', label: 'Midnight' },
-    { value: 'royal', label: 'Royal Blue' },
-    { value: 'darkRoyal', label: 'Dark Royal' },
-    { value: 'pink', label: 'Pink' },
-    { value: 'darkPink', label: 'Dark Pink' },
-    { value: 'pure', label: 'White' },
-    { value: 'ocean', label: 'Ocean' },
-    { value: 'sunset', label: 'Sunset' },
-    { value: 'neon', label: 'Neon' },
-    { value: 'custom', label: 'Custom Theme' }
-  ];
+  const themes = useMemo(() => [
+    { value: 'midnight' as const, label: 'Midnight' },
+    { value: 'royal' as const, label: 'Royal Blue' },
+    { value: 'darkRoyal' as const, label: 'Dark Royal' },
+    { value: 'pink' as const, label: 'Pink' },
+    { value: 'darkPink' as const, label: 'Dark Pink' },
+    { value: 'pure' as const, label: 'White' },
+    { value: 'ocean' as const, label: 'Ocean' },
+    { value: 'sunset' as const, label: 'Sunset' },
+    { value: 'neon' as const, label: 'Neon' },
+    { value: 'custom' as const, label: 'Custom Theme' }
+  ], []);
 
-  const handleCategoryChange = (category: WordCategory) => {
+  const handleCategoryChange = useCallback((category: WordCategory) => {
     onSettingsChange({
       ...settings,
       wordCategory: category
     });
     setShowCategoryDropdown(false);
     setShowDropdownMenu(false);
-  };
+  }, [settings, onSettingsChange]);
 
-  const handleThemeChange = (newTheme: Theme) => {
+  const handleThemeChange = useCallback((newTheme: Theme) => {
     onSettingsChange({
       ...settings,
       theme: newTheme
     });
     setShowThemeDropdown(false);
     setShowDropdownMenu(false);
-  };
+  }, [settings, onSettingsChange]);
 
-  const getCurrentCategoryLabel = () => {
+  const getCurrentCategoryLabel = useCallback(() => {
     const currentCategory = wordCategories.find(c => c.value === settings.wordCategory);
     return isMobile ? currentCategory?.label || 'Category' : 'Categories';
-  };
+  }, [wordCategories, settings.wordCategory, isMobile]);
 
-  const getCurrentThemeLabel = () => {
+  const getCurrentThemeLabel = useCallback(() => {
     const currentTheme = themes.find(t => t.value === settings.theme);
     return isMobile ? currentTheme?.label || 'Theme' : 'Themes';
-  };
+  }, [themes, settings.theme, isMobile]);
   
   // For very small screens, use a single dropdown menu
   if (isMobile) {
@@ -112,154 +145,17 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
           <ChevronDown size={iconSize} style={{ color: theme.primary }} />
         </button>
 
-        {/* Combined dropdown menu */}
-        {showDropdownMenu && (
-          <div style={{
-            position: 'absolute',
-            top: '120px', // Position below header
-            left: '16px',
-            right: '16px',
-            backgroundColor: theme.gridBg,
-            borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
-            zIndex: 100,
-            padding: '12px',
-            border: `1px solid ${theme.secondary}20`,
-            animation: 'fadeIn 0.2s ease'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
-              paddingBottom: '8px',
-              borderBottom: `1px solid ${theme.secondary}20`
-            }}>
-              <span style={{ fontWeight: 'bold', fontSize: '16px', color: theme.primary }}>
-                Game Options
-              </span>
-              <button
-                onClick={() => setShowDropdownMenu(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: theme.primary
-                }}
-              >
-                <X size={iconSize} />
-              </button>
-            </div>
-            
-            {/* Category section */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ 
-                fontWeight: 'bold', 
-                fontSize: '14px', 
-                color: theme.secondary,
-                marginBottom: '8px' 
-              }}>
-                Word Category
-              </div>
-              <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: '6px',
-                maxHeight: '150px',
-                overflowY: 'auto'
-              }}>
-                {wordCategories.map((category) => (
-                  <button
-                    key={category.value}
-                    onClick={() => handleCategoryChange(category.value)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: settings.wordCategory === category.value
-                        ? `${theme.secondary}20`
-                        : 'transparent',
-                      color: settings.wordCategory === category.value
-                        ? theme.secondary
-                        : theme.primary,
-                      border: `1px solid ${settings.wordCategory === category.value ? theme.secondary : theme.secondary + '20'}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      textAlign: 'center',
-                      fontSize: '13px'
-                    }}
-                  >
-                    {category.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Theme section */}
-            <div>
-              <div style={{ 
-                fontWeight: 'bold', 
-                fontSize: '14px', 
-                color: theme.secondary,
-                marginBottom: '8px' 
-              }}>
-                Theme
-              </div>
-              <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: '6px',
-                maxHeight: '150px',
-                overflowY: 'auto'
-              }}>
-                {themes.map((themeOption) => {
-                  const themeColors = THEMES[themeOption.value as keyof typeof THEMES] || THEMES.midnight;
-
-                  return (
-                    <button
-                      key={themeOption.value}
-                      onClick={() => handleThemeChange(themeOption.value)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        backgroundColor: settings.theme === themeOption.value
-                          ? `${theme.secondary}20`
-                          : 'transparent',
-                        color: settings.theme === themeOption.value
-                          ? theme.secondary
-                          : theme.primary,
-                        border: `1px solid ${settings.theme === themeOption.value ? theme.secondary : theme.secondary + '20'}`,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        textAlign: 'center',
-                        fontSize: '13px'
-                      }}
-                    >
-                      <div style={{
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '3px',
-                        background: `linear-gradient(135deg, ${themeColors.background} 0%, ${themeColors.gridBg} 100%)`,
-                        border: `1px solid ${themeColors.secondary}40`
-                      }} />
-                      {themeOption.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+        <MobileDropdown
+          isOpen={showDropdownMenu}
+          onClose={() => setShowDropdownMenu(false)}
+          settings={settings}
+          wordCategories={wordCategories}
+          themes={themes}
+          onCategoryChange={handleCategoryChange}
+          onThemeChange={handleThemeChange}
+          theme={theme}
+          iconSize={iconSize}
+        />
       </div>
     );
   }
@@ -281,6 +177,9 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
             setShowCategoryDropdown(!showCategoryDropdown);
             setShowThemeDropdown(false);
           }}
+          aria-expanded={showCategoryDropdown}
+          aria-haspopup="listbox"
+          aria-label="Select word category"
           style={{
             display: 'flex',
             alignItems: 'center',

@@ -47,6 +47,8 @@ function App() {
   const [isZoomed, setIsZoomed] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
+  const [isClickMode, setIsClickMode] = useState(false);
 
   // Use responsive hook for better performance and maintainability
   const breakpoints = useResponsive();
@@ -300,6 +302,13 @@ function App() {
     }
   }, [gameState.settings.difficulty, gameState.settings.hintsCount]);
 
+  // Handle click mode toggle
+  const handleToggleClickMode = useCallback(() => {
+    const newMode = selectionMode === 'drag' ? 'click-start-end' : 'drag';
+    setSelectionMode(newMode);
+    setIsClickMode(newMode === 'click-start-end');
+  }, [selectionMode]);
+
   return (
     <div
       style={{
@@ -323,9 +332,10 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
-          /* Category and theme toggles are now handled in QuickSettings */
           onToggleZoom={() => setIsZoomed(!isZoomed)}
+          onToggleClickMode={handleToggleClickMode}
           isZoomed={isZoomed}
+          isClickMode={isClickMode}
           theme={currentTheme}
           isDesktop={breakpoints.isDesktop}
           timeRemaining={gameState.settings.timerMode === 'countdown' ? timeRemaining : null}
@@ -586,6 +596,8 @@ function App() {
               showDescriptions={gameState.settings.showDescriptions}
               kidsMode={gameState.settings.kidsMode}
               isZoomed={isZoomed}
+              selectionMode={selectionMode}
+              onSelectionModeChange={setSelectionMode}
             />
           </div>
 

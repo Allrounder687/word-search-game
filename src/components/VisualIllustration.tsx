@@ -15,8 +15,6 @@ export const VisualIllustration: React.FC<VisualIllustrationProps> = ({
   // Don't render if kids mode is disabled or no illustration exists
   if (!kidsMode || !getIllustration(word)) return null;
   
-  const illustrationFile = getIllustration(word);
-  
   return (
     <div style={{
       marginTop: '12px',

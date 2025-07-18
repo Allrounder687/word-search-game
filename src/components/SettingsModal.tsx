@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen, Type } from 'lucide-react';
-import type { GameSettings, Difficulty, Theme, TimerMode } from '../types/game';
+import type { GameSettings, Theme, TimerMode } from '../types/game';
 import { THEMES } from '../types/game';
 
 // Interface for saved word lists
@@ -86,7 +86,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     // If custom theme is selected, save custom colors
     const updatedSettings = { ...localSettings };
 
@@ -112,9 +112,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     onSettingsChange(updatedSettings);
     onClose();
-  };
+  }, [localSettings, selectedFont, customColors, onSettingsChange, onClose]);
 
-  const addCustomWord = () => {
+  const addCustomWord = useCallback(() => {
     if (customWord.trim() && customWord.length >= 3) {
       const words = localSettings.customWords || [];
       if (!words.includes(customWord.toUpperCase())) {
@@ -125,15 +125,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
       setCustomWord('');
     }
-  };
+  }, [customWord, localSettings]);
 
-  const removeCustomWord = (index: number) => {
+  const removeCustomWord = useCallback((index: number) => {
     const words = localSettings.customWords || [];
     setLocalSettings({
       ...localSettings,
       customWords: words.filter((_, i) => i !== index)
     });
-  };
+  }, [localSettings]);
 
   const generateRandomWords = () => {
     // Generate 5-10 random words for custom mode
@@ -201,14 +201,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setSavedLists(updatedLists);
   };
 
-  const difficulties: { value: Difficulty; label: string; description: string }[] = [
-    { value: 'easy', label: 'Easy', description: '10x10 grid, simple words' },
-    { value: 'medium', label: 'Medium', description: '12x12 grid, moderate words' },
-    { value: 'hard', label: 'Hard', description: '15x15 grid, complex words' },
-    { value: 'custom', label: 'Custom', description: 'Your own words and settings' }
-  ];
+  // Memoize static configuration arrays to prevent recreation on every render
+  const difficulties = useMemo(() => [
+    { value: 'easy' as const, label: 'Easy', description: '10x10 grid, simple words' },
+    { value: 'medium' as const, label: 'Medium', description: '12x12 grid, moderate words' },
+    { value: 'hard' as const, label: 'Hard', description: '15x15 grid, complex words' },
+    { value: 'custom' as const, label: 'Custom', description: 'Your own words and settings' }
+  ], []);
 
-  const wordCategories: { value: string; label: string; description: string }[] = [
+  const wordCategories = useMemo(() => [
     { value: 'general', label: 'General', description: 'Standard word lists' },
     { value: 'animals', label: 'Animals', description: 'Various animal names' },
     { value: 'islamicPlaces', label: 'Islamic Places', description: 'Important locations in Islam' },
@@ -216,7 +217,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { value: 'fivePillars', label: 'Five Pillars', description: 'The five pillars of Islam and related terms' },
     { value: 'islamicTerms', label: 'Islamic Terms', description: 'Common Islamic terminology' },
     { value: 'custom', label: 'Custom Words', description: 'Your own custom word list' }
-  ];
+  ], []);
 
   const themes: { value: Theme; label: string; colors: string[] }[] = [
     { value: 'midnight', label: 'Midnight', colors: ['#000000', '#1e1b4b', '#a855f7', '#ec4899'] },

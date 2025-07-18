@@ -1,13 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { GameSettings } from '../types/game';
 
-interface SavedWordList {
-  id: string;
-  name: string;
-  settings: GameSettings;
-  createdAt: number;
-}
-
 export const useSettingsModal = (initialSettings: GameSettings) => {
   const [localSettings, setLocalSettings] = useState<GameSettings>({
     ...initialSettings,

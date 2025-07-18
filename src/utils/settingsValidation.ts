@@ -1,5 +1,5 @@
 import type { GameSettings } from '../types/game';
-import { validateCustomWord, validateListName, validateHexColor } from '../types/settings';
+import { validateCustomWord, validateHexColor } from '../types/settings';
 
 export interface ValidationResult {
   isValid: boolean;

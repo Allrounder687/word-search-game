@@ -398,9 +398,26 @@ function App() {
         }}>
           {/* Create descriptions object outside of JSX */}
           
-          {/* For mobile layout, use a more compact design */}
+          {/* For mobile layout, show WordList at the top first */}
           {!breakpoints.isDesktop && (
             <>
+              {/* WordList for mobile - moved to the very top */}
+              <div style={{
+                width: '100%',
+                marginBottom: '16px'
+              }}>
+                <WordList
+                  words={gameState.words}
+                  theme={currentTheme}
+                  showDescriptions={gameState.settings.showDescriptions}
+                  kidsMode={gameState.settings.kidsMode}
+                  isMobileLayout={true}
+                  descriptions={descriptions}
+                  selectedWord={selectedDescriptionWord}
+                  setSelectedWord={setSelectedDescriptionWord}
+                />
+              </div>
+              
               {/* Mobile Layout - Compact Controls Bar */}
               <div style={{
                 width: '100%',
@@ -467,23 +484,6 @@ function App() {
                     hintsRemaining={hintsRemaining}
                   />
                 </div>
-              </div>
-              
-              {/* WordList - Horizontal scrolling for mobile */}
-              <div style={{
-                width: '100%',
-                marginBottom: '8px'
-              }}>
-                <WordList
-                  words={gameState.words}
-                  theme={currentTheme}
-                  showDescriptions={gameState.settings.showDescriptions}
-                  kidsMode={gameState.settings.kidsMode}
-                  isMobileLayout={true}
-                  descriptions={descriptions}
-                  selectedWord={selectedDescriptionWord}
-                  setSelectedWord={setSelectedDescriptionWord}
-                />
               </div>
             </>
           )}

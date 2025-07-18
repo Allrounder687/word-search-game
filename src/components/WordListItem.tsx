@@ -53,11 +53,12 @@ export const WordListItem: React.FC<WordListItemProps> = ({
         position: 'relative',
         overflow: 'hidden',
         boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
-        minHeight: isMobileLayout ? '30px' : '44px',
+        minHeight: isMobileLayout ? '36px' : '44px',
         minWidth: isMobileLayout ? 'fit-content' : undefined,
         maxWidth: isMobileLayout ? '120px' : undefined,
         flexShrink: isMobileLayout ? 0 : undefined,
-        touchAction: 'manipulation'
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent'
       }}
       onMouseEnter={(e) => {
         if (!isFound) {
@@ -72,11 +73,19 @@ export const WordListItem: React.FC<WordListItemProps> = ({
       onTouchStart={(e) => {
         if (!isFound) {
           e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.backgroundColor = `${theme.cellBg}80`;
         }
       }}
       onTouchEnd={(e) => {
         if (!isFound) {
           e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.backgroundColor = theme.cellBg;
+        }
+      }}
+      onTouchCancel={(e) => {
+        if (!isFound) {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.backgroundColor = theme.cellBg;
         }
       }}
     >

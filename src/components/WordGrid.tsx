@@ -196,33 +196,40 @@ export const WordGrid: React.FC<WordGridProps> = ({
   }, [isSelecting, handleMouseUp]);
 
   // Touch support
-  const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
-    // Prevent default behavior to stop iOS Safari from moving the screen
-    e.stopPropagation();
+  const handleTouchStart = useCallback((row: number, col: number, _e: React.TouchEvent) => {
+    // Don't prevent default here to allow the touch event to be registered normally
     
     // Set state for selection
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
     setHighlightedCells(new Set([getCellKey(row, col)]));
 
-    // Add haptic feedback if available
-    if (navigator.vibrate) {
-      navigator.vibrate(10); // Short vibration
-    }
+    // Add haptic feedback if available - use requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      if (navigator.vibrate) {
+        navigator.vibrate(10); // Short vibration
+      }
+    });
     
-    // Add visual feedback
-    const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
-    if (cell) {
-      cell.classList.add('cell-tap-feedback');
-      setTimeout(() => cell.classList.remove('cell-tap-feedback'), 300);
-    }
+    // Add visual feedback - use requestAnimationFrame for smoother animation
+    requestAnimationFrame(() => {
+      const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
+      if (cell) {
+        cell.classList.add('cell-tap-feedback');
+        setTimeout(() => {
+          if (cell) {
+            cell.classList.remove('cell-tap-feedback');
+          }
+        }, 300);
+      }
+    });
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
 
-    // Stop propagation to prevent other handlers from interfering
-    e.stopPropagation();
+    // Note: We're not calling preventDefault() here anymore
+    // as it causes issues with passive event listeners in modern browsers
     
     const touch = e.touches[0];
     
@@ -260,9 +267,8 @@ export const WordGrid: React.FC<WordGridProps> = ({
     }
   }, [isSelecting, currentSelection, highlightedCells]);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    // Stop propagation to prevent other handlers from interfering
-    e.stopPropagation();
+  const handleTouchEnd = useCallback((_e: React.TouchEvent) => {
+    // Don't prevent default here to allow the touch event to complete normally
     
     // Process the selection
     handleMouseUp();
@@ -373,17 +379,17 @@ export const WordGrid: React.FC<WordGridProps> = ({
       // Set reasonable limits
       baseSize = Math.min(Math.max(baseSize, 30), 60);
     } else if (screenWidth >= 768) {
-      // Tablet
-      baseSize = 36;
+      // Tablet - improved sizing for iPad
+      baseSize = Math.min(42, Math.floor((screenWidth * 0.8) / gridSize) - 4);
     } else if (screenWidth >= 480) {
       // Large mobile
-      baseSize = 32;
+      baseSize = Math.min(36, Math.floor((screenWidth * 0.9) / gridSize) - 4);
     } else if (screenWidth >= 360) {
       // Medium mobile
-      baseSize = 28;
+      baseSize = Math.min(30, Math.floor((screenWidth * 0.95) / gridSize) - 2);
     } else {
       // Small mobile
-      baseSize = 24;
+      baseSize = Math.min(26, Math.floor((screenWidth * 0.98) / gridSize) - 2);
     }
     
     // Scale down for larger grids
@@ -397,6 +403,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
     // Apply zoom factor if isZoomed is true
     if (isZoomed) {
       baseSize = Math.floor(baseSize * 1.2); // 20% larger when zoomed
+    }
+    
+    // Ensure minimum size for touch targets on mobile
+    if (isMobile && baseSize < 22) {
+      baseSize = 22; // Minimum size for touch targets
     }
     
     return `${baseSize}px`;
@@ -447,6 +458,52 @@ export const WordGrid: React.FC<WordGridProps> = ({
           'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
       }
       
+      // iOS-specific fix to prevent screen movement during word selection
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      if (isIOS) {
+        // Add a specific class for iOS devices
+        gridElement.classList.add('ios-touch-fix');
+        
+        // Add a style element with iOS-specific CSS
+        const styleElement = document.createElement('style');
+        styleElement.textContent = `
+          .ios-touch-fix {
+            -webkit-overflow-scrolling: touch;
+            touch-action: manipulation;
+            position: relative;
+          }
+          .ios-touch-fix * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+          }
+        `;
+        document.head.appendChild(styleElement);
+        
+        // Return cleanup function for iOS-specific fixes
+        return () => {
+          gridElement.classList.remove('ios-touch-fix');
+          if (styleElement.parentNode) {
+            styleElement.parentNode.removeChild(styleElement);
+          }
+          
+          // Clean up event listeners
+          gridElement.removeEventListener('contextmenu', preventContextMenu);
+          
+          // Restore viewport meta when component unmounts
+          if (viewportMeta) {
+            viewportMeta.setAttribute('content',
+              'width=device-width, initial-scale=1.0');
+          }
+          
+          // Remove mini-map
+          const miniMap = document.getElementById('grid-mini-map');
+          if (miniMap) {
+            miniMap.remove();
+          }
+        };
+      }
+      
       // Create mini-map for large grids
       if (grid.length > 12 && gridContainerRef.current.parentElement) {
         createGridMiniMap(
@@ -473,7 +530,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
         }
       };
     }
-  }, [isMobile, grid.length]);
+  }, [isMobile, grid.length, theme]);
 
   // Handle click-start-end selection mode
   const handleCellClick = useCallback((row: number, col: number) => {
@@ -575,41 +632,68 @@ export const WordGrid: React.FC<WordGridProps> = ({
 
   // Show floating word preview above finger
   const showFloatingWordPreview = useCallback((x: number, y: number, selection: Position[]) => {
-    // Remove any existing preview
+    // Remove any existing preview with proper checks
     const existingPreview = document.getElementById('floating-word-preview');
-    if (existingPreview) {
-      existingPreview.remove();
+    if (existingPreview && existingPreview.parentNode) {
+      existingPreview.parentNode.removeChild(existingPreview);
     }
 
     // Create word from selection
-    const word = selection.map(pos => grid[pos.row][pos.col].letter).join('');
+    const word = selection.map(pos => {
+      // Add safety check for grid boundaries
+      if (pos.row >= 0 && pos.row < grid.length && 
+          pos.col >= 0 && pos.col < grid[pos.row].length) {
+        return grid[pos.row][pos.col].letter;
+      }
+      return '';
+    }).join('');
     
     // Create floating preview element
     const preview = document.createElement('div');
     preview.id = 'floating-word-preview';
     preview.textContent = word;
-    preview.style.position = 'fixed';
-    preview.style.left = `${x - 20}px`;
-    preview.style.top = `${y}px`;
-    preview.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-    preview.style.color = 'white';
-    preview.style.padding = '4px 8px';
-    preview.style.borderRadius = '4px';
-    preview.style.fontSize = '14px';
-    preview.style.fontWeight = 'bold';
-    preview.style.zIndex = '1000';
-    preview.style.pointerEvents = 'none';
-    preview.style.transform = 'translateX(-50%)';
+    
+    // Apply styles using Object.assign for better performance
+    Object.assign(preview.style, {
+      position: 'fixed',
+      left: `${x - 20}px`,
+      top: `${y - 40}px`, // Position higher above finger for better visibility
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      color: 'white',
+      padding: '6px 12px',
+      borderRadius: '6px',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      zIndex: '1000',
+      pointerEvents: 'none',
+      transform: 'translateX(-50%)',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+      transition: 'opacity 0.2s ease',
+      opacity: '0'
+    });
     
     document.body.appendChild(preview);
     
-    // Remove preview after a short delay
+    // Fade in the preview
+    requestAnimationFrame(() => {
+      if (preview && preview.parentNode) {
+        preview.style.opacity = '1';
+      }
+    });
+    
+    // Remove preview after a short delay with proper checks
     setTimeout(() => {
       const previewElement = document.getElementById('floating-word-preview');
-      if (previewElement && previewElement.parentNode === document.body) {
-        document.body.removeChild(previewElement);
+      if (previewElement && previewElement.parentNode) {
+        // Fade out before removing
+        previewElement.style.opacity = '0';
+        setTimeout(() => {
+          if (previewElement && previewElement.parentNode) {
+            previewElement.parentNode.removeChild(previewElement);
+          }
+        }, 200);
       }
-    }, 1000);
+    }, 800);
   }, [grid]);
 
   // Close the word found popup
@@ -661,26 +745,59 @@ export const WordGrid: React.FC<WordGridProps> = ({
         </div>
       )}
       
+      <style>
+        {`
+          @keyframes cell-tap {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+          }
+          
+          .cell-tap-feedback {
+            animation: cell-tap 0.3s ease;
+          }
+          
+          @keyframes cell-error {
+            0% { background-color: rgba(239, 68, 68, 0.4); }
+            100% { background-color: transparent; }
+          }
+          
+          .cell-error-feedback {
+            animation: cell-error 0.3s ease;
+          }
+          
+          @keyframes word-found-animation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+          }
+          
+          .animate-word-found {
+            animation: word-found-animation 0.6s ease;
+          }
+        `}
+      </style>
       <div
         ref={gridContainerRef}
         className="word-grid-container"
         style={{
           display: 'inline-block',
-          padding: isMobile ? '12px' : '16px',
-          borderRadius: '12px',
+          padding: isMobile ? '10px' : '16px',
+          borderRadius: isMobile ? '10px' : '12px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           backgroundColor: theme.gridBg,
-          touchAction: 'none', // Prevent scrolling/zooming on touch
-          maxHeight: isMobile ? '70vh' : 'auto',
+          touchAction: 'auto', // Let the touch events be handled by our handlers
+          maxHeight: isMobile ? '65vh' : 'auto',
           overflowY: isMobile ? 'auto' : 'visible',
           position: 'relative',
-          WebkitOverflowScrolling: 'touch'
+          WebkitOverflowScrolling: 'touch',
+          width: isMobile ? '100%' : 'auto'
         }}
       >
         <div
           style={{
             display: 'grid',
-            gap: '4px',
+            gap: window.innerWidth >= 480 ? '4px' : '2px',
             gridTemplateColumns: `repeat(${grid.length}, minmax(0, 1fr))`,
             userSelect: 'none'
           }}

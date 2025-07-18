@@ -1,6 +1,8 @@
 import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
 import { getResponsiveIconSize } from '../utils/responsiveLayout';
 
+import type { ThemeColors } from '../types/game';
+
 interface GameHeaderProps {
   score: number;
   timeElapsed: number;
@@ -12,7 +14,7 @@ interface GameHeaderProps {
   onToggleClickMode?: () => void;
   isZoomed?: boolean;
   isClickMode?: boolean;
-  theme: any;
+  theme: ThemeColors;
   isDesktop: boolean;
   timeRemaining?: number | null;
 }
@@ -48,10 +50,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
     <div
       style={{
         width: '100%',
-        padding: isMobile ? '6px' : '24px',
-        borderRadius: '12px',
+        padding: isMobile ? '10px' : '24px',
+        borderRadius: isMobile ? '10px' : '12px',
         boxShadow: '0 15px 30px -12px rgba(0, 0, 0, 0.2)',
-        marginBottom: isMobile ? '8px' : '24px',
+        marginBottom: isMobile ? '12px' : '24px',
         backgroundColor: theme.gridBg,
         boxSizing: 'border-box',
         overflow: 'hidden'
@@ -62,7 +64,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         flexDirection: isMobile ? 'row' : 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: isMobile ? '8px' : '16px',
+        gap: isMobile ? '10px' : '16px',
         maxWidth: '100%',
         overflow: 'hidden'
       }}>
@@ -108,23 +110,23 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '12px' : '24px',
+          gap: isMobile ? '16px' : '24px',
           flexWrap: 'nowrap',
           justifyContent: 'center',
           flexGrow: 1
         }}>
           {/* Score */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px' }}>
             <Trophy size={iconSize} style={{ color: theme.accent }} />
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: isMobile ? '10px' : '12px',
+                fontSize: isMobile ? '12px' : '12px',
                 opacity: 0.75,
                 color: theme.primary
               }}>Score</div>
               <div
                 style={{
-                  fontSize: isMobile ? '14px' : '18px',
+                  fontSize: isMobile ? '16px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
                   color: theme.primary
@@ -136,11 +138,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
 
           {/* Time */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px' }}>
             <Clock size={iconSize} style={{ color: theme.secondary }} />
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: isMobile ? '10px' : '12px',
+                fontSize: isMobile ? '12px' : '12px',
                 opacity: 0.75,
                 color: theme.primary
               }}>
@@ -148,7 +150,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               </div>
               <div
                 style={{
-                  fontSize: isMobile ? '14px' : '18px',
+                  fontSize: isMobile ? '16px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
                   color: timeRemaining !== null && timeRemaining < 30 ? '#ef4444' : theme.primary,
@@ -161,16 +163,16 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
 
           {/* Progress */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px' }}>
             <div
               style={{
-                width: isMobile ? '24px' : '32px',
-                height: isMobile ? '24px' : '32px',
+                width: isMobile ? '28px' : '32px',
+                height: isMobile ? '28px' : '32px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: isMobile ? '10px' : '12px',
+                fontSize: isMobile ? '12px' : '12px',
                 fontWeight: 'bold',
                 backgroundColor: theme.accent + '20',
                 color: theme.accent,
@@ -181,13 +183,13 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: isMobile ? '10px' : '12px',
+                fontSize: isMobile ? '12px' : '12px',
                 opacity: 0.75,
                 color: theme.primary
               }}>Found</div>
               <div
                 style={{
-                  fontSize: isMobile ? '14px' : '18px',
+                  fontSize: isMobile ? '16px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
                   color: theme.primary
@@ -203,7 +205,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '2px' : '8px',
+          gap: isMobile ? '6px' : '8px',
           flexWrap: 'nowrap',
           flexShrink: 0,
           marginLeft: isMobile ? '0' : 0,
@@ -216,18 +218,19 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <button
               onClick={onToggleClickMode}
               style={{
-                padding: '6px',
-                borderRadius: '6px',
+                padding: '8px',
+                borderRadius: '8px',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
                 border: `1px solid ${theme.secondary}40`,
                 backgroundColor: isClickMode ? `${theme.secondary}40` : theme.cellBg,
                 color: isClickMode ? theme.secondary : theme.primary,
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                WebkitTapHighlightColor: 'transparent'
               }}
               title={isClickMode ? "Drag Mode" : "Click Mode"}
               onMouseEnter={(e) => {
@@ -246,18 +249,19 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <button
               onClick={onToggleZoom}
               style={{
-                padding: '6px',
-                borderRadius: '6px',
+                padding: '8px',
+                borderRadius: '8px',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
                 border: `1px solid ${theme.secondary}40`,
                 backgroundColor: isZoomed ? `${theme.secondary}40` : theme.cellBg,
                 color: isZoomed ? theme.secondary : theme.primary,
-                width: '32px',
-                height: '32px',
+                width: '36px',
+                height: '36px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                WebkitTapHighlightColor: 'transparent'
               }}
               title={isZoomed ? "Zoom Out" : "Zoom In"}
               onMouseEnter={(e) => {
@@ -275,18 +279,19 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={onReset}
             style={{
-              padding: isMobile ? '6px' : '12px',
-              borderRadius: isMobile ? '6px' : '8px',
+              padding: isMobile ? '8px' : '12px',
+              borderRadius: isMobile ? '8px' : '8px',
               transition: 'all 0.2s',
               cursor: 'pointer',
               border: `1px solid ${theme.secondary}40`,
               backgroundColor: theme.cellBg,
               color: theme.primary,
-              width: isMobile ? '32px' : '44px',
-              height: isMobile ? '32px' : '44px',
+              width: isMobile ? '36px' : '44px',
+              height: isMobile ? '36px' : '44px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              WebkitTapHighlightColor: 'transparent'
             }}
             title="New Game"
             onMouseEnter={(e) => {
@@ -303,18 +308,19 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={onSettings}
             style={{
-              padding: isMobile ? '6px' : '12px',
-              borderRadius: isMobile ? '6px' : '8px',
+              padding: isMobile ? '8px' : '12px',
+              borderRadius: isMobile ? '8px' : '8px',
               transition: 'all 0.2s',
               cursor: 'pointer',
               border: `1px solid ${theme.secondary}40`,
               backgroundColor: theme.cellBg,
               color: theme.primary,
-              width: isMobile ? '32px' : '44px',
-              height: isMobile ? '32px' : '44px',
+              width: isMobile ? '36px' : '44px',
+              height: isMobile ? '36px' : '44px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              WebkitTapHighlightColor: 'transparent'
             }}
             title="Settings"
             onMouseEnter={(e) => {

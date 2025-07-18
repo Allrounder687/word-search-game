@@ -219,9 +219,9 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
 
-    // Prevent default to stop screen dragging but only during selection
-    e.preventDefault();
-
+    // Note: We're not calling preventDefault() here anymore
+    // as it causes issues with passive event listeners in modern browsers
+    
     const touch = e.touches[0];
     
     // Apply touch offset to show word above finger (30px up)
@@ -600,8 +600,9 @@ export const WordGrid: React.FC<WordGridProps> = ({
     
     // Remove preview after a short delay
     setTimeout(() => {
-      if (document.getElementById('floating-word-preview')) {
-        document.body.removeChild(preview);
+      const previewElement = document.getElementById('floating-word-preview');
+      if (previewElement && previewElement.parentNode === document.body) {
+        document.body.removeChild(previewElement);
       }
     }, 1000);
   }, [grid]);

@@ -119,7 +119,9 @@ export const WordList: React.FC<WordListProps> = ({
           boxSizing: 'border-box',
           backgroundColor: `${theme.gridBg}90`,
           backdropFilter: 'blur(8px)',
-          border: `1px solid ${theme.accent}20`
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          borderColor: `${theme.accent}20`
         }}
       >
         <div style={{ 

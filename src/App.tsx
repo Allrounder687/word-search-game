@@ -81,6 +81,42 @@ function App() {
     getLayoutConfig(breakpoints, currentTheme),
     [breakpoints, currentTheme]
   );
+  
+  // Memoize descriptions based on the current category
+  const descriptions = useMemo(() => {
+    const category = gameState.settings.wordCategory;
+    let descriptionMap: Record<string, string> = {};
+
+    // Import descriptions based on the selected category
+    if (category === 'fivePillars') {
+      descriptionMap = FIVE_PILLARS_DESCRIPTIONS;
+    } else if (category === 'islamicPlaces') {
+      // Convert the places descriptions to the expected format
+      Object.entries(ISLAMIC_PLACES_DESCRIPTIONS).forEach(([key, value]: [string, { description: string; urduDescription?: string }]) => {
+        descriptionMap[key] = value.description;
+      });
+    } else if (category === 'islamicProphets') {
+      descriptionMap = PROPHETS_DESCRIPTIONS;
+    } else if (category === 'islamicMonths') {
+      descriptionMap = ISLAMIC_MONTHS_DESCRIPTIONS;
+    } else if (category === 'muslimScientists') {
+      descriptionMap = MUSLIM_SCIENTISTS_DESCRIPTIONS;
+    } else if (category === 'quranicSurahs') {
+      descriptionMap = QURANIC_SURAHS_DESCRIPTIONS;
+    } else if (category === 'islamicValues') {
+      descriptionMap = ISLAMIC_VALUES_DESCRIPTIONS;
+    } else if (category === 'islamicAngels') {
+      descriptionMap = ISLAMIC_ANGELS_DESCRIPTIONS;
+    } else if (category === 'islamicBooks') {
+      descriptionMap = ISLAMIC_BOOKS_DESCRIPTIONS;
+    } else if (category === 'islamicEvents') {
+      descriptionMap = ISLAMIC_EVENTS_DESCRIPTIONS;
+    } else if (category === 'islamicVirtues') {
+      descriptionMap = ISLAMIC_VIRTUES_DESCRIPTIONS;
+    }
+
+    return descriptionMap;
+  }, [gameState.settings.wordCategory]);
 
   // Initialize timer based on settings
   useEffect(() => {
@@ -360,75 +396,99 @@ function App() {
           marginTop: layoutConfig.spacing.marginTop,
           padding: layoutConfig.spacing.padding
         }}>
-          {/* For mobile layout, show QuickSettings and Game Controls before WordGrid */}
+          {/* Create descriptions object outside of JSX */}
+          
+          {/* For mobile layout, show WordList at the top first */}
           {!breakpoints.isDesktop && (
-            <div style={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              marginBottom: '16px'
-            }}>
-              {/* Quick Settings for Category and Theme Selection */}
-              <QuickSettings
-                settings={gameState.settings}
-                onSettingsChange={handleSettingsChange}
-                theme={currentTheme}
-                onReset={handleReset}
-                onToggleZoom={onToggleZoom}
-                onToggleClickMode={handleToggleClickMode}
-                isZoomed={isZoomed}
-                isClickMode={isClickMode}
-              />
-
-              {/* Game Controls for mobile - moved to top */}
-              <div
-                style={{
-                  padding: '12px',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  backgroundColor: currentTheme.gridBg
-                }}
-              >
-                {/* Hint System */}
-                <HintSystem
+            <>
+              {/* WordList for mobile - moved to the very top */}
+              <div style={{
+                width: '100%',
+                marginBottom: '16px'
+              }}>
+                <WordList
                   words={gameState.words}
-                  onHintUsed={handleHintUsed}
                   theme={currentTheme}
-                  hintsRemaining={hintsRemaining}
+                  showDescriptions={gameState.settings.showDescriptions}
+                  kidsMode={gameState.settings.kidsMode}
+                  isMobileLayout={true}
+                  descriptions={descriptions}
+                  selectedWord={selectedDescriptionWord}
+                  setSelectedWord={setSelectedDescriptionWord}
+                />
+              </div>
+              
+              {/* Quick Settings and Game Controls */}
+              <div style={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                marginBottom: '16px'
+              }}>
+                {/* Quick Settings for Category and Theme Selection */}
+                <QuickSettings
+                  settings={gameState.settings}
+                  onSettingsChange={handleSettingsChange}
+                  theme={currentTheme}
+                  onReset={handleReset}
+                  onToggleZoom={onToggleZoom}
+                  onToggleClickMode={handleToggleClickMode}
+                  isZoomed={isZoomed}
+                  isClickMode={isClickMode}
                 />
 
-                {/* Timer Display (for countdown mode) */}
-                {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                  <div style={{
+                {/* Game Controls for mobile */}
+                <div
+                  style={{
+                    padding: '12px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                     display: 'flex',
+                    flexWrap: 'wrap',
                     alignItems: 'center',
-                    gap: '8px',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                    border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
-                    animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                  }}>
-                    <Clock size={20} style={{
-                      color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                    }} />
-                    <span style={{
-                      fontWeight: 'bold',
-                      fontSize: '16px'
+                    justifyContent: 'center',
+                    gap: '10px',
+                    backgroundColor: currentTheme.gridBg
+                  }}
+                >
+                  {/* Hint System */}
+                  <HintSystem
+                    words={gameState.words}
+                    onHintUsed={handleHintUsed}
+                    theme={currentTheme}
+                    hintsRemaining={hintsRemaining}
+                  />
+
+                  {/* Timer Display (for countdown mode) */}
+                  {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
+                      color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
+                      borderWidth: '1px',
+                      borderStyle: 'solid',
+                      borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
+                      animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
                     }}>
-                      {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                )}
+                      <Clock size={20} style={{
+                        color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
+                      }} />
+                      <span style={{
+                        fontWeight: 'bold',
+                        fontSize: '16px'
+                      }}>
+                        {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </>
           )}
 
           <div style={{
@@ -470,77 +530,19 @@ function App() {
               />
             )}
 
-            {/* Get descriptions based on the current category */}
-            {useMemo(() => {
-              const category = gameState.settings.wordCategory;
-              let descriptions: Record<string, string> = {};
-
-              // Import descriptions based on the selected category
-              if (category === 'fivePillars') {
-                descriptions = FIVE_PILLARS_DESCRIPTIONS;
-              } else if (category === 'islamicPlaces') {
-                // Convert the places descriptions to the expected format
-                Object.entries(ISLAMIC_PLACES_DESCRIPTIONS).forEach(([key, value]: [string, { description: string; urduDescription?: string }]) => {
-                  descriptions[key] = value.description;
-                });
-              } else if (category === 'islamicProphets') {
-                descriptions = PROPHETS_DESCRIPTIONS;
-              } else if (category === 'islamicMonths') {
-                descriptions = ISLAMIC_MONTHS_DESCRIPTIONS;
-              } else if (category === 'muslimScientists') {
-                descriptions = MUSLIM_SCIENTISTS_DESCRIPTIONS;
-              } else if (category === 'quranicSurahs') {
-                descriptions = QURANIC_SURAHS_DESCRIPTIONS;
-              } else if (category === 'islamicValues') {
-                descriptions = ISLAMIC_VALUES_DESCRIPTIONS;
-              } else if (category === 'islamicAngels') {
-                descriptions = ISLAMIC_ANGELS_DESCRIPTIONS;
-              } else if (category === 'islamicBooks') {
-                descriptions = ISLAMIC_BOOKS_DESCRIPTIONS;
-              } else if (category === 'islamicEvents') {
-                descriptions = ISLAMIC_EVENTS_DESCRIPTIONS;
-              } else if (category === 'islamicVirtues') {
-                descriptions = ISLAMIC_VIRTUES_DESCRIPTIONS;
-              }
-
-              // Determine which WordList to render based on screen size
-              const isMobileLayout = !breakpoints.isDesktop;
-
-              return (
-                <>
-                  {/* Conditionally render either desktop or mobile WordList */}
-                  {isMobileLayout ? (
-                    <div style={{
-                      width: '100%',
-                      marginTop: layoutConfig.spacing.marginTop,
-                      marginBottom: layoutConfig.spacing.marginBottom
-                    }}>
-                      <WordList
-                        words={gameState.words}
-                        theme={currentTheme}
-                        showDescriptions={gameState.settings.showDescriptions}
-                        kidsMode={gameState.settings.kidsMode}
-                        isMobileLayout={true}
-                        descriptions={descriptions}
-                        selectedWord={selectedDescriptionWord}
-                        setSelectedWord={setSelectedDescriptionWord}
-                      />
-                    </div>
-                  ) : (
-                    <WordList
-                      words={gameState.words}
-                      theme={currentTheme}
-                      showDescriptions={gameState.settings.showDescriptions}
-                      kidsMode={gameState.settings.kidsMode}
-                      isMobileLayout={false}
-                      descriptions={descriptions}
-                      selectedWord={selectedDescriptionWord}
-                      setSelectedWord={setSelectedDescriptionWord}
-                    />
-                  )}
-                </>
-              );
-            }, [breakpoints.isDesktop, currentTheme, gameState.settings.kidsMode, gameState.settings.showDescriptions, gameState.settings.wordCategory, gameState.words, layoutConfig.spacing.marginBottom, layoutConfig.spacing.marginTop])}
+            {/* Desktop WordList - only render if in desktop mode */}
+            {breakpoints.isDesktop && (
+              <WordList
+                words={gameState.words}
+                theme={currentTheme}
+                showDescriptions={gameState.settings.showDescriptions}
+                kidsMode={gameState.settings.kidsMode}
+                isMobileLayout={false}
+                descriptions={descriptions}
+                selectedWord={selectedDescriptionWord}
+                setSelectedWord={setSelectedDescriptionWord}
+              />
+            )}
 
             {/* Game Controls - Desktop only */}
             {breakpoints.isDesktop && (
@@ -575,7 +577,9 @@ function App() {
                     borderRadius: '8px',
                     backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
                     color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                    border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
                     animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
                   }}>
                     <Clock size={20} style={{
@@ -642,7 +646,9 @@ function App() {
                     borderRadius: '8px',
                     transition: 'all 0.2s',
                     cursor: 'pointer',
-                    border: `1px solid ${currentTheme.secondary}40`,
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: `${currentTheme.secondary}40`,
                     backgroundColor: currentTheme.cellBg,
                     color: currentTheme.primary
                   }}
@@ -712,7 +718,9 @@ function App() {
               style={{
                 backgroundColor: `${currentTheme.gridBg}CC`,
                 backdropFilter: 'blur(8px)',
-                border: `2px solid ${currentTheme.accent}40`
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: `${currentTheme.accent}40`
               }}
             >
               <div className="text-6xl mb-4 flex justify-center">
@@ -811,7 +819,9 @@ function App() {
               style={{
                 backgroundColor: 'rgba(0, 0, 0, 0.9)',
                 backdropFilter: 'blur(8px)',
-                border: '2px solid #ef4444',
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: '#ef4444',
                 maxWidth: '400px',
                 width: '90%'
               }}
@@ -852,7 +862,8 @@ function App() {
                     backgroundColor: currentTheme.secondary,
                     color: 'white',
                     fontWeight: 'bold',
-                    border: 'none',
+                    borderWidth: '0',
+                    borderStyle: 'none',
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}
@@ -873,7 +884,9 @@ function App() {
                     backgroundColor: 'transparent',
                     color: '#ffffff',
                     fontWeight: 'bold',
-                    border: `1px solid ${currentTheme.secondary}`,
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: currentTheme.secondary,
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}

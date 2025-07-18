@@ -11,7 +11,7 @@ interface AudioPronunciationProps {
 export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, color, kidsMode }) => {
   // Don't render if kids mode is disabled or no audio file exists
   if (!kidsMode || !getAudioFile(word)) return null;
-  
+
   // Function to initialize audio on iOS
   const initializeAudioForIOS = () => {
     // Create a silent audio element to unlock audio on iOS
@@ -21,7 +21,7 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
     silentAudio.setAttribute('preload', 'auto');
     silentAudio.className = 'audio-enabled';
     document.body.appendChild(silentAudio);
-    
+
     // Play and immediately pause to enable audio
     const playPromise = silentAudio.play();
     if (playPromise !== undefined) {
@@ -32,7 +32,7 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
       });
     }
   };
-  
+
   // Initialize audio on component mount
   useEffect(() => {
     // Check if it's iOS
@@ -45,43 +45,43 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
         document.removeEventListener('touchstart', handleUserInteraction);
         document.removeEventListener('click', handleUserInteraction);
       };
-      
+
       document.addEventListener('touchstart', handleUserInteraction);
       document.addEventListener('click', handleUserInteraction);
-      
+
       return () => {
         document.removeEventListener('touchstart', handleUserInteraction);
         document.removeEventListener('click', handleUserInteraction);
       };
     }
   }, []);
-  
+
   const handlePlayAudio = () => {
     try {
       // First try to use the browser's speech synthesis API
       if ('speechSynthesis' in window) {
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
-        
+
         // Create a new utterance
         const utterance = new SpeechSynthesisUtterance(word);
-        
+
         // Configure the utterance
         utterance.rate = 0.8; // Slightly slower for clearer pronunciation
         utterance.volume = 1.0; // Maximum volume
         utterance.pitch = 1.0; // Normal pitch
-        
+
         // Add vibration feedback for mobile devices
         if (navigator.vibrate) {
           navigator.vibrate(50);
         }
-        
+
         // Log for debugging
         console.log(`Playing audio for ${word}`);
-        
+
         // Speak the word
         window.speechSynthesis.speak(utterance);
-        
+
         // iOS requires user interaction to play audio
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
         if (isIOS) {
@@ -92,22 +92,37 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
         const audio = new Audio();
         audio.src = `data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV`;
         audio.volume = 1.0;
-        
+
         // Play the audio
         const playPromise = audio.play();
         if (playPromise !== undefined) {
           playPromise.catch(error => {
             console.error('Audio playback failed:', error);
-            
+
             // Try one more fallback - create a beep sound using Web Audio API
             try {
-              const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+              // Use the shared AudioContext if available
+              const audioContext = (window as any).gameAudioContext ||
+                new (window.AudioContext || (window as any).webkitAudioContext)();
+
+              // Resume the audio context if it's suspended
+              if (audioContext.state === 'suspended') {
+                audioContext.resume().catch((err: Error) => {
+                  console.warn('Failed to resume AudioContext:', err);
+                });
+              }
+
               const oscillator = audioContext.createOscillator();
               oscillator.type = 'sine';
               oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A4 note
               oscillator.connect(audioContext.destination);
               oscillator.start();
               oscillator.stop(audioContext.currentTime + 0.2); // Short beep
+
+              // Store the AudioContext for future use if we created a new one
+              if (!(window as any).gameAudioContext) {
+                (window as any).gameAudioContext = audioContext;
+              }
             } catch (err) {
               console.error('Web Audio API failed:', err);
             }
@@ -118,10 +133,10 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
       console.error('Audio playback error:', error);
     }
   };
-  
+
   // Determine if we're on a mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
+
   return (
     <button
       onClick={handlePlayAudio}

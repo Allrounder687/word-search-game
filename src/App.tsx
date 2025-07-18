@@ -332,11 +332,7 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
-          onToggleZoom={() => setIsZoomed(!isZoomed)}
-          onToggleClickMode={handleToggleClickMode}
-          isZoomed={isZoomed}
-          isClickMode={isClickMode}
-          theme={currentTheme}
+theme={currentTheme}
           isDesktop={breakpoints.isDesktop}
           timeRemaining={gameState.settings.timerMode === 'countdown' ? timeRemaining : null}
         />
@@ -347,6 +343,11 @@ function App() {
             settings={gameState.settings}
             onSettingsChange={handleSettingsChange}
             theme={currentTheme}
+            onReset={handleReset}
+            onToggleZoom={() => setIsZoomed(!isZoomed)}
+            onToggleClickMode={handleToggleClickMode}
+            isZoomed={isZoomed}
+            isClickMode={isClickMode}
           />
         )}
 

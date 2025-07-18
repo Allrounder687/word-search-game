@@ -1,5 +1,5 @@
-import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
-import { getResponsiveIconSize, getCompactMobilePadding } from '../utils/responsiveLayout';
+import { Clock, Trophy, Zap, Settings, RotateCcw } from 'lucide-react';
+import { getResponsiveIconSize } from '../utils/responsiveLayout';
 
 interface GameHeaderProps {
   score: number;
@@ -8,10 +8,6 @@ interface GameHeaderProps {
   totalWords: number;
   onReset: () => void;
   onSettings: () => void;
-  onToggleZoom?: () => void;
-  onToggleClickMode?: () => void;
-  isZoomed?: boolean;
-  isClickMode?: boolean;
   theme: any;
   isDesktop: boolean;
   timeRemaining?: number | null;
@@ -24,10 +20,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   totalWords,
   onReset,
   onSettings,
-  onToggleZoom,
-  onToggleClickMode,
-  isZoomed,
-  isClickMode,
   theme,
   isDesktop = false,
   timeRemaining = null
@@ -39,23 +31,22 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   };
 
   const completionPercentage = (foundWords / totalWords) * 100;
-  
+
   // Get responsive sizes for mobile
   const iconSize = getResponsiveIconSize(20);
-  const padding = getCompactMobilePadding(24);
   const isMobile = !isDesktop;
 
   return (
-    <div 
-      style={{ 
+    <div
+      style={{
         width: '100%',
-        padding: isMobile ? padding : '24px',
-        paddingRight: isMobile ? '8px' : '24px', // Ensure enough padding on the right side
+        padding: isMobile ? '8px' : '24px',
         borderRadius: '12px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         marginBottom: isMobile ? '12px' : '24px',
         backgroundColor: theme.gridBg,
-        boxSizing: 'border-box' // Ensure padding is included in width calculation
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}
     >
       <div style={{
@@ -63,31 +54,34 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         flexDirection: isMobile ? 'row' : 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: isMobile ? '8px' : '16px',
-        maxWidth: '100%',
-        overflow: 'hidden'
+        gap: isMobile ? '4px' : '16px',
+        width: '100%'
       }}>
-        {/* Title */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: isMobile ? '8px' : '12px',
-          flexShrink: 0
+        {/* Title - Make it smaller on mobile */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '4px' : '12px',
+          flexShrink: 1,
+          maxWidth: isMobile ? '80px' : 'auto'
         }}>
           <div className="animate-float">
-            <Zap size={isMobile ? 24 : 32} style={{ color: theme.secondary }} />
+            <Zap size={isMobile ? 20 : 32} style={{ color: theme.secondary }} />
           </div>
-          <div>
-            <h1 
-              style={{ 
-                fontSize: isMobile ? '20px' : '30px',
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <h1
+              style={{
+                fontSize: isMobile ? '16px' : '30px',
                 fontWeight: 'bold',
                 background: 'linear-gradient(to right, #ffffff, #d1d5db)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
                 fontFamily: 'Inter, sans-serif',
-                margin: 0
+                margin: 0,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
               WordZilla
@@ -106,29 +100,31 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         </div>
 
         {/* Stats - Compact for mobile */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: isMobile ? '12px' : '24px', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '8px' : '24px',
           flexWrap: 'nowrap',
           justifyContent: 'center',
-          flexGrow: 1
+          flexGrow: 1,
+          flexShrink: 1,
+          minWidth: 0
         }}>
           {/* Score */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
-            <Trophy size={iconSize} style={{ color: theme.accent }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '2px' : '8px' }}>
+            <Trophy size={isMobile ? 14 : iconSize} style={{ color: theme.accent }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: isMobile ? '10px' : '12px', 
-                opacity: 0.75, 
-                color: theme.primary 
+              <div style={{
+                fontSize: isMobile ? '8px' : '12px',
+                opacity: 0.75,
+                color: theme.primary
               }}>Score</div>
-              <div 
-                style={{ 
-                  fontSize: isMobile ? '14px' : '18px',
+              <div
+                style={{
+                  fontSize: isMobile ? '12px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
-                  color: theme.primary 
+                  color: theme.primary
                 }}
               >
                 {score.toLocaleString()}
@@ -137,19 +133,19 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
 
           {/* Time */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
-            <Clock size={iconSize} style={{ color: theme.secondary }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '2px' : '8px' }}>
+            <Clock size={isMobile ? 14 : iconSize} style={{ color: theme.secondary }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: isMobile ? '10px' : '12px', 
-                opacity: 0.75, 
-                color: theme.primary 
+              <div style={{
+                fontSize: isMobile ? '8px' : '12px',
+                opacity: 0.75,
+                color: theme.primary
               }}>
                 {timeRemaining !== null ? 'Time' : 'Time'}
               </div>
-              <div 
-                style={{ 
-                  fontSize: isMobile ? '14px' : '18px',
+              <div
+                style={{
+                  fontSize: isMobile ? '12px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
                   color: timeRemaining !== null && timeRemaining < 30 ? '#ef4444' : theme.primary,
@@ -162,16 +158,16 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
 
           {/* Progress */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
-            <div 
-              style={{ 
-                width: isMobile ? '24px' : '32px',
-                height: isMobile ? '24px' : '32px',
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '2px' : '8px' }}>
+            <div
+              style={{
+                width: isMobile ? '20px' : '32px',
+                height: isMobile ? '20px' : '32px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: isMobile ? '10px' : '12px',
+                fontSize: isMobile ? '8px' : '12px',
                 fontWeight: 'bold',
                 backgroundColor: theme.accent + '20',
                 color: theme.accent,
@@ -181,17 +177,17 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               {Math.round(completionPercentage)}%
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: isMobile ? '10px' : '12px', 
-                opacity: 0.75, 
-                color: theme.primary 
+              <div style={{
+                fontSize: isMobile ? '8px' : '12px',
+                opacity: 0.75,
+                color: theme.primary
               }}>Found</div>
-              <div 
-                style={{ 
-                  fontSize: isMobile ? '14px' : '18px',
+              <div
+                style={{
+                  fontSize: isMobile ? '12px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
-                  color: theme.primary 
+                  color: theme.primary
                 }}
               >
                 {foundWords}/{totalWords}
@@ -200,37 +196,34 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
         </div>
 
-        {/* Controls - Single row for mobile */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: isMobile ? '2px' : '8px', 
+        {/* Controls - Only show on desktop */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '2px' : '8px',
           flexWrap: 'nowrap',
           flexShrink: 0,
-          marginLeft: isMobile ? '0' : 0,
-          marginRight: isMobile ? '0' : 0,
-          position: isMobile ? 'relative' : 'static',
-          right: isMobile ? '0' : 'auto'
+          marginLeft: isMobile ? '4px' : 0
         }}>
-          {/* Click Mode Button (Mobile only) */}
-          {isMobile && onToggleClickMode && (
+          {/* On mobile, we only show the settings button since other controls are in Game Options */}
+          {isMobile ? (
             <button
-              onClick={onToggleClickMode}
-              style={{ 
-                padding: '6px',
-                borderRadius: '6px',
+              onClick={onSettings}
+              style={{
+                padding: '4px',
+                borderRadius: '4px',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
                 border: `1px solid ${theme.secondary}40`,
-                backgroundColor: isClickMode ? `${theme.secondary}40` : theme.cellBg,
-                color: isClickMode ? theme.secondary : theme.primary,
-                width: '32px',
-                height: '32px',
+                backgroundColor: theme.cellBg,
+                color: theme.primary,
+                width: '28px',
+                height: '28px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
-              title={isClickMode ? "Drag Mode" : "Click Mode"}
+              title="Settings"
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'scale(1.05)';
               }}
@@ -238,112 +231,84 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              <MousePointer size={14} />
+              <Settings size={12} />
             </button>
-          )}
+          ) : (
+            <>
+              {/* Reset Button - Desktop only */}
+              <button
+                onClick={onReset}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  border: `1px solid ${theme.secondary}40`,
+                  backgroundColor: theme.cellBg,
+                  color: theme.primary,
+                  width: '44px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="New Game"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <RotateCcw size={iconSize} />
+              </button>
 
-          {/* Zoom Button (Mobile only) */}
-          {isMobile && onToggleZoom && (
-            <button
-              onClick={onToggleZoom}
-              style={{ 
-                padding: '6px',
-                borderRadius: '6px',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                border: `1px solid ${theme.secondary}40`,
-                backgroundColor: isZoomed ? `${theme.secondary}40` : theme.cellBg,
-                color: isZoomed ? theme.secondary : theme.primary,
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-              title={isZoomed ? "Zoom Out" : "Zoom In"}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              <ZoomIn size={14} />
-            </button>
+              {/* Settings Button - Desktop only */}
+              <button
+                onClick={onSettings}
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  border: `1px solid ${theme.secondary}40`,
+                  backgroundColor: theme.cellBg,
+                  color: theme.primary,
+                  width: '44px',
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title="Settings"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Settings size={iconSize} />
+              </button>
+            </>
           )}
-          
-          {/* Reset Button */}
-          <button
-            onClick={onReset}
-            style={{ 
-              padding: isMobile ? '6px' : '12px',
-              borderRadius: isMobile ? '6px' : '8px',
-              transition: 'all 0.2s',
-              cursor: 'pointer',
-              border: `1px solid ${theme.secondary}40`,
-              backgroundColor: theme.cellBg,
-              color: theme.primary,
-              width: isMobile ? '32px' : '44px',
-              height: isMobile ? '32px' : '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title="New Game"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <RotateCcw size={isMobile ? 14 : iconSize} />
-          </button>
-          
-          {/* Settings Button */}
-          <button
-            onClick={onSettings}
-            style={{ 
-              padding: isMobile ? '6px' : '12px',
-              borderRadius: isMobile ? '6px' : '8px',
-              transition: 'all 0.2s',
-              cursor: 'pointer',
-              border: `1px solid ${theme.secondary}40`,
-              backgroundColor: theme.cellBg,
-              color: theme.primary,
-              width: isMobile ? '32px' : '44px',
-              height: isMobile ? '32px' : '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-            title="Settings"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <Settings size={isMobile ? 14 : iconSize} />
-          </button>
         </div>
       </div>
 
       {/* Progress Bar - More vibrant for mobile */}
-      <div style={{ marginTop: isMobile ? '12px' : '16px' }}>
-        <div 
-          style={{ 
+      <div style={{ marginTop: isMobile ? '8px' : '16px' }}>
+        <div
+          style={{
             width: '100%',
-            height: isMobile ? '6px' : '8px',
+            height: isMobile ? '4px' : '8px',
             borderRadius: '4px',
             overflow: 'hidden',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)' 
+            backgroundColor: 'rgba(255, 255, 255, 0.1)'
           }}
         >
           <div
             className="animate-rainbow"
-            style={{ 
+            style={{
               height: '100%',
               transition: 'all 0.5s ease-out',
               width: `${completionPercentage}%`,

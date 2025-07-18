@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
 import type { WordCategory, Theme } from '../../types/game';
 import { THEMES } from '../../types/game';
 
@@ -13,6 +13,12 @@ interface MobileDropdownProps {
   onThemeChange: (theme: Theme) => void;
   theme: any;
   iconSize: number;
+  // Game control props
+  onReset?: () => void;
+  onToggleZoom?: () => void;
+  onToggleClickMode?: () => void;
+  isZoomed?: boolean;
+  isClickMode?: boolean;
 }
 
 export const MobileDropdown: React.FC<MobileDropdownProps> = ({
@@ -24,7 +30,12 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
   onCategoryChange,
   onThemeChange,
   theme,
-  iconSize
+  iconSize,
+  onReset,
+  onToggleZoom,
+  onToggleClickMode,
+  isZoomed,
+  isClickMode
 }) => {
   if (!isOpen) return null;
 
@@ -119,7 +130,7 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
       </div>
       
       {/* Theme section */}
-      <div>
+      <div style={{ marginBottom: '16px' }}>
         <div style={{ 
           fontWeight: 'bold', 
           fontSize: '14px', 
@@ -173,6 +184,100 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
               </button>
             );
           })}
+        </div>
+      </div>
+      
+      {/* Game Controls section */}
+      <div>
+        <div style={{ 
+          fontWeight: 'bold', 
+          fontSize: '14px', 
+          color: theme.secondary,
+          marginBottom: '8px' 
+        }}>
+          Game Controls
+        </div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '8px',
+          justifyContent: 'flex-start'
+        }}>
+          {/* Click Mode Button */}
+          {onToggleClickMode && (
+            <button
+              onClick={onToggleClickMode}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                backgroundColor: isClickMode ? `${theme.secondary}20` : 'transparent',
+                color: isClickMode ? theme.secondary : theme.primary,
+                border: `1px solid ${isClickMode ? theme.secondary : theme.secondary + '20'}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                minWidth: '70px'
+              }}
+            >
+              <MousePointer size={18} />
+              <span style={{ fontSize: '12px' }}>
+                {isClickMode ? "Click Mode" : "Drag Mode"}
+              </span>
+            </button>
+          )}
+
+          {/* Zoom Button */}
+          {onToggleZoom && (
+            <button
+              onClick={onToggleZoom}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                backgroundColor: isZoomed ? `${theme.secondary}20` : 'transparent',
+                color: isZoomed ? theme.secondary : theme.primary,
+                border: `1px solid ${isZoomed ? theme.secondary : theme.secondary + '20'}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                minWidth: '70px'
+              }}
+            >
+              <ZoomIn size={18} />
+              <span style={{ fontSize: '12px' }}>
+                {isZoomed ? "Zoom Out" : "Zoom In"}
+              </span>
+            </button>
+          )}
+
+          {/* Reset Button */}
+          {onReset && (
+            <button
+              onClick={onReset}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                backgroundColor: 'transparent',
+                color: theme.primary,
+                border: `1px solid ${theme.secondary + '20'}`,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                minWidth: '70px'
+              }}
+            >
+              <RotateCcw size={18} />
+              <span style={{ fontSize: '12px' }}>New Game</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -21,6 +21,12 @@ interface QuickSettingsProps {
   settings: GameSettings;
   onSettingsChange: (settings: GameSettings) => void;
   theme: ThemeColors;
+  // Game control props
+  onReset?: () => void;
+  onToggleZoom?: () => void;
+  onToggleClickMode?: () => void;
+  isZoomed?: boolean;
+  isClickMode?: boolean;
 }
 
 
@@ -28,7 +34,12 @@ interface QuickSettingsProps {
 export const QuickSettings: React.FC<QuickSettingsProps> = ({
   settings,
   onSettingsChange,
-  theme
+  theme,
+  onReset,
+  onToggleZoom,
+  onToggleClickMode,
+  isZoomed,
+  isClickMode
 }) => {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
@@ -155,6 +166,11 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
           onThemeChange={handleThemeChange}
           theme={theme}
           iconSize={iconSize}
+          onReset={onReset}
+          onToggleZoom={onToggleZoom}
+          onToggleClickMode={onToggleClickMode}
+          isZoomed={isZoomed}
+          isClickMode={isClickMode}
         />
       </div>
     );

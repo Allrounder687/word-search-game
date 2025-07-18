@@ -344,8 +344,8 @@ function App() {
         {breakpoints.isDesktop && showCategoryDropdown && (
           <div style={{
             position: 'absolute',
-            top: '100px',
-            right: '120px',
+            top: '80px',
+            right: '70px',
             width: '200px',
             backgroundColor: 'rgba(0, 0, 0, 0.85)',
             backdropFilter: 'blur(8px)',
@@ -436,8 +436,8 @@ function App() {
         {breakpoints.isDesktop && showThemeDropdown && (
           <div style={{
             position: 'absolute',
-            top: '100px',
-            right: '70px',
+            top: '80px',
+            right: '30px',
             width: '200px',
             backgroundColor: 'rgba(0, 0, 0, 0.85)',
             backdropFilter: 'blur(8px)',

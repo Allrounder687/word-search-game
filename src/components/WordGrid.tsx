@@ -25,7 +25,10 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const [highlightedCells, setHighlightedCells] = useState<Set<string>>(new Set());
   const [lastFoundWord, setLastFoundWord] = useState<WordPlacement | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end' | 'keyboard'>('drag');
+  const [startCell, setStartCell] = useState<Position | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
+  const [keyboardFocusPosition, setKeyboardFocusPosition] = useState<Position | null>(null);
 
   // Detect if we're on a mobile device
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -236,12 +239,26 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
   const getCellSize = () => {
     const gridSize = grid.length;
     const screenWidth = window.innerWidth;
-
-    // Base size calculations
+    const screenHeight = window.innerHeight;
+    
+    // Calculate available space for the grid
+    // For desktop, we want to use the available space more intelligently
     let baseSize;
+    
     if (screenWidth >= 1024) {
-      // Desktop
-      baseSize = 40;
+      // Desktop - calculate based on available space
+      const availableWidth = Math.min(screenWidth * 0.5, 800); // Limit max width
+      const availableHeight = screenHeight * 0.7; // Use 70% of screen height
+      
+      // Calculate the maximum possible cell size based on available space
+      const maxWidthBasedSize = Math.floor(availableWidth / gridSize) - 4; // Subtract for gap
+      const maxHeightBasedSize = Math.floor(availableHeight / gridSize) - 4; // Subtract for gap
+      
+      // Use the smaller of the two to ensure grid fits both dimensions
+      baseSize = Math.min(maxWidthBasedSize, maxHeightBasedSize);
+      
+      // Set reasonable limits
+      baseSize = Math.min(Math.max(baseSize, 30), 60);
     } else if (screenWidth >= 768) {
       // Tablet
       baseSize = 36;
@@ -255,7 +272,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       // Small mobile
       baseSize = 24;
     }
-
+    
     // Scale down for larger grids
     if (gridSize > 10) {
       // Calculate scaling factor based on grid size
@@ -263,12 +280,12 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
       const scaleFactor = Math.min(1, 10 / gridSize);
       baseSize = Math.max(18, Math.floor(baseSize * scaleFactor));
     }
-
+    
     // Apply zoom factor if isZoomed is true
     if (isZoomed) {
       baseSize = Math.floor(baseSize * 1.2); // 20% larger when zoomed
     }
-
+    
     return `${baseSize}px`;
   };
 
@@ -330,8 +347,115 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     }
   }, [isMobile]);
 
+  // Handle click-start-end selection mode
+  const handleCellClick = useCallback((row: number, col: number) => {
+    if (selectionMode === 'click-start-end') {
+      if (!startCell) {
+        // First click - set start cell
+        setStartCell({ row, col });
+        setCurrentSelection([{ row, col }]);
+        setHighlightedCells(new Set([getCellKey(row, col)]));
+      } else {
+        // Second click - set end cell and check for word
+        const newSelection = getSelectionPath(startCell, { row, col });
+        setCurrentSelection(newSelection);
+        
+        const foundWord = checkWordSelection(newSelection, words);
+        if (foundWord) {
+          // Process found word
+          if (showDescriptions) {
+            if (kidsMode && shouldUseKidsDescription(foundWord.word, kidsMode)) {
+              foundWord.description = getKidsDescription(foundWord.word);
+              foundWord.descriptionType = 'kidsMode';
+            } else if (FIVE_PILLARS_DESCRIPTIONS[foundWord.word]) {
+              foundWord.description = FIVE_PILLARS_DESCRIPTIONS[foundWord.word];
+              foundWord.descriptionType = 'fivePillars';
+            } else if (ISLAMIC_PLACES_DESCRIPTIONS[foundWord.word]) {
+              const placeInfo = ISLAMIC_PLACES_DESCRIPTIONS[foundWord.word];
+              foundWord.description = placeInfo.description;
+              foundWord.urduDescription = placeInfo.urduDescription;
+              foundWord.descriptionType = 'islamicPlaces';
+            }
+          }
+
+          onWordFound(foundWord);
+          setLastFoundWord(foundWord);
+          setShowCelebration(true);
+
+          // Add celebration effect
+          const wordCells = getSelectionPath(foundWord.start, foundWord.end);
+          wordCells.forEach(pos => {
+            const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
+            if (cell) {
+              cell.classList.add('animate-word-found');
+              setTimeout(() => cell.classList.remove('animate-word-found'), 600);
+            }
+          });
+
+          // Hide celebration after a delay
+          setTimeout(() => {
+            setShowCelebration(false);
+            setLastFoundWord(null);
+          }, foundWord.description ? 5000 : 2000);
+        }
+        
+        // Reset for next selection
+        setStartCell(null);
+        setCurrentSelection([]);
+        setHighlightedCells(new Set());
+      }
+    }
+  }, [selectionMode, startCell, words, onWordFound, showDescriptions, kidsMode]);
+
+  // Close the word found popup
+  const handleClosePopup = useCallback(() => {
+    setShowCelebration(false);
+    setLastFoundWord(null);
+  }, []);
+
   return (
     <div style={{ position: 'relative' }}>
+      {/* Selection Mode Toggle (Desktop only) */}
+      {!isMobile && (
+        <div style={{
+          marginBottom: '12px',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <button
+            onClick={() => setSelectionMode('drag')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              backgroundColor: selectionMode === 'drag' ? theme.secondary : theme.cellBg,
+              color: selectionMode === 'drag' ? '#ffffff' : theme.primary,
+              border: `1px solid ${theme.secondary}40`,
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s'
+            }}
+          >
+            Drag Mode
+          </button>
+          <button
+            onClick={() => setSelectionMode('click-start-end')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              backgroundColor: selectionMode === 'click-start-end' ? theme.secondary : theme.cellBg,
+              color: selectionMode === 'click-start-end' ? '#ffffff' : theme.primary,
+              border: `1px solid ${theme.secondary}40`,
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s'
+            }}
+          >
+            Click Mode
+          </button>
+        </div>
+      )}
+      
       <div
         ref={gridContainerRef}
         className={isMobile ? 'word-grid-container' : ''}
@@ -421,8 +545,36 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
               animation: 'bounce-in 0.6s ease-out forwards',
               textAlign: 'center',
               maxHeight: window.innerWidth < 480 ? '80vh' : 'auto',
-              overflowY: window.innerWidth < 480 ? 'auto' : 'visible'
+              overflowY: window.innerWidth < 480 ? 'auto' : 'visible',
+              position: 'relative',
+              pointerEvents: 'auto'
             }}>
+              {/* Close button */}
+              <button 
+                onClick={handleClosePopup}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  padding: 0,
+                  lineHeight: 1
+                }}
+              >
+                ✕
+              </button>
+              
               <div style={{
                 display: 'flex',
                 alignItems: 'center',

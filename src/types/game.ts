@@ -44,6 +44,8 @@ export interface GameSettings {
   showDescriptions?: boolean; // Toggle for showing word descriptions
   kidsMode?: boolean; // Toggle for kids mode with simplified content
   customWords?: string[];
+  customFont?: string; // Custom font selection
+  selectionMode?: 'drag' | 'click-start-end' | 'keyboard'; // Word selection mode
   customColors?: {
     background: string;
     primary: string;

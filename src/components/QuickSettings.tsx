@@ -66,8 +66,6 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
     return themeOption ? themeOption.label : 'Select Theme';
   };
 
-  const isWhiteTheme = settings.theme === 'pure';
-
   return (
     <div style={{
       display: 'flex',
@@ -259,7 +257,7 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
             }}>
               {themes.map((themeOption) => {
                 const themeColors = THEMES[themeOption.value] || THEMES.midnight;
-                
+
                 return (
                   <button
                     key={themeOption.value}

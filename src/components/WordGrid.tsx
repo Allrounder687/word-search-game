@@ -231,6 +231,65 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
     };
   };
 
+  // Dynamic cell sizing based on grid size and screen width
+  const getCellSize = () => {
+    const gridSize = grid.length;
+    const screenWidth = window.innerWidth;
+    
+    // Base size calculations
+    let baseSize;
+    if (screenWidth >= 1024) {
+      // Desktop
+      baseSize = 40;
+    } else if (screenWidth >= 768) {
+      // Tablet
+      baseSize = 36;
+    } else if (screenWidth >= 480) {
+      // Large mobile
+      baseSize = 32;
+    } else if (screenWidth >= 360) {
+      // Medium mobile
+      baseSize = 28;
+    } else {
+      // Small mobile
+      baseSize = 24;
+    }
+    
+    // Scale down for larger grids
+    if (gridSize > 10) {
+      // Calculate scaling factor based on grid size
+      // 10x10 grid = 100%, 15x15 grid = 67%, 20x20 grid = 50%
+      const scaleFactor = Math.min(1, 10 / gridSize);
+      baseSize = Math.max(18, Math.floor(baseSize * scaleFactor));
+    }
+    
+    return `${baseSize}px`;
+  };
+  
+  // Dynamic font size based on cell size
+  const getCellFontSize = () => {
+    const gridSize = grid.length;
+    const screenWidth = window.innerWidth;
+    
+    // Base font size calculations
+    let baseFontSize;
+    if (screenWidth >= 768) {
+      baseFontSize = 16;
+    } else if (screenWidth >= 480) {
+      baseFontSize = 14;
+    } else {
+      baseFontSize = 12;
+    }
+    
+    // Scale down for larger grids
+    if (gridSize > 10) {
+      const scaleFactor = Math.min(1, 10 / gridSize);
+      baseFontSize = Math.max(10, Math.floor(baseFontSize * scaleFactor));
+    }
+    
+    return `${baseFontSize}px`;
+  };
+
   // Apply touch optimizations when component mounts
   useEffect(() => {
     if (isMobile && gridContainerRef.current) {
@@ -295,12 +354,8 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                   key={getCellKey(rowIndex, colIndex)}
                   data-cell={getCellKey(rowIndex, colIndex)}
                   style={{
-                    width: window.innerWidth >= 768 ? '40px' :
-                      window.innerWidth >= 480 ? '32px' :
-                        window.innerWidth >= 360 ? '28px' : '24px',
-                    height: window.innerWidth >= 768 ? '40px' :
-                      window.innerWidth >= 480 ? '32px' :
-                        window.innerWidth >= 360 ? '28px' : '24px',
+                    width: getCellSize(),
+                    height: getCellSize(),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -308,8 +363,7 @@ export const WordGrid: React.FC<WordGridProps> = ({ grid, words, onWordFound, th
                     borderRadius: window.innerWidth >= 480 ? '8px' : '6px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: window.innerWidth >= 768 ? '16px' :
-                      window.innerWidth >= 480 ? '14px' : '12px',
+                    fontSize: getCellFontSize(),
                     // Apply baseStyle which includes: backgroundColor, color, borderColor, boxShadow, transition, transform, fontFamily
                     ...baseStyle
                   }}

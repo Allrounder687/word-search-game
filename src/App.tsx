@@ -47,15 +47,15 @@ function App() {
 
   // Use responsive hook for better performance and maintainability
   const breakpoints = useResponsive();
-  
+
   // Memoize theme and layout calculations
-  const currentTheme = useMemo(() => 
-    THEMES[gameState.settings.theme] || THEMES.midnight, 
+  const currentTheme = useMemo(() =>
+    THEMES[gameState.settings.theme] || THEMES.midnight,
     [gameState.settings.theme]
   );
-  
-  const layoutConfig = useMemo(() => 
-    getLayoutConfig(breakpoints, currentTheme), 
+
+  const layoutConfig = useMemo(() =>
+    getLayoutConfig(breakpoints, currentTheme),
     [breakpoints, currentTheme]
   );
 
@@ -63,14 +63,14 @@ function App() {
   useEffect(() => {
     // Reset game over state
     setGameOver(false);
-    
+
     // Handle countdown timer initialization
     if (gameState.settings.timerMode === 'countdown' && gameState.settings.timerDuration) {
       setTimeRemaining(gameState.settings.timerDuration);
     } else {
       setTimeRemaining(null);
     }
-    
+
     // Reset timeElapsed for countup mode or when no timer is set
     if (gameState.settings.timerMode !== 'countdown') {
       setGameState(prev => ({
@@ -136,10 +136,10 @@ function App() {
       currentSelection: [],
       settings: gameSettings
     });
-    
+
     // Reset game over state
     setGameOver(false);
-    
+
     // Reset timer based on mode
     if (gameSettings.timerMode === 'countdown' && gameSettings.timerDuration) {
       setTimeRemaining(gameSettings.timerDuration);
@@ -155,7 +155,7 @@ function App() {
 
     // Initialize mobile optimizations
     initializeMobileOptimizations();
-    
+
     // Setup mobile viewport for better mobile experience
     setupMobileViewport();
   }, []);
@@ -322,7 +322,7 @@ function App() {
           onSettings={() => setShowSettings(true)}
           theme={currentTheme}
         />
-        
+
         {/* Quick Settings for Category and Theme Selection */}
         <QuickSettings
           settings={gameState.settings}
@@ -356,7 +356,7 @@ function App() {
           marginTop: layoutConfig.spacing.marginTop,
           padding: layoutConfig.spacing.padding
         }}>
-          <div style={{ 
+          <div style={{
             flexShrink: 0,
             display: 'flex',
             justifyContent: 'center',
@@ -794,7 +794,7 @@ function App() {
           `}
         </style>
       </div>
-      
+
       {/* Orientation Warning for Mobile */}
       <OrientationWarning theme={currentTheme} />
     </div>

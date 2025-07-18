@@ -20,32 +20,32 @@ export const HintSystem: React.FC<HintSystemProps> = ({
   const [dialogPosition, setDialogPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('top');
   const hintButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  
+
   // Use responsive hook for better device detection
   const breakpoints = useResponsive();
   const { isMobile, isTablet } = breakpoints;
-  
+
   const unFoundWords = words.filter(w => !w.found);
 
   // Calculate optimal dialog position based on available space
   const calculateDialogPosition = useCallback(() => {
     if (!hintButtonRef.current || !dialogRef.current) return;
-    
+
     const buttonRect = hintButtonRef.current.getBoundingClientRect();
     const dialogRect = dialogRef.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
+
     // Calculate available space in each direction
     const spaceBelow = viewportHeight - buttonRect.bottom;
     const spaceAbove = buttonRect.top;
     const spaceRight = viewportWidth - buttonRect.right;
     const spaceLeft = buttonRect.left;
-    
+
     // Add safety margins
     const safetyMargin = 20;
     const minSpaceNeeded = 100; // Minimum space needed to show dialog in a direction
-    
+
     // Determine best position based on device type and available space
     if (isMobile) {
       // On mobile, always use bottom sheet for consistency and better UX
@@ -53,15 +53,15 @@ export const HintSystem: React.FC<HintSystemProps> = ({
     } else if (isTablet) {
       // On iPad/tablet, prioritize vertical positioning (top/bottom)
       // This works better for touch interfaces
-      
+
       // Check if we have enough space below
-      if (spaceBelow >= dialogRect.height + safetyMargin || 
-          (spaceBelow > spaceAbove && spaceBelow > minSpaceNeeded)) {
+      if (spaceBelow >= dialogRect.height + safetyMargin ||
+        (spaceBelow > spaceAbove && spaceBelow > minSpaceNeeded)) {
         setDialogPosition('bottom');
-      } 
+      }
       // Otherwise check if we have enough space above
-      else if (spaceAbove >= dialogRect.height + safetyMargin || 
-               spaceAbove > minSpaceNeeded) {
+      else if (spaceAbove >= dialogRect.height + safetyMargin ||
+        spaceAbove > minSpaceNeeded) {
         setDialogPosition('top');
       }
       // If neither above nor below has enough space, use the side with more space
@@ -73,15 +73,15 @@ export const HintSystem: React.FC<HintSystemProps> = ({
     } else {
       // On desktop, prioritize horizontal positioning (left/right)
       // This is more natural for mouse interaction
-      
+
       // Check if we have enough space to the right
-      if (spaceRight >= dialogRect.width + safetyMargin || 
-          (spaceRight > spaceLeft && spaceRight > minSpaceNeeded)) {
+      if (spaceRight >= dialogRect.width + safetyMargin ||
+        (spaceRight > spaceLeft && spaceRight > minSpaceNeeded)) {
         setDialogPosition('right');
-      } 
+      }
       // Otherwise check if we have enough space to the left
-      else if (spaceLeft >= dialogRect.width + safetyMargin || 
-               spaceLeft > minSpaceNeeded) {
+      else if (spaceLeft >= dialogRect.width + safetyMargin ||
+        spaceLeft > minSpaceNeeded) {
         setDialogPosition('left');
       }
       // If neither left nor right has enough space, use the vertical direction with more space
@@ -96,18 +96,18 @@ export const HintSystem: React.FC<HintSystemProps> = ({
   // Handle click outside to close dialog
   useEffect(() => {
     if (!showHintMenu) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dialogRef.current && 
+        dialogRef.current &&
         !dialogRef.current.contains(event.target as Node) &&
-        hintButtonRef.current && 
+        hintButtonRef.current &&
         !hintButtonRef.current.contains(event.target as Node)
       ) {
         setShowHintMenu(false);
       }
     };
-    
+
     // Handle keyboard navigation
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -118,11 +118,11 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         const focusableElements = dialogRef.current.querySelectorAll(
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
-        
+
         if (focusableElements.length > 0) {
           const firstElement = focusableElements[0] as HTMLElement;
           const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-          
+
           if (event.shiftKey && document.activeElement === firstElement) {
             // Shift+Tab on first element should focus last element
             event.preventDefault();
@@ -135,10 +135,10 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         }
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
-    
+
     // Focus first focusable element in dialog when it opens
     if (dialogRef.current) {
       const focusableElements = dialogRef.current.querySelectorAll(
@@ -148,7 +148,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         (focusableElements[0] as HTMLElement).focus();
       }
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
@@ -169,7 +169,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         calculateDialogPosition();
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [showHintMenu, calculateDialogPosition]);
@@ -260,9 +260,8 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         ref={hintButtonRef}
         onClick={() => setShowHintMenu(!showHintMenu)}
         disabled={hintsRemaining === 0}
-        className={`rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
-          hintsRemaining === 0 ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
+        className={`rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 ${hintsRemaining === 0 ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
         style={{
           backgroundColor: theme.cellBg,
           color: theme.primary,
@@ -304,9 +303,9 @@ export const HintSystem: React.FC<HintSystemProps> = ({
           <div className="flex items-center justify-between p-3 md:p-4 border-b border-gray-700">
             <div className="flex items-center gap-2">
               <Eye size={isMobile ? 18 : 16} style={{ color: theme.secondary }} />
-              <span 
+              <span
                 id="hint-dialog-title"
-                className={`${isMobile ? 'text-base' : 'text-sm'} font-semibold`} 
+                className={`${isMobile ? 'text-base' : 'text-sm'} font-semibold`}
                 style={{ color: theme.primary }}
               >
                 Choose a word for hint
@@ -321,9 +320,9 @@ export const HintSystem: React.FC<HintSystemProps> = ({
             </button>
           </div>
 
-          <div 
+          <div
             className="overflow-y-auto p-2 md:p-3 scroll-smooth"
-            style={{ 
+            style={{
               maxHeight: isMobile ? 'calc(70vh - 60px)' : isTablet ? '300px' : '400px',
               scrollbarWidth: 'thin',
               scrollbarColor: `${theme.secondary}60 ${theme.gridBg}80`,
@@ -362,7 +361,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
                     const size = Math.max(rect.width, rect.height);
                     const x = e.touches[0].clientX - rect.left - size / 2;
                     const y = e.touches[0].clientY - rect.top - size / 2;
-                    
+
                     ripple.style.width = ripple.style.height = `${size}px`;
                     ripple.style.left = `${x}px`;
                     ripple.style.top = `${y}px`;
@@ -371,20 +370,20 @@ export const HintSystem: React.FC<HintSystemProps> = ({
                     ripple.style.backgroundColor = `${theme.accent}30`;
                     ripple.style.transform = 'scale(0)';
                     ripple.style.animation = 'ripple 0.6s linear';
-                    
+
                     button.appendChild(ripple);
-                    
+
                     setTimeout(() => {
                       if (ripple.parentNode === button) {
                         button.removeChild(ripple);
                       }
                     }, 600);
-                    
+
                     // Add visual feedback
                     button.style.borderColor = theme.accent;
                     button.style.backgroundColor = `${theme.cellBg}90`;
                     button.style.transform = 'scale(0.98)';
-                    
+
                     setTimeout(() => {
                       button.style.borderColor = 'transparent';
                       button.style.backgroundColor = theme.cellBg;

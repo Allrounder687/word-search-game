@@ -240,19 +240,21 @@ const WordListItemComponent: React.FC<WordListItemProps> = ({
   );
 };
 
-// Memoize the component to prevent unnecessary re-renders
-export const WordListItem = React.memo(WordListItemComponent, (prevProps, nextProps) => {
-  // Custom comparison for better memoization
+// Memoize the component with proper comparison function for performance
+const arePropsEqual = (prevProps: WordListItemProps, nextProps: WordListItemProps) => {
   return (
     prevProps.word.word === nextProps.word.word &&
+    prevProps.word.found === nextProps.word.found &&
     prevProps.word.color === nextProps.word.color &&
-    prevProps.isFound === nextProps.isFound &&
     prevProps.index === nextProps.index &&
+    prevProps.isFound === nextProps.isFound &&
     prevProps.isMobile === nextProps.isMobile &&
     prevProps.showDescriptions === nextProps.showDescriptions &&
-    // Shallow comparison for theme object
+    // Theme comparison - only check properties we actually use
     prevProps.theme.primary === nextProps.theme.primary &&
     prevProps.theme.secondary === nextProps.theme.secondary &&
     prevProps.theme.cellBg === nextProps.theme.cellBg
   );
-});
+};
+
+export const WordListItem = React.memo(WordListItemComponent, arePropsEqual);

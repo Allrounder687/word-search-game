@@ -12,18 +12,15 @@ export const VisualIllustration: React.FC<VisualIllustrationProps> = ({
   kidsMode, 
   theme 
 }) => {
-  // Don't render if kids mode is disabled
-  if (!kidsMode) return null;
+  // Don't render if kids mode is disabled or no illustration exists
+  if (!kidsMode || !getIllustration(word)) return null;
   
   const illustrationFile = getIllustration(word);
-  
-  // Don't render if no illustration exists for this word
-  if (!illustrationFile) return null;
   
   return (
     <div style={{
       marginTop: '12px',
-      padding: '16px',
+      padding: '12px',
       borderRadius: '8px',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       textAlign: 'center'
@@ -33,8 +30,8 @@ export const VisualIllustration: React.FC<VisualIllustrationProps> = ({
         width: '120px',
         height: '120px',
         margin: '0 auto',
-        borderRadius: '8px',
         backgroundColor: theme.secondary + '20',
+        borderRadius: '8px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

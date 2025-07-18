@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen, Type } from 'lucide-react';
 import type { GameSettings, Difficulty, Theme, TimerMode } from '../types/game';
 import { THEMES } from '../types/game';
@@ -45,6 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     secondary: localSettings.customColors?.secondary || '#a855f7',
     accent: localSettings.customColors?.accent || '#ec4899'
   });
+  const [selectedFont, setSelectedFont] = useState<string>("'Inter', sans-serif");
 
   // Update local settings when settings prop changes
   useEffect(() => {
@@ -255,9 +256,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { value: "'Rajdhani', sans-serif", label: "Rajdhani" },
     { value: "'JetBrains Mono', monospace", label: "JetBrains Mono" }
   ];
-
-  // Selected font
-  const [selectedFont, setSelectedFont] = useState<string>(settings.customFont || "'Inter', sans-serif");
 
   // Special handling for white theme
   const isWhiteTheme = theme.primary === '#000000';

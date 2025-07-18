@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { WordPlacement } from '../types/game';
 import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
@@ -245,20 +245,22 @@ export const WordList: React.FC<WordListProps> = ({
     const [selectedWord, setSelectedWord] = useState<string | null>(null);
 
     // Memoize expensive calculations
-    const { foundCount, totalCount, hasDescription, completionPercentage } = useMemo(() => {
+    const { foundCount, totalCount, completionPercentage } = useMemo(() => {
         const foundCount = words.filter(w => w.found).length;
         const totalCount = words.length;
-        const hasDescription = (word: string): boolean => {
-            return Boolean(FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word]);
-        };
         const completionPercentage = totalCount > 0 ? (foundCount / totalCount) * 100 : 0;
 
-        return { foundCount, totalCount, hasDescription, completionPercentage };
+        return { foundCount, totalCount, completionPercentage };
     }, [words]);
 
-    const handleWordClick = (word: string) => {
+    // Stable function references to prevent unnecessary re-renders
+    const hasDescription = useCallback((word: string): boolean => {
+        return Boolean(FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word]);
+    }, []); // Empty dependency array since the dictionaries are static
+
+    const handleWordClick = useCallback((word: string) => {
         setSelectedWord(word);
-    };
+    }, []); // setSelectedWord is stable from useState
 
     const containerStyle = {
         padding: isMobileLayout ? '12px' : '24px',

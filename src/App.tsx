@@ -32,7 +32,7 @@ import {
   ISLAMIC_VIRTUES_DESCRIPTIONS
 } from './types/islamicNewCategories';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from './types/islamicPlacesDescriptions';
-import { Sparkles, Trophy, Info, Clock } from 'lucide-react';
+import { Sparkles, Trophy, Info, Clock, Settings } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
 function App() {

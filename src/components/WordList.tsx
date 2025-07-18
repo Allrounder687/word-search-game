@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { WordPlacement } from '../types/game';
 import { Check, Search, Star, Sparkles, Info, BookOpen, MapPin, Globe } from 'lucide-react';
-import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
+import { FIVE_PILLARS_DESCRIPTIONS, PROPHETS_DESCRIPTIONS, ISLAMIC_MONTHS_DESCRIPTIONS, MUSLIM_SCIENTISTS_DESCRIPTIONS, ISLAMIC_LANDMARKS_DESCRIPTIONS, QURANIC_SURAHS_DESCRIPTIONS, ISLAMIC_VALUES_DESCRIPTIONS } from '../types/islamicDescriptions';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
 import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
 import { AudioPronunciation } from './AudioPronunciation';
@@ -13,6 +13,7 @@ interface WordListProps {
     showDescriptions?: boolean;
     kidsMode?: boolean;
     isMobileLayout?: boolean;
+    descriptions?: Record<string, string>;
 }
 
 interface DescriptionBoxProps {
@@ -21,10 +22,11 @@ interface DescriptionBoxProps {
     onClose: () => void;
     kidsMode?: boolean;
     theme?: any;
+    descriptions?: Record<string, string>;
 }
 
 // Description Box Component
-const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, kidsMode = false, theme }) => {
+const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, kidsMode = false, theme, descriptions }) => {
     // Check if we should use kids mode description
     let description;
     let descriptionType;
@@ -34,15 +36,15 @@ const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, k
         // Use simplified description for kids
         description = getKidsDescription(word);
         descriptionType = 'kidsMode';
+    } else if (descriptions) {
+        // Use provided descriptions mapping
+        description = descriptions[word] || '';
+        descriptionType = 'category';
     } else {
-        // Use standard descriptions
+        // Fallback to previous hardcoded logic
         description = FIVE_PILLARS_DESCRIPTIONS[word] || 
             (ISLAMIC_PLACES_DESCRIPTIONS[word]?.description || '');
-        
-        // Get the Urdu description if it's an Islamic place
         urduDescription = ISLAMIC_PLACES_DESCRIPTIONS[word]?.urduDescription;
-        
-        // Determine the description type
         descriptionType = FIVE_PILLARS_DESCRIPTIONS[word] ? 'fivePillars' : 'islamicPlaces';
     }
     
@@ -176,7 +178,13 @@ const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, k
                         ? 'Sacred Place in Islam' 
                         : descriptionType === 'kidsMode'
                         ? 'Islamic Term for Kids'
-                        : 'One of the Five Pillars of Islam'}
+                        : FIVE_PILLARS_DESCRIPTIONS[word] 
+                        ? 'Five Pillars of Islam'
+                        : ISLAMIC_PLACES_DESCRIPTIONS[word] 
+                        ? 'Sacred Place in Islam'
+                        : descriptions && descriptions[word] 
+                        ? descriptions[word].split(':')[0] || 'Custom Category'
+                        : 'Islamic Term'}
                 </div>
                 
                 {/* Close button - optimized for touch */}
@@ -203,7 +211,7 @@ const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, k
                     }}
                     aria-label="Close"
                 >
-                    ×
+                    �
                 </button>
                 
                 {/* Decorative elements */}
@@ -239,19 +247,59 @@ const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, k
     );
 };
 
-export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptions = true, kidsMode = false, isMobileLayout = false }) => {
+export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptions = true, kidsMode = false, isMobileLayout = false, descriptions }) => {
     const [selectedWord, setSelectedWord] = useState<string | null>(null);
+    const prevWordsRef = useRef<WordPlacement[]>([]);
+    const isInitialMount = useRef(true);
     
+    // Effect to show description when a new word is found
+    useEffect(() => {
+        // Skip the initial render
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            prevWordsRef.current = [...words];
+            return;
+        }
+
+        // Find newly found words by comparing with previous words
+        const newlyFoundWord = words.find(w => (
+            w.found && 
+            !prevWordsRef.current.some(pw => pw.word === w.word && pw.found) &&
+            allDescriptions[w.word] !== undefined
+        ));
+        
+        // Update the ref for the next render
+        if (newlyFoundWord) {
+            setSelectedWord(newlyFoundWord.word);
+        }
+        
+        // Always update the ref with current words for next comparison
+        prevWordsRef.current = [...words];
+    }, [words, descriptions]);
+    
+    // Combine all description sources
+    const allDescriptions = useMemo(() => ({
+        ...FIVE_PILLARS_DESCRIPTIONS,
+        ...PROPHETS_DESCRIPTIONS,
+        ...ISLAMIC_MONTHS_DESCRIPTIONS,
+        ...MUSLIM_SCIENTISTS_DESCRIPTIONS,
+        ...ISLAMIC_LANDMARKS_DESCRIPTIONS,
+        ...QURANIC_SURAHS_DESCRIPTIONS,
+        ...ISLAMIC_VALUES_DESCRIPTIONS,
+        ...ISLAMIC_PLACES_DESCRIPTIONS,
+        ...(descriptions || {})
+    }), [descriptions]);
+
     // Memoize expensive calculations
     const { foundCount, totalCount, hasDescription } = useMemo(() => {
         const foundCount = words.filter(w => w.found).length;
         const totalCount = words.length;
         const hasDescription = (word: string) => {
-            return FIVE_PILLARS_DESCRIPTIONS[word] || ISLAMIC_PLACES_DESCRIPTIONS[word];
+            return allDescriptions[word] !== undefined;
         };
         
         return { foundCount, totalCount, hasDescription };
-    }, [words]);
+    }, [words, allDescriptions]);
 
     // Memoize completion percentage
     const completionPercentage = useMemo(() => {
@@ -519,7 +567,7 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                     animation: 'rainbow-shift 3s ease infinite'
                 }}>
                     <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
-                        🎉 Congratulations! 🎉
+                        ?? Congratulations! ??
                     </div>
                     <div style={{ fontSize: '14px', opacity: 0.9 }}>
                         All words found!
@@ -541,6 +589,7 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                     onClose={() => setSelectedWord(null)}
                     kidsMode={kidsMode}
                     theme={theme}
+                    descriptions={descriptions}
                 />
             )}
         </div>
@@ -791,7 +840,7 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                     animation: 'rainbow-shift 3s ease infinite'
                 }}>
                     <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
-                        🎉 Congratulations! 🎉
+                        ?? Congratulations! ??
                     </div>
                     <div style={{ fontSize: '14px', opacity: 0.9 }}>
                         All words found!
@@ -813,6 +862,7 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                     onClose={() => setSelectedWord(null)}
                     kidsMode={kidsMode}
                     theme={theme}
+                    descriptions={descriptions}
                 />
             )}
         </div>

@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Palette, Sparkles, X, ChevronDown } from 'lucide-react';
-import type { GameSettings, Theme, WordCategory } from '../types/game';
+import type { GameSettings, Theme } from '../types/game';
+import { ISLAMIC_CATEGORIES } from '../types/islamicCategories';
 import { THEMES } from '../types/game';
+import type { WordCategory } from '../types/game';
 import { getResponsiveIconSize } from '../utils/responsiveLayout';
 
 import { MobileDropdown } from './QuickSettings/MobileDropdown';
@@ -27,7 +29,7 @@ interface QuickSettingsProps {
   onToggleClickMode?: () => void;
   isZoomed?: boolean;
   isClickMode?: boolean;
-}
+} // wordCategory is now string, not WordCategory
 
 
 
@@ -44,6 +46,27 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showThemeDropdown, setShowThemeDropdown] = useState(false);
   const [showDropdownMenu, setShowDropdownMenu] = useState(false);
+  
+  // Map between Islamic category keys and WordCategory type
+  const categoryKeyToWordCategory: Record<string, WordCategory> = {
+    'five-pillars': 'fivePillars',
+    'prophets': 'islamicProphets',
+    'islamic-months': 'islamicMonths',
+    'muslim-scientists': 'muslimScientists',
+    'islamic-landmarks': 'islamicPlaces',
+    'quranic-surahs': 'quranicSurahs',
+    'islamic-values': 'islamicValues'
+  };
+
+  // Build dynamic category list for dropdowns
+  const wordCategories = useMemo(() => 
+    ISLAMIC_CATEGORIES.map(cat => ({
+      value: categoryKeyToWordCategory[cat.key] || 'general',
+      label: cat.name,
+      originalKey: cat.key
+    })),
+    [ISLAMIC_CATEGORIES]
+  );
   
   // Get responsive icon size
   const iconSize = getResponsiveIconSize(16);
@@ -68,16 +91,7 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
     }
   }, []);
 
-  // Memoize static data to prevent recreation on every render
-  const wordCategories = useMemo(() => [
-    { value: 'general' as const, label: 'General' },
-    { value: 'animals' as const, label: 'Animals' },
-    { value: 'islamicPlaces' as const, label: 'Islamic Places' },
-    { value: 'islamicProphets' as const, label: 'Islamic Prophets' },
-    { value: 'fivePillars' as const, label: 'Five Pillars' },
-    { value: 'islamicTerms' as const, label: 'Islamic Terms' },
-    { value: 'custom' as const, label: 'Custom Words' }
-  ], []);
+  
 
   const themes = useMemo(() => [
     { value: 'midnight' as const, label: 'Midnight' },
@@ -89,14 +103,18 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
     { value: 'ocean' as const, label: 'Ocean' },
     { value: 'sunset' as const, label: 'Sunset' },
     { value: 'neon' as const, label: 'Neon' },
+    { value: 'forest' as const, label: 'Forest' },
     { value: 'custom' as const, label: 'Custom Theme' }
   ], []);
 
-  const handleCategoryChange = useCallback((category: WordCategory) => {
-    onSettingsChange({
+  const handleCategoryChange = useCallback((categoryKey: string) => {
+    console.log('Changing category to:', categoryKey);
+    const newSettings = {
       ...settings,
-      wordCategory: category
-    });
+      wordCategory: categoryKey as WordCategory
+    };
+    console.log('New settings:', newSettings);
+    onSettingsChange(newSettings);
     setShowCategoryDropdown(false);
     setShowDropdownMenu(false);
   }, [settings, onSettingsChange]);
@@ -156,22 +174,25 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
           <ChevronDown size={iconSize} style={{ color: theme.primary }} />
         </button>
 
-        <MobileDropdown
-          isOpen={showDropdownMenu}
-          onClose={() => setShowDropdownMenu(false)}
-          settings={settings}
-          wordCategories={wordCategories}
-          themes={themes}
-          onCategoryChange={handleCategoryChange}
-          onThemeChange={handleThemeChange}
-          theme={theme}
-          iconSize={iconSize}
-          onReset={onReset}
-          onToggleZoom={onToggleZoom}
-          onToggleClickMode={onToggleClickMode}
-          isZoomed={isZoomed}
-          isClickMode={isClickMode}
-        />
+        {isMobile && (
+          <MobileDropdown
+            isOpen={showDropdownMenu}
+            onClose={() => setShowDropdownMenu(false)}
+            settings={settings}
+            wordCategories={wordCategories}
+            themes={themes}
+            onCategoryChange={handleCategoryChange}
+            onThemeChange={handleThemeChange}
+            theme={theme}
+            iconSize={iconSize}
+            onReset={onReset}
+            onToggleZoom={onToggleZoom}
+            onToggleClickMode={onToggleClickMode}
+            isZoomed={isZoomed}
+            isClickMode={isClickMode}
+            key={wordCategories.length} // Force re-render when categories change
+          />
+        )}
       </div>
     );
   }

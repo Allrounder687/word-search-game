@@ -15,47 +15,55 @@ import { initializeMobileOptimizations } from './utils/mobileOptimizations';
 import { setupMobileViewport } from './utils/responsiveLayout';
 import { useResponsive } from './hooks/useResponsive';
 import { getLayoutConfig } from './utils/layoutConfig';
-import type { GameState, GameSettings, WordPlacement, Theme } from './types/game';
+import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
-import { Sparkles, Trophy, Info, X } from 'lucide-react';
+import { 
+  FIVE_PILLARS_DESCRIPTIONS,
+  ISLAMIC_MONTHS_DESCRIPTIONS,
+  MUSLIM_SCIENTISTS_DESCRIPTIONS,
+  PROPHETS_DESCRIPTIONS,
+  QURANIC_SURAHS_DESCRIPTIONS,
+  ISLAMIC_VALUES_DESCRIPTIONS
+} from './types/islamicDescriptions';
+import { ISLAMIC_PLACES_DESCRIPTIONS } from './types/islamicPlacesDescriptions';
+import { Sparkles, Trophy, Info, Clock } from 'lucide-react';
+import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
 function App() {
-  const [gameState, setGameState] = useState<GameState>({
-    grid: [],
-    words: [],
-    foundWords: new Set(),
-    score: 0,
-    timeElapsed: 0,
-    isComplete: false,
-    currentSelection: [],
-    settings: {
-      difficulty: 'easy',
-      theme: 'midnight',
-      gridSize: 10,
-      wordCategory: 'fivePillars',
-      showDescriptions: true // Enable descriptions by default
+  // Load saved game state on mount
+  const savedState = loadGameState();
+  const [gameState, setGameState] = useState<GameState>(
+    savedState || {
+      grid: [],
+      words: [],
+      foundWords: new Set(),
+      score: 0,
+      timeElapsed: 0,
+      isComplete: false,
+      currentSelection: [],
+      settings: {
+        difficulty: 'easy',
+        theme: 'midnight',
+        gridSize: 10,
+        wordCategory: 'fivePillars',
+        showDescriptions: true // Enable descriptions by default
+      }
     }
-  });
+  );
 
   const [showSettings, setShowSettings] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [hintsRemaining, setHintsRemaining] = useState(3);
-  const [hintsUsed, setHintsUsed] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showThemeDropdown, setShowThemeDropdown] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
-  const [isClickMode, setIsClickMode] = useState(false);
 
   // Use responsive hook for better performance and maintainability
   const breakpoints = useResponsive();
 
   // Memoize theme and layout calculations
   const currentTheme = useMemo(() =>
-    THEMES[gameState.settings.theme as keyof typeof THEMES] || THEMES.midnight,
+    THEMES[gameState.settings.theme] || THEMES.midnight,
     [gameState.settings.theme]
   );
 
@@ -165,7 +173,16 @@ function App() {
     setupMobileViewport();
   }, []);
 
+  // Save game state whenever it changes (except during initialization)
+  useEffect(() => {
+    // Skip saving during initial load
+    if (savedState && Object.keys(savedState).length > 0) {
+      saveGameState(gameState);
+    }
+  }, [gameState, savedState]);
+
   const handleWordFound = useCallback((word: WordPlacement) => {
+    // Update state with the found word
     setGameState(prev => {
       const newFoundWords = new Set(prev.foundWords);
       newFoundWords.add(word.word);
@@ -182,6 +199,25 @@ function App() {
 
       const isComplete = newFoundWords.size === prev.words.length;
 
+      // Create the new state
+      const newState = {
+        ...prev,
+        words: updatedWords,
+        foundWords: newFoundWords,
+        score: newScore,
+        isComplete
+      };
+
+      // Save the state immediately
+      saveGameState(newState);
+
+      // Return the new state
+      return newState;
+    });
+
+    // Handle achievements and celebrations after state update
+    setGameState(prev => {
+      const isComplete = prev.isComplete;
       if (isComplete) {
         // Show celebration animation
         setShowCelebration(true);
@@ -197,61 +233,15 @@ function App() {
             window.achievementSystem.unlockAchievement('speed_demon');
           }
 
-          // Word master achievement (complete hard puzzle without hints)
-          if (prev.settings.difficulty === 'hard' && hintsUsed === 0) {
-            window.achievementSystem.unlockAchievement('word_master');
+          // Perfect score achievement (complete medium puzzle with max score)
+          if (prev.settings.difficulty === 'medium' && prev.score === 1000) {
+            window.achievementSystem.unlockAchievement('perfect_score');
           }
-
-          // High scorer achievement (score over 1000 points)
-          if (newScore > 1000) {
-            window.achievementSystem.unlockAchievement('high_scorer');
-          }
-
-          // Time challenge achievement (complete countdown mode)
-          if (prev.settings.timerMode === 'countdown') {
-            window.achievementSystem.unlockAchievement('time_challenge');
-          }
-
-          // Update word collector progress
-          window.achievementSystem.updateAchievementProgress('word_collector',
-            newFoundWords.size);
-
-          // Update theme explorer if this is a different theme
-          if (window.localStorage.getItem(`theme_used_${prev.settings.theme}`) !== 'true') {
-            window.localStorage.setItem(`theme_used_${prev.settings.theme}`, 'true');
-            const themesUsed = Object.keys(window.localStorage)
-              .filter(key => key.startsWith('theme_used_')).length;
-            window.achievementSystem.updateAchievementProgress('theme_explorer', themesUsed);
-          }
-
-          // Update perfect streak
-          const currentStreak = parseInt(window.localStorage.getItem('win_streak') || '0');
-          window.localStorage.setItem('win_streak', (currentStreak + 1).toString());
-          window.achievementSystem.updateAchievementProgress('perfect_streak', currentStreak + 1);
-        }
-
-        // Add to leaderboard
-        if (window.leaderboardSystem) {
-          window.leaderboardSystem.addLeaderboardEntry({
-            score: newScore,
-            difficulty: prev.settings.difficulty,
-            timeElapsed: prev.timeElapsed,
-            wordsFound: newFoundWords.size,
-            totalWords: prev.words.length,
-            hintsUsed: hintsUsed
-          });
         }
       }
-
-      return {
-        ...prev,
-        words: updatedWords,
-        foundWords: newFoundWords,
-        score: newScore,
-        isComplete
-      };
+      return prev;
     });
-  }, [hintsUsed]);
+  }, [calculateScore, setShowCelebration]);
 
   const handleSettingsChange = useCallback((newSettings: GameSettings) => {
     initializeGame(newSettings);
@@ -259,6 +249,8 @@ function App() {
 
   const handleReset = useCallback(() => {
     initializeGame();
+    // Clear saved state when resetting
+    clearGameState();
   }, [initializeGame]);
 
   // Apply theme to body
@@ -269,7 +261,12 @@ function App() {
   // Handle hint usage
   const handleHintUsed = useCallback((word: WordPlacement) => {
     if (hintsRemaining > 0) {
-      setHintsRemaining(prev => prev - 1);
+      setHintsRemaining(prev => {
+        if (prev > 0) {
+          return prev - 1;
+        }
+        return prev;
+      });
 
       // Highlight the first letter of the word
       const firstLetterPos = word.start;
@@ -283,7 +280,7 @@ function App() {
         }, 3000);
       }
     }
-  }, [hintsRemaining]);
+  }, [hintsRemaining, setHintsRemaining]);
 
   // Reset hints when starting a new game
   useEffect(() => {
@@ -301,13 +298,6 @@ function App() {
       setHintsRemaining(difficultyHints[gameState.settings.difficulty] || 3);
     }
   }, [gameState.settings.difficulty, gameState.settings.hintsCount]);
-
-  // Handle click mode toggle
-  const handleToggleClickMode = useCallback(() => {
-    const newMode = selectionMode === 'drag' ? 'click-start-end' : 'drag';
-    setSelectionMode(newMode);
-    setIsClickMode(newMode === 'click-start-end');
-  }, [selectionMode]);
 
   return (
     <div
@@ -332,244 +322,10 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
-theme={currentTheme}
+          theme={currentTheme}
           isDesktop={breakpoints.isDesktop}
-          timeRemaining={gameState.settings.timerMode === 'countdown' ? timeRemaining : null}
+          timeRemaining={timeRemaining}
         />
-
-        {/* Quick Settings for Category and Theme Selection - Only show on mobile */}
-        {!breakpoints.isDesktop && (
-          <QuickSettings
-            settings={gameState.settings}
-            onSettingsChange={handleSettingsChange}
-            theme={currentTheme}
-            onReset={handleReset}
-            onToggleZoom={() => setIsZoomed(!isZoomed)}
-            onToggleClickMode={handleToggleClickMode}
-            isZoomed={isZoomed}
-            isClickMode={isClickMode}
-          />
-        )}
-
-        {/* Category Dropdown for Desktop */}
-        {breakpoints.isDesktop && showCategoryDropdown && (
-          <div style={{
-            position: 'absolute',
-            top: '90px',
-            right: '110px',
-            width: '200px',
-            backgroundColor: `${currentTheme.gridBg.replace('0.1', '0.4')}`,
-            backdropFilter: 'blur(10px)',
-            borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
-            zIndex: 100,
-            padding: '12px',
-            border: `1px solid ${currentTheme.secondary}40`
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
-              paddingBottom: '8px',
-              borderBottom: `1px solid ${currentTheme.secondary}20`
-            }}>
-              <span style={{ fontWeight: 'bold', fontSize: '16px', color: currentTheme.primary }}>
-                Categories
-              </span>
-              <button
-                onClick={() => setShowCategoryDropdown(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: currentTheme.primary
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              maxHeight: '300px',
-              overflowY: 'auto'
-            }}>
-              {[
-                { value: 'general', label: 'General' },
-                { value: 'animals', label: 'Animals' },
-                { value: 'islamicPlaces', label: 'Islamic Places' },
-                { value: 'islamicProphets', label: 'Islamic Prophets' },
-                { value: 'fivePillars', label: 'Five Pillars' },
-                { value: 'islamicTerms', label: 'Islamic Terms' },
-                { value: 'custom', label: 'Custom Words' }
-              ].map((category) => (
-                <button
-                  key={category.value}
-                  onClick={() => {
-                    handleSettingsChange({
-                      ...gameState.settings,
-                      wordCategory: category.value as any
-                    });
-                    setShowCategoryDropdown(false);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '10px 12px',
-                    borderRadius: '6px',
-                    backgroundColor: gameState.settings.wordCategory === category.value
-                      ? `${currentTheme.secondary}20`
-                      : 'transparent',
-                    color: gameState.settings.wordCategory === category.value
-                      ? currentTheme.secondary
-                      : currentTheme.primary,
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left',
-                    width: '100%'
-                  }}
-                >
-                  {category.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Theme Dropdown for Desktop */}
-        {breakpoints.isDesktop && showThemeDropdown && (
-          <div style={{
-            position: 'absolute',
-            top: '90px',
-            right: '70px',
-            width: '200px',
-            backgroundColor: `${currentTheme.gridBg.replace('0.1', '0.4')}`,
-            backdropFilter: 'blur(10px)',
-            borderRadius: '8px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
-            zIndex: 100,
-            padding: '12px',
-            border: `1px solid ${currentTheme.secondary}40`
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
-              paddingBottom: '8px',
-              borderBottom: `1px solid ${currentTheme.secondary}20`
-            }}>
-              <span style={{ fontWeight: 'bold', fontSize: '16px', color: currentTheme.primary }}>
-                Themes
-              </span>
-              <button
-                onClick={() => setShowThemeDropdown(false)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: currentTheme.primary
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              maxHeight: '300px',
-              overflowY: 'auto'
-            }}>
-              {[
-                { value: 'midnight', label: 'Midnight' },
-                { value: 'royal', label: 'Royal Blue' },
-                { value: 'darkRoyal', label: 'Dark Royal' },
-                { value: 'pink', label: 'Pink' },
-                { value: 'darkPink', label: 'Dark Pink' },
-                { value: 'pure', label: 'White' },
-                { value: 'ocean', label: 'Ocean' },
-                { value: 'sunset', label: 'Sunset' },
-                { value: 'neon', label: 'Neon' },
-                { value: 'forest', label: 'Forest' },
-                { value: 'galaxy', label: 'Galaxy' },
-                { value: 'desert', label: 'Desert' },
-                { value: 'cyber', label: 'Cyber' },
-                { value: 'custom', label: 'Custom Theme' }
-              ].map((themeOption) => {
-                const themeColors = THEMES[themeOption.value as keyof typeof THEMES] || THEMES.midnight;
-
-                return (
-                  <button
-                    key={themeOption.value}
-                    onClick={() => {
-                      handleSettingsChange({
-                        ...gameState.settings,
-                        theme: themeOption.value as Theme
-                      });
-                      setShowThemeDropdown(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      backgroundColor: gameState.settings.theme === themeOption.value
-                        ? `${currentTheme.secondary}20`
-                        : 'transparent',
-                      color: gameState.settings.theme === themeOption.value
-                        ? currentTheme.secondary
-                        : currentTheme.primary,
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      textAlign: 'left',
-                      width: '100%'
-                    }}
-                  >
-                    <div style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '4px',
-                      background: `linear-gradient(135deg, ${themeColors.background} 0%, ${themeColors.gridBg} 100%)`,
-                      border: `1px solid ${themeColors.secondary}40`
-                    }} />
-                    {themeOption.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Mobile WordList - Displayed at the top on mobile devices */}
-        {!breakpoints.isDesktop && (
-          <div style={{
-            width: '100%',
-            marginTop: layoutConfig.spacing.marginTop,
-            marginBottom: layoutConfig.spacing.marginBottom
-          }}>
-            <WordList
-              words={gameState.words}
-              theme={currentTheme}
-              showDescriptions={gameState.settings.showDescriptions}
-              kidsMode={gameState.settings.kidsMode}
-              isMobileLayout={true}
-            />
-          </div>
-        )}
 
         <div style={{
           display: 'flex',
@@ -584,10 +340,7 @@ theme={currentTheme}
             flexShrink: 0,
             display: 'flex',
             justifyContent: 'center',
-            ...layoutConfig.wordGrid,
-            transform: !breakpoints.isDesktop && isZoomed ? 'scale(1.3)' : 'scale(1)',
-            transformOrigin: 'center center',
-            transition: 'transform 0.3s ease'
+            ...layoutConfig.wordGrid
           }}>
             <WordGrid
               grid={gameState.grid}
@@ -596,9 +349,6 @@ theme={currentTheme}
               theme={currentTheme}
               showDescriptions={gameState.settings.showDescriptions}
               kidsMode={gameState.settings.kidsMode}
-              isZoomed={isZoomed}
-              selectionMode={selectionMode}
-              onSelectionModeChange={setSelectionMode}
             />
           </div>
 
@@ -608,16 +358,72 @@ theme={currentTheme}
             flexDirection: 'column',
             gap: '16px'
           }}>
-            {/* Desktop WordList - Only displayed on desktop */}
-            {breakpoints.isDesktop && (
-              <WordList
-                words={gameState.words}
-                theme={currentTheme}
-                showDescriptions={gameState.settings.showDescriptions}
-                kidsMode={gameState.settings.kidsMode}
-                isMobileLayout={false}
-              />
-            )}
+            {/* Quick Settings for Category and Theme Selection */}
+            <QuickSettings
+              settings={gameState.settings}
+              onSettingsChange={handleSettingsChange}
+              theme={currentTheme}
+            />
+
+            {/* Get descriptions based on the current category */}
+            {useMemo(() => {
+              const category = gameState.settings.wordCategory;
+              let descriptions: Record<string, string> = {};
+              
+              // Import descriptions based on the selected category
+              if (category === 'fivePillars') {
+                descriptions = FIVE_PILLARS_DESCRIPTIONS;
+              } else if (category === 'islamicPlaces') {
+                // Convert the places descriptions to the expected format
+                Object.entries(ISLAMIC_PLACES_DESCRIPTIONS).forEach(([key, value]: [string, { description: string; urduDescription?: string }]) => {
+                  descriptions[key] = value.description;
+                });
+              } else if (category === 'islamicProphets') {
+                descriptions = PROPHETS_DESCRIPTIONS;
+              } else if (category === 'islamicMonths') {
+                descriptions = ISLAMIC_MONTHS_DESCRIPTIONS;
+              } else if (category === 'muslimScientists') {
+                descriptions = MUSLIM_SCIENTISTS_DESCRIPTIONS;
+              } else if (category === 'quranicSurahs') {
+                descriptions = QURANIC_SURAHS_DESCRIPTIONS;
+              } else if (category === 'islamicValues') {
+                descriptions = ISLAMIC_VALUES_DESCRIPTIONS;
+              }
+              
+              return (
+                <>
+                  {/* Desktop WordList - Only displayed on desktop */}
+                  {breakpoints.isDesktop && (
+                    <WordList
+                      words={gameState.words}
+                      theme={currentTheme}
+                      showDescriptions={gameState.settings.showDescriptions}
+                      kidsMode={gameState.settings.kidsMode}
+                      isMobileLayout={false}
+                      descriptions={descriptions}
+                    />
+                  )}
+
+                  {/* Mobile WordList - Displayed at the top on mobile devices */}
+                  {!breakpoints.isDesktop && (
+                    <div style={{
+                      width: '100%',
+                      marginTop: layoutConfig.spacing.marginTop,
+                      marginBottom: layoutConfig.spacing.marginBottom
+                    }}>
+                      <WordList
+                        words={gameState.words}
+                        theme={currentTheme}
+                        showDescriptions={gameState.settings.showDescriptions}
+                        kidsMode={gameState.settings.kidsMode}
+                        isMobileLayout={true}
+                        descriptions={descriptions}
+                      />
+                    </div>
+                  )}
+                </>
+              );
+            }, [breakpoints.isDesktop, currentTheme, gameState.settings.kidsMode, gameState.settings.showDescriptions, gameState.settings.wordCategory, gameState.words, layoutConfig.spacing.marginBottom, layoutConfig.spacing.marginTop])}
 
             {/* Game Controls */}
             <div
@@ -636,15 +442,35 @@ theme={currentTheme}
               {/* Hint System */}
               <HintSystem
                 words={gameState.words}
-                onHintUsed={(word) => {
-                  handleHintUsed(word);
-                  setHintsUsed(prev => prev + 1);
-                }}
+                onHintUsed={handleHintUsed}
                 theme={currentTheme}
                 hintsRemaining={hintsRemaining}
               />
 
-              {/* Timer display has been moved to the GameHeader component */}
+              {/* Timer Display (for countdown mode) */}
+              {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
+                  color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
+                  border: timeRemaining < 30 ? '1px solid #ef4444' : `1px solid ${currentTheme.secondary}40`,
+                  animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
+                }}>
+                  <Clock size={20} style={{
+                    color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
+                  }} />
+                  <span style={{
+                    fontWeight: 'bold',
+                    fontSize: '16px'
+                  }}>
+                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+              )}
 
               {/* Achievement System */}
               <AchievementSystem

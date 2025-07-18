@@ -1,15 +1,23 @@
-import React from 'react';
-import { X, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
-import type { WordCategory, Theme } from '../../types/game';
+import React, { useState } from 'react';
+import { X, RotateCcw, ZoomIn, MousePointer, Info } from 'lucide-react';
+import type { Theme } from '../../types/game';
 import { THEMES } from '../../types/game';
+import { ISLAMIC_CATEGORIES } from '../../types/islamicCategories';
+
+interface CategoryOption {
+  value: string;
+  label: string;
+  originalKey?: string;
+  description?: string;
+}
 
 interface MobileDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   settings: any;
-  wordCategories: Array<{ value: WordCategory; label: string }>;
+  wordCategories: CategoryOption[];
   themes: Array<{ value: Theme; label: string }>;
-  onCategoryChange: (category: WordCategory) => void;
+  onCategoryChange: (category: string) => void;
   onThemeChange: (theme: Theme) => void;
   theme: any;
   iconSize: number;
@@ -39,21 +47,40 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const [showInfo, setShowInfo] = useState<{[key: string]: boolean}>({});
+  
+  // Create a map of category keys to their descriptions
+  const categoryDescriptions = ISLAMIC_CATEGORIES.reduce((acc, category) => {
+    // Get the first description as a general description for the category
+    const firstWord = category.words[0] || '';
+    acc[category.key] = category.descriptions[firstWord] || '';
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Toggle info display for a category
+  const toggleInfo = (key: string) => {
+    setShowInfo(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   return (
     <div style={{
       position: 'absolute',
       top: '120px',
       left: '16px',
       right: '16px',
-      backgroundColor: 'rgba(0, 0, 0, 0.85)',
+      backgroundColor: 'rgba(0, 0, 0, 0.99)',
       backdropFilter: 'blur(12px)',
       WebkitBackdropFilter: 'blur(12px)',
       borderRadius: '8px',
-      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
+      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.9)',
       zIndex: 100,
       padding: '12px',
       border: `1px solid ${theme.secondary}40`,
-      animation: 'fadeIn 0.2s ease'
+      animation: 'fadeIn 0.2s ease',
+      color: theme.primary
     }}>
       <div style={{
         display: 'flex',
@@ -101,31 +128,76 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
           maxHeight: '150px',
           overflowY: 'auto'
         }}>
-          {wordCategories.map((category) => (
-            <button
-              key={category.value}
-              onClick={() => onCategoryChange(category.value)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '6px 10px',
-                borderRadius: '6px',
-                backgroundColor: settings.wordCategory === category.value
-                  ? `${theme.secondary}20`
-                  : 'transparent',
-                color: settings.wordCategory === category.value
-                  ? theme.secondary
-                  : theme.primary,
-                border: `1px solid ${settings.wordCategory === category.value ? theme.secondary : theme.secondary + '20'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                textAlign: 'center',
-                fontSize: '13px'
-              }}
-            >
-              {category.label}
-            </button>
-          ))}
+          {wordCategories.map((category) => {
+            const originalKey = (category as any).originalKey || category.value;
+            const description = categoryDescriptions[originalKey];
+            const isInfoShown = showInfo[originalKey];
+            
+            return (
+              <div key={category.value} style={{ marginBottom: '8px', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <button
+                    onClick={() => onCategoryChange(category.value)}
+                    style={{
+                      backgroundColor: settings.wordCategory === category.value ? theme.primary : 'transparent',
+                      color: settings.wordCategory === category.value ? theme.font : theme.primary,
+                      border: `1px solid ${theme.primary}`,
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      flex: 1,
+                      textAlign: 'left',
+                      marginRight: '8px',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    {category.label}
+                  </button>
+                  {description && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleInfo(originalKey);
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: theme.primary,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '8px',
+                        borderRadius: '50%',
+                        transition: 'all 0.2s ease'
+                      }}
+                      aria-label="Show category information"
+                    >
+                      <Info size={16} />
+                    </button>
+                  )}
+                </div>
+                {isInfoShown && description && (
+                  <div 
+                    style={{
+                      backgroundColor: theme.gridBg,
+                      color: theme.font,
+                      padding: '8px',
+                      borderRadius: '4px',
+                      marginTop: '4px',
+                      fontSize: '0.85rem',
+                      borderLeft: `3px solid ${theme.primary}`
+                    }}
+                  >
+                    {description}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       

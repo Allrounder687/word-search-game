@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen, Type } from 'lucide-react';
-import type { GameSettings, Theme, TimerMode } from '../types/game';
+import type { GameSettings, Theme, TimerMode, WordCategory } from '../types/game';
 import { THEMES } from '../types/game';
 
 // Interface for saved word lists
@@ -417,7 +417,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   key={category.value}
                   onClick={() => setLocalSettings({
                     ...localSettings,
-                    wordCategory: category.value as any,
+                    wordCategory: category.value as WordCategory,
                     // If selecting custom category, ensure difficulty is also set to custom
                     ...(category.value === 'custom' ? { difficulty: 'custom' } : {})
                   })}

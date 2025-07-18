@@ -73,20 +73,23 @@ export const AchievementSystem: React.FC<AchievementSystemProps> = ({ theme }) =
     }
   };
 
+  // Create achievement system methods
+  const achievementSystemMethods = {
+    unlockAchievement,
+    updateAchievementProgress,
+    getAchievements: () => achievements
+  };
+
+  // Initialize achievement system when component mounts
+  useEffect(() => {
+    // Only expose methods once on mount
+    window.achievementSystem = achievementSystemMethods;
+  }, []); // Empty dependency array ensures this only runs once on mount
+
   // Calculate total progress
   const totalProgress = achievements.length > 0 
     ? Math.round((achievements.filter(a => a.unlocked).length / achievements.length) * 100) 
     : 0;
-
-  // For external components to access these methods
-  useEffect(() => {
-    // Expose methods globally for other components to use
-    window.achievementSystem = {
-      unlockAchievement,
-      updateAchievementProgress,
-      getAchievements: () => achievements
-    };
-  }, [achievements]);
 
   const isWhiteTheme = theme.primary === '#000000';
 

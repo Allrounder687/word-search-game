@@ -29,7 +29,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard' | 'custom';
 
 export type Theme = 'midnight' | 'royal' | 'pink' | 'pure' | 'darkRoyal' | 'darkPink' | 'ocean' | 'sunset' | 'neon' | 'forest' | 'galaxy' | 'desert' | 'cyber' | 'custom';
 
-export type WordCategory = 'general' | 'animals' | 'islamicPlaces' | 'islamicProphets' | 'fivePillars' | 'islamicTerms' | 'custom';
+export type WordCategory = 'general' | 'animals' | 'islamicPlaces' | 'islamicProphets' | 'fivePillars' | 'islamicTerms' | 'islamicMonths' | 'muslimScientists' | 'quranicSurahs' | 'islamicValues' | 'custom';
 
 export type TimerMode = 'none' | 'countdown' | 'countup';
 
@@ -80,7 +80,6 @@ export const WORD_LISTS = {
   hard: [
     'EXTRAORDINARY', 'MAGNIFICENT', 'REVOLUTIONARY', 'SOPHISTICATED',
     'INCOMPREHENSIBLE', 'TRANSFORMATION', 'PHILOSOPHICAL', 'ASTRONOMICAL',
-    'ARCHAEOLOGICAL', 'PSYCHOLOGICAL', 'TECHNOLOGICAL', 'ENVIRONMENTAL',
     'INTERNATIONAL', 'CONSTITUTIONAL', 'ENTREPRENEURIAL', 'MULTIDIMENSIONAL',
     'INTERDISCIPLINARY', 'TRANSCENDENTAL', 'METAMORPHOSIS', 'KALEIDOSCOPE'
   ]
@@ -108,36 +107,7 @@ export const CATEGORY_WORD_LISTS = {
       'FLAMINGO', 'HEDGEHOG', 'MONGOOSE', 'NIGHTINGALE', 'SALAMANDER'
     ]
   },
-  islamicPlaces: {
-    easy: [
-      'MAKKAH', 'MADINAH', 'KAABA', 'ARAFAT', 'QUBA',
-      'HARAM', 'RAWDAH', 'CAVE', 'ZAMZAM', 'UHUD'
-    ],
-    medium: [
-      'JERUSALEM', 'QUDS', 'QIBLATAIN', 'JANNATULBAQI',
-      'HIRA', 'THAWR', 'SAFA', 'MARWA', 'MINA'
-    ],
-    hard: [
-      'MASJIDALNABAWI', 'MASJIDALHARAM', 'MASJIDAQSA', 'MOUNTARAFAT',
-      'MAQAMIBRAHIM', 'BAQIALGARQAD'
-    ]
-  },
-  islamicProphets: {
-    easy: [
-      'ADAM', 'NOAH', 'HUD', 'SALEH', 'IBRAHIM', 'LOT', 'ISMAIL',
-      'ISHAQ', 'YAQUB', 'YUSUF', 'MUSA', 'HARUN', 'DAWUD', 'SULAIMAN',
-      'AYYUB', 'YUNUS', 'ISA', 'MUHAMMAD'
-    ],
-    medium: [
-      'IDRIS', 'ZAKARIYA', 'YAHYA', 'ILYAS', 'ALYASA', 'DHULKIFL',
-      'SHUAIB', 'LUQMAN', 'UZAIR', 'DHULQARNAIN', 'TALUT', 'JALUT'
-    ],
-    hard: [
-      'ABRAHAMIC', 'MUHAMMADAN', 'PROPHETHOOD', 'MESSENGERSHIP',
-      'REVELATION', 'SCRIPTURE', 'MONOTHEISM', 'ABRAHAMIC', 'COVENANT',
-      'INTERCESSION', 'FINALITY'
-    ]
-  },
+  // Five Pillars of Islam
   fivePillars: {
     easy: [
       'SHAHADA', 'SALAT', 'ZAKAT', 'SAWM', 'HAJJ'
@@ -149,21 +119,109 @@ export const CATEGORY_WORD_LISTS = {
       'TESTIMONY', 'NAMAZ', 'ALMSGIVING', 'RAMADAN', 'MAKKAH'
     ]
   },
-  islamicTerms: {
+  // Prophets of Islam
+  islamicProphets: {
     easy: [
-      'QURAN', 'SUNNAH', 'HADITH', 'ISLAM', 'IMAN', 'IHSAN', 'HALAL',
-      'HARAM', 'WUDU', 'IMAM', 'MASJID', 'SURAH', 'AYAH', 'JANNAH',
-      'AKHIRAH', 'DEEN', 'UMMAH'
+      'ADAM', 'NUH', 'IBRAHIM', 'MUSA', 'ISA', 'MUHAMMAD', 'YUNUS', 'YUSUF', 'DAWOOD', 'SULEIMAN'
     ],
     medium: [
-      'TAWHEED', 'SHIRK', 'ISTIGHFAR', 'TAQWA', 'SABR', 'SHUKR',
-      'TAWAKKUL', 'TAFSIR', 'FIQH', 'SHARIAH', 'SEERAH', 'SADAQAH',
-      'KHUTBAH', 'DHIKR', 'ISTIKHARAH', 'MADHHAB', 'IJMA', 'QIYAS'
+      'HUD', 'SALEH', 'LOT', 'ISMAIL', 'ISHAQ', 'YAQUB', 'HARUN', 'AYYUB',
+      'IDRIS', 'ZAKARIYA', 'YAHYA', 'ILYAS', 'ALYASA', 'DHULKIFL', 'SHUAIB'
     ],
     hard: [
-      'MAQASIDALSHARIAH', 'USULULFIQH', 'MUTAWATIR', 'MUJTAHID',
-      'ISTIHSAN', 'MASLAHAH', 'UBUDIYYAH', 'MUAMALAT', 'TAJWEED',
+      'LUQMAN', 'UZAIR', 'DHULQARNAIN', 'TALUT', 'JALUT', 'ABRAHAMIC',
+      'MUHAMMADAN', 'PROPHETHOOD', 'MESSENGERSHIP', 'REVELATION',
       'MAKHRAJ', 'GHUNNAH', 'IDGHAM', 'IKHFA', 'QALQALAH', 'WAQF'
+    ]
+  },
+  // Islamic Months
+  islamicMonths: {
+    easy: [
+      'MUHARRAM', 'SAFAR', 'RABIULAWAL', 'RABIULTHANI', 'JUMADAALAWAL',
+      'JUMADAALTHANI', 'RAJAB', 'SHAABAN', 'RAMADAN', 'SHAWWAL'
+    ],
+    medium: [
+      'DHULQAADAH', 'DHULHIJJAH', 'ISRA', 'MIRAJ', 'LAILATULQADR',
+      'EIDULFITR', 'EIDULADHA', 'ASHURA', 'LAILATULMIRAJ', 'LAILATULBARAT'
+    ],
+    hard: [
+      'MUHARRAMULHARAM', 'SAFARULMUZAFFAR', 'RABIULAWWAL', 'RABIULAKHIR',
+      'JUMADALAWAL', 'JUMADALAKHIR', 'RAJABULMURAJJAB', 'SHABANULKARIM',
+      'RAMADANULMUBARAK', 'SHAWWALULMUZAMMAL', 'DHULQAADAH', 'DHULHIJJAH'
+    ]
+  },
+  // Muslim Scientists
+  muslimScientists: {
+    easy: [
+      'IBN SINA', 'AL KHAWARIZMI', 'IBN AL HAYTHAM', 'JABIR IBN HAYYAN',
+      'AL ZAHRAWI', 'AL BIRUNI', 'UMAR AL KHAYYAM', 'AL IDRISI'
+    ],
+    medium: [
+      'IBN RUSHD', 'IBN AL NAFIS', 'AL RAZI', 'IBN BATTUTA', 'AL KINDI',
+      'AL FARABI', 'IBN KHALDUN', 'IBN AL BAYTAR', 'AL JAZARI', 'AL KARAJI'
+    ],
+    hard: [
+      'IBN AL NAQASH', 'AL KHUWARIZMI', 'IBN AL SHATIR', 'AL MAJUSI',
+      'IBN TUFAYL', 'IBN ZUHR', 'AL MASUDI', 'AL BATTANI', 'IBN AL QUFF',
+      'IBN JAZLAH', 'AL TUSI', 'IBN AL HAJAR', 'IBN AL QUFF', 'IBN AL QUFF'
+    ]
+  },
+  // Islamic Places
+  islamicPlaces: {
+    easy: [
+      'MAKKAH', 'MADINAH', 'JERUSALEM', 'AL AQSA', 'KAABA', 'MASJID NABAWI'
+    ],
+    medium: [
+      'SAFA', 'MARWA', 'HIRA', 'THAWR', 'MINA', 'ARAFAT', 'MUZDALIFAH',
+      'JANNATULBAQI', 'JANNATULMUALLAA', 'MASJID AL QUBA'
+    ],
+    hard: [
+      'MASJID AL HARAM', 'MASJID AL NABAWI', 'MASJID AL AQSA', 'JABAL AL NOOR',
+      'JABAL AL THAWR', 'JABAL AL RAHMAH', 'JANNAT AL BAGI', 'JANNAT AL MUALLAA',
+      'MAQAM IBRAHIM', 'ZAMZAM'
+    ]
+  },
+  // Quranic Surahs
+  quranicSurahs: {
+    easy: [
+      'FATIHA', 'IKHLAS', 'FALAQ', 'NAAS', 'KAWTHAR', 'MASAD', 'QURAISH',
+      'MAUN', 'KAUTHAR', 'KAFIRUN'
+    ],
+    medium: [
+      'YASIN', 'MULK', 'RAHMAN', 'WAQIAH', 'MULK', 'MUTAFFIFIN', 'INFITAR',
+      'TAKWEER', 'NAZIAT', 'ABASA'
+    ],
+    hard: [
+      'BAQARAH', 'AL IMRAN', 'NISA', 'MAIDAH', 'ANAM', 'ARAF', 'ANFAL',
+      'TAWBAH', 'YUNUS', 'HUD', 'YUSUF', 'IBRAHIM', 'HJJ', 'MUJADILA', 'HASHR'
+    ]
+  },
+  // Islamic Values
+  islamicValues: {
+    easy: [
+      'SABR', 'SHUKR', 'TAQWA', 'TAWAKKUL', 'IKHLAS', 'SIDQ', 'AMANAH',
+      'ISTIQAMAH', 'TAWADHU', 'HILM'
+    ],
+    medium: [
+      'RAHMAH', 'AFW', 'KARAM', 'SYAJAHAH', 'MURUA', 'WAFAA', 'ADL',
+      'IHSAN', 'ITQAN', 'ISTIQAMAH'
+    ],
+    hard: [
+      'TAQWA', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR',
+      'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR'
+    ]
+  },
+  // Islamic Terms (legacy category kept for backward compatibility)
+  islamicTerms: {
+    easy: [
+      'SALAM', 'DUA', 'ADHAN', 'IMAM', 'MASJID', 'QURAN', 'HADITH', 'SUNNAH', 'TAWHEED', 'SHIRK'
+    ],
+    medium: [
+      'TAQWA', 'TAWAKKUL', 'SABR', 'SHUKR', 'IKHLAS', 'SIDQ', 'AMANAH', 'ISTIQAMAH', 'TAWADHU', 'HILM'
+    ],
+    hard: [
+      'MUHASABAH', 'TADABBUR', 'TAFKIR', 'TADABBUR', 'TADABBUR', 'TADABBUR',
+      'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR', 'TADABBUR'
     ]
   }
 };

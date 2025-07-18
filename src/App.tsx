@@ -483,6 +483,29 @@ function App() {
                     theme={currentTheme}
                     hintsRemaining={hintsRemaining}
                   />
+                  
+                  {/* Settings Button - always visible in portrait mode */}
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    style={{
+                      padding: '8px',
+                      borderRadius: '8px',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer',
+                      border: `1px solid ${currentTheme.secondary}40`,
+                      backgroundColor: currentTheme.cellBg,
+                      color: currentTheme.primary,
+                      width: '36px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      WebkitTapHighlightColor: 'transparent'
+                    }}
+                    title="Settings"
+                  >
+                    <Settings size={14} />
+                  </button>
                 </div>
               </div>
             </>

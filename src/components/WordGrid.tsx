@@ -48,6 +48,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const [showPathAnimation, setShowPathAnimation] = useState(false);
   const [pathAnimationCells, setPathAnimationCells] = useState<Position[]>([]);
   const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
+  const [selectionArrow, setSelectionArrow] = useState<{start: Position, end: Position} | null>(null);
 
   // Update selection mode when prop changes
   useEffect(() => {
@@ -83,6 +84,12 @@ export const WordGrid: React.FC<WordGridProps> = ({
     const newSelection = getSelectionPath(start, { row, col });
     setCurrentSelection(newSelection);
     setHighlightedCells(new Set(newSelection.map(pos => getCellKey(pos.row, pos.col))));
+    
+    // Update selection arrow
+    setSelectionArrow({
+      start: start,
+      end: { row, col }
+    });
     
     // Add tap feedback for the current cell
     const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
@@ -187,6 +194,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
     setIsSelecting(false);
     setCurrentSelection([]);
     setHighlightedCells(new Set());
+    setSelectionArrow(null);
   }, [currentSelection, words, onWordFound, kidsMode, showDescriptions, isMobile]);
 
   useEffect(() => {
@@ -255,6 +263,12 @@ export const WordGrid: React.FC<WordGridProps> = ({
           const newSelection = getSelectionPath(start, { row, col });
           setCurrentSelection(newSelection);
           setHighlightedCells(new Set(newSelection.map(pos => getCellKey(pos.row, pos.col))));
+          
+          // Update selection arrow
+          setSelectionArrow({
+            start: start,
+            end: { row, col }
+          });
 
           // Add haptic feedback for iOS and Android if available
           if (window.navigator && window.navigator.vibrate) {
@@ -442,6 +456,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
     return `${baseFontSize}px`;
   };
 
+  // State for pinch-to-zoom
+  const [zoomScale, setZoomScale] = useState(1);
+  const initialTouchDistance = useRef<number | null>(null);
+  const currentZoomScale = useRef(1);
+
   // Apply touch optimizations when component mounts
   useEffect(() => {
     if (isMobile && gridContainerRef.current) {
@@ -485,6 +504,43 @@ export const WordGrid: React.FC<WordGridProps> = ({
         `;
         document.head.appendChild(styleElement);
         
+        // Add pinch-to-zoom handlers for iOS
+        const handleTouchStartZoom = (e: TouchEvent) => {
+          if (e.touches.length === 2) {
+            // Only handle pinch gestures (2 fingers)
+            e.preventDefault();
+            const dist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            initialTouchDistance.current = dist;
+          }
+        };
+        
+        const handleTouchMoveZoom = (e: TouchEvent) => {
+          if (e.touches.length === 2 && initialTouchDistance.current !== null) {
+            e.preventDefault();
+            const dist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+            );
+            
+            const scale = Math.max(0.8, Math.min(2.0, currentZoomScale.current * (dist / initialTouchDistance.current)));
+            setZoomScale(scale);
+          }
+        };
+        
+        const handleTouchEndZoom = () => {
+          if (initialTouchDistance.current !== null) {
+            currentZoomScale.current = zoomScale;
+            initialTouchDistance.current = null;
+          }
+        };
+        
+        gridElement.addEventListener('touchstart', handleTouchStartZoom, { passive: false });
+        gridElement.addEventListener('touchmove', handleTouchMoveZoom, { passive: false });
+        gridElement.addEventListener('touchend', handleTouchEndZoom);
+        
         // Return cleanup function for iOS-specific fixes
         return () => {
           gridElement.classList.remove('ios-touch-fix');
@@ -494,6 +550,9 @@ export const WordGrid: React.FC<WordGridProps> = ({
           
           // Clean up event listeners
           gridElement.removeEventListener('contextmenu', preventContextMenu);
+          gridElement.removeEventListener('touchstart', handleTouchStartZoom);
+          gridElement.removeEventListener('touchmove', handleTouchMoveZoom);
+          gridElement.removeEventListener('touchend', handleTouchEndZoom);
           
           // Restore viewport meta when component unmounts
           if (viewportMeta) {
@@ -535,7 +594,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
         }
       };
     }
-  }, [isMobile, grid.length, theme]);
+  }, [isMobile, grid.length, theme, zoomScale]);
 
   // Handle click-start-end selection mode
   const handleCellClick = useCallback((row: number, col: number) => {
@@ -782,29 +841,54 @@ export const WordGrid: React.FC<WordGridProps> = ({
           }
         `}
       </style>
-      <div
-        ref={gridContainerRef}
-        className="word-grid-container"
-        style={{
-          display: 'inline-block',
-          padding: isMobile ? '10px' : '16px',
-          borderRadius: isMobile ? '10px' : '12px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          backgroundColor: theme.gridBg,
-          touchAction: 'auto', // Let the touch events be handled by our handlers
-          maxHeight: isMobile ? '65vh' : 'auto',
-          overflowY: isMobile ? 'auto' : 'visible',
-          position: 'relative',
-          WebkitOverflowScrolling: 'touch',
-          width: isMobile ? '100%' : 'auto'
-        }}
+      <div style={{ position: 'relative' }}>
+        {/* Zoom indicator */}
+        {zoomScale !== 1 && (
+          <div style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            backgroundColor: `${theme.secondary}80`,
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            zIndex: 10,
+            opacity: 0.8,
+            pointerEvents: 'none'
+          }}>
+            {Math.round(zoomScale * 100)}%
+          </div>
+        )}
+        
+        <div
+          ref={gridContainerRef}
+          className="word-grid-container"
+          style={{
+            display: 'inline-block',
+            padding: isMobile ? '10px' : '16px',
+            borderRadius: isMobile ? '10px' : '12px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            backgroundColor: theme.gridBg,
+            touchAction: 'auto', // Let the touch events be handled by our handlers
+            maxHeight: isMobile ? '55vh' : 'auto', // Reduced from 65vh to 55vh to show more of the grid
+            overflowY: isMobile ? 'auto' : 'visible',
+            position: 'relative',
+            WebkitOverflowScrolling: 'touch',
+            width: isMobile ? '100%' : 'auto'
+          }}
       >
         <div
           style={{
             display: 'grid',
             gap: window.innerWidth >= 480 ? '4px' : '2px',
             gridTemplateColumns: `repeat(${grid.length}, minmax(0, 1fr))`,
-            userSelect: 'none'
+            userSelect: 'none',
+            transform: `scale(${zoomScale})`,
+            transformOrigin: 'center center',
+            transition: initialTouchDistance.current ? 'none' : 'transform 0.1s ease',
+            position: 'relative'
           }}
         >
           {grid.map((row, rowIndex) =>
@@ -850,10 +934,75 @@ export const WordGrid: React.FC<WordGridProps> = ({
               );
             })
           )}
+          
+          {/* Selection Arrow Overlay */}
+          {selectionArrow && (
+            <svg 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                zIndex: 5
+              }}
+            >
+              {(() => {
+                // Calculate cell size
+                const cellSizeStr = getCellSize();
+                const cellSize = parseInt(cellSizeStr.replace('px', ''));
+                const gapSize = window.innerWidth >= 480 ? 4 : 2;
+                
+                // Calculate start and end positions
+                const startX = selectionArrow.start.col * (cellSize + gapSize) + cellSize / 2;
+                const startY = selectionArrow.start.row * (cellSize + gapSize) + cellSize / 2;
+                const endX = selectionArrow.end.col * (cellSize + gapSize) + cellSize / 2;
+                const endY = selectionArrow.end.row * (cellSize + gapSize) + cellSize / 2;
+                
+                // Calculate arrow angle
+                const dx = endX - startX;
+                const dy = endY - startY;
+                const angle = Math.atan2(dy, dx);
+                
+                // Calculate arrow head points
+                const arrowHeadSize = cellSize * 0.4;
+                const arrowHead1X = endX - arrowHeadSize * Math.cos(angle - Math.PI / 6);
+                const arrowHead1Y = endY - arrowHeadSize * Math.sin(angle - Math.PI / 6);
+                const arrowHead2X = endX - arrowHeadSize * Math.cos(angle + Math.PI / 6);
+                const arrowHead2Y = endY - arrowHeadSize * Math.sin(angle + Math.PI / 6);
+                
+                return (
+                  <>
+                    {/* Line */}
+                    <line 
+                      x1={startX} 
+                      y1={startY} 
+                      x2={endX} 
+                      y2={endY} 
+                      stroke={theme.accent}
+                      strokeWidth={2}
+                      strokeDasharray="4 2"
+                      opacity={0.8}
+                    />
+                    
+                    {/* Arrow Head */}
+                    <polygon 
+                      points={`${endX},${endY} ${arrowHead1X},${arrowHead1Y} ${arrowHead2X},${arrowHead2Y}`}
+                      fill={theme.accent}
+                      opacity={0.8}
+                    />
+                  </>
+                );
+              })()}
+            </svg>
+          )}
         </div>
       </div>
 
       {/* Word found celebration */}
+      </div>
+      
       {showCelebration && lastFoundWord && (
         <div style={{
           position: 'absolute',

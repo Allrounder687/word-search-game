@@ -1,3 +1,8 @@
+// This file is currently not being used in the application
+// Keeping it for reference, but it's causing issues with the build
+// If you need to use memoized components, import React.memo directly in the component files
+
+/*
 import React from 'react';
 import { WordGrid } from './WordGrid';
 import { WordList } from './WordList';
@@ -25,3 +30,7 @@ export const MemoizedWordListWithCustomComparison = React.memo(WordList, (prevPr
     prevProps.isMobileLayout === nextProps.isMobileLayout
   );
 });
+*/
+
+// Export empty object to avoid import errors
+export {};

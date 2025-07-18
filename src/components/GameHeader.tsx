@@ -29,7 +29,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   onToggleZoom,
   isZoomed,
   theme,
-  isDesktop = false
+  isDesktop = false,
+  timeRemaining = null
 }) => {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);

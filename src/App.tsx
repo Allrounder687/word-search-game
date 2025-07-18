@@ -9,6 +9,7 @@ import { LeaderboardSystem } from './components/LeaderboardSystem';
 import { LevelSystem } from './components/LevelSystem';
 import { KidsAchievements } from './components/KidsAchievements';
 import { OrientationWarning } from './components/OrientationWarning';
+import { QuickSettings } from './components/QuickSettings';
 import { WordSearchGenerator, calculateScore } from './utils/gameLogic';
 import { initializeMobileOptimizations } from './utils/mobileOptimizations';
 import { setupMobileViewport } from './utils/responsiveLayout';
@@ -319,6 +320,13 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
+          theme={currentTheme}
+        />
+        
+        {/* Quick Settings for Category and Theme Selection */}
+        <QuickSettings
+          settings={gameState.settings}
+          onSettingsChange={handleSettingsChange}
           theme={currentTheme}
         />
 

@@ -383,6 +383,13 @@ export const WordGrid: React.FC<WordGridProps> = ({
     // For desktop, we want to use the available space more intelligently
     let baseSize;
     
+    // Check if device is iPad using the user agent
+    const isIPad = /iPad/i.test(navigator.userAgent) || 
+                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+    
+    // Check orientation
+    const isLandscape = screenWidth > screenHeight;
+    
     if (screenWidth >= 1024) {
       // Desktop - calculate based on available space
       const availableWidth = Math.min(screenWidth * 0.5, 800); // Limit max width
@@ -397,9 +404,27 @@ export const WordGrid: React.FC<WordGridProps> = ({
       
       // Set reasonable limits
       baseSize = Math.min(Math.max(baseSize, 30), 60);
-    } else if (screenWidth >= 768) {
-      // Tablet - improved sizing for iPad
-      baseSize = Math.min(42, Math.floor((screenWidth * 0.8) / gridSize) - 4);
+    } else if (isIPad || (screenWidth >= 768 && screenWidth < 1024)) {
+      // iPad-specific sizing
+      // Use a higher percentage of available space (95% instead of 80%)
+      const availableWidth = isLandscape ? screenWidth * 0.6 : screenWidth * 0.95;
+      const availableHeight = isLandscape ? screenHeight * 0.9 : screenHeight * 0.6;
+      
+      // Calculate the maximum possible cell size based on available space
+      const maxWidthBasedSize = Math.floor(availableWidth / gridSize) - 4;
+      const maxHeightBasedSize = Math.floor(availableHeight / gridSize) - 4;
+      
+      // Use the smaller of the two to ensure grid fits both dimensions
+      baseSize = Math.min(maxWidthBasedSize, maxHeightBasedSize);
+      
+      // Ensure the size is reasonable for touch
+      baseSize = Math.min(Math.max(baseSize, 28), 50);
+      
+      // iPad Pro might need different sizing
+      if (screenWidth >= 1000 || screenHeight >= 1000) {
+        // Likely an iPad Pro
+        baseSize = Math.min(Math.max(baseSize, 32), 55);
+      }
     } else if (screenWidth >= 480) {
       // Large mobile
       baseSize = Math.min(36, Math.floor((screenWidth * 0.9) / gridSize) - 4);

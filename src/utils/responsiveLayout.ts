@@ -149,9 +149,124 @@ export function isMobilePhone(): boolean {
  * @returns True if the device is a tablet
  */
 export function isTablet(): boolean {
-  const isTabletDevice = /iPad|Android(?!.*Mobile)/i.test(navigator.userAgent);
+  // Check for iPad specifically
+  const isIPad = /iPad/i.test(navigator.userAgent) || 
+                 (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+  
+  // Check for Android tablets
+  const isAndroidTablet = /Android(?!.*Mobile)/i.test(navigator.userAgent);
+  
+  // Check for medium-sized screens (typical tablet dimensions)
   const isMediumScreen = window.innerWidth >= BREAKPOINTS.md && window.innerWidth < BREAKPOINTS.lg;
-  return isTabletDevice || isMediumScreen;
+  
+  return isIPad || isAndroidTablet || isMediumScreen;
+}
+
+/**
+ * Check if the device is specifically an iPad
+ * @returns True if the device is an iPad
+ */
+export function isIPad(): boolean {
+  // Direct iPad detection
+  const isDirectIPad = /iPad/i.test(navigator.userAgent);
+  
+  // Modern iPads report as Macintosh in user agent but have touch capabilities
+  const isModernIPad = /Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
+  
+  // Additional check for iPad dimensions (typical iPad aspect ratios and sizes)
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const aspectRatio = screenWidth / screenHeight;
+  
+  // iPad aspect ratios are typically between 0.65 and 0.77 (portrait) or 1.3 and 1.55 (landscape)
+  const hasIPadAspectRatio = (aspectRatio >= 0.65 && aspectRatio <= 0.77) || 
+                             (aspectRatio >= 1.3 && aspectRatio <= 1.55);
+  
+  // iPad screen sizes typically range from 768px to 1366px
+  const hasIPadScreenSize = (screenWidth >= 768 && screenWidth <= 1366) || 
+                            (screenHeight >= 768 && screenHeight <= 1366);
+  
+  return isDirectIPad || (isModernIPad && hasIPadAspectRatio && hasIPadScreenSize);
+}
+
+/**
+ * Get iPad model information based on screen dimensions
+ * @returns Object with iPad model information
+ */
+export function getIPadInfo(): { 
+  model: 'iPad' | 'iPad Pro' | 'iPad Mini' | 'iPad Air' | 'unknown', 
+  size: '11-inch' | '12.9-inch' | '10.9-inch' | '10.2-inch' | '8.3-inch' | 'unknown',
+  orientation: 'portrait' | 'landscape'
+} {
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const isLandscape = screenWidth > screenHeight;
+  
+  // Default return value
+  const defaultInfo = {
+    model: 'unknown' as const,
+    size: 'unknown' as const,
+    orientation: isLandscape ? 'landscape' as const : 'portrait' as const
+  };
+  
+  // Return early if not an iPad
+  if (!isIPad()) return defaultInfo;
+  
+  // Get the longer and shorter dimensions
+  const longSide = Math.max(screenWidth, screenHeight);
+  const shortSide = Math.min(screenWidth, screenHeight);
+  
+  // iPad Pro 12.9-inch (2048x2732 or 2732x2048)
+  if (longSide >= 2000 && longSide <= 2800 && shortSide >= 1500 && shortSide <= 2100) {
+    return {
+      model: 'iPad Pro',
+      size: '12.9-inch',
+      orientation: isLandscape ? 'landscape' : 'portrait'
+    };
+  }
+  
+  // iPad Pro 11-inch (1668x2388 or 2388x1668)
+  if (longSide >= 2200 && longSide <= 2400 && shortSide >= 1600 && shortSide <= 1700) {
+    return {
+      model: 'iPad Pro',
+      size: '11-inch',
+      orientation: isLandscape ? 'landscape' : 'portrait'
+    };
+  }
+  
+  // iPad Air (1640x2360 or 2360x1640)
+  if (longSide >= 2300 && longSide <= 2400 && shortSide >= 1600 && shortSide <= 1700) {
+    return {
+      model: 'iPad Air',
+      size: '10.9-inch',
+      orientation: isLandscape ? 'landscape' : 'portrait'
+    };
+  }
+  
+  // iPad 10.2-inch (1620x2160 or 2160x1620)
+  if (longSide >= 2100 && longSide <= 2200 && shortSide >= 1600 && shortSide <= 1700) {
+    return {
+      model: 'iPad',
+      size: '10.2-inch',
+      orientation: isLandscape ? 'landscape' : 'portrait'
+    };
+  }
+  
+  // iPad Mini (1488x2266 or 2266x1488)
+  if (longSide >= 2200 && longSide <= 2300 && shortSide >= 1400 && shortSide <= 1500) {
+    return {
+      model: 'iPad Mini',
+      size: '8.3-inch',
+      orientation: isLandscape ? 'landscape' : 'portrait'
+    };
+  }
+  
+  // Fallback for older iPads or when resolution detection is not precise
+  return {
+    model: 'iPad',
+    size: 'unknown',
+    orientation: isLandscape ? 'landscape' : 'portrait'
+  };
 }
 
 /**

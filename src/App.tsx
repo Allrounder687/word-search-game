@@ -81,7 +81,7 @@ function App() {
     getLayoutConfig(breakpoints, currentTheme),
     [breakpoints, currentTheme]
   );
-  
+
   // Memoize descriptions based on the current category
   const descriptions = useMemo(() => {
     const category = gameState.settings.wordCategory;
@@ -397,7 +397,7 @@ function App() {
           padding: breakpoints.isDesktop ? layoutConfig.spacing.padding : '8px'
         }}>
           {/* Create descriptions object outside of JSX */}
-          
+
           {/* For mobile layout, show WordList at the top first */}
           {!breakpoints.isDesktop && (
             <>
@@ -417,7 +417,7 @@ function App() {
                   setSelectedWord={setSelectedDescriptionWord}
                 />
               </div>
-              
+
               {/* Mobile Layout - Compact Controls Bar */}
               <div style={{
                 width: '100%',
@@ -441,10 +441,10 @@ function App() {
                     isClickMode={isClickMode}
                   />
                 </div>
-                
+
                 {/* Right side: Hint System */}
-                <div style={{ 
-                  display: 'flex', 
+                <div style={{
+                  display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'flex-end',
                   gap: '8px'
@@ -475,7 +475,7 @@ function App() {
                       </span>
                     </div>
                   )}
-                  
+
                   {/* Hint System - more compact */}
                   <HintSystem
                     words={gameState.words}
@@ -483,7 +483,7 @@ function App() {
                     theme={currentTheme}
                     hintsRemaining={hintsRemaining}
                   />
-                  
+
                   {/* Settings Button - always visible in portrait mode */}
                   <button
                     onClick={() => setShowSettings(true)}
@@ -517,7 +517,25 @@ function App() {
             justifyContent: 'center',
             width: '100%',
             maxWidth: breakpoints.isDesktop ? '600px' : '100%',
-            maxHeight: 'calc(100vh - 220px)',
+            maxHeight: (() => {
+              // Check if device is iPad
+              const isIPad = /iPad/i.test(navigator.userAgent) || 
+                            (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+              
+              // Check orientation
+              const isLandscape = window.innerWidth > window.innerHeight;
+              
+              if (isIPad) {
+                // Use more space for iPad
+                return isLandscape ? 'calc(100vh - 180px)' : 'calc(100vh - 200px)';
+              } else if (breakpoints.isTablet) {
+                // Other tablets
+                return 'calc(100vh - 200px)';
+              } else {
+                // Default for other devices
+                return 'calc(100vh - 220px)';
+              }
+            })(),
             overflow: 'hidden'
           }}>
             <WordGrid

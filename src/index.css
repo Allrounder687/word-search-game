@@ -293,6 +293,22 @@ body {
     -webkit-touch-action: none !important;
     overscroll-behavior: none;
     -webkit-overscroll-behavior: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Prevent iOS Safari from showing the highlight when tapping */
+  .word-grid-container * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Prevent iOS Safari from zooming in */
+  html {
+    touch-action: manipulation;
   }
 }
 

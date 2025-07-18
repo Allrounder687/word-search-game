@@ -196,9 +196,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
   }, [isSelecting, handleMouseUp]);
 
   // Touch support
-  const handleTouchStart = useCallback((row: number, col: number, _e: React.TouchEvent) => {
-    // Don't prevent default here to allow the touch event to be registered
-
+  const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
+    // Prevent default behavior to stop iOS Safari from moving the screen
+    e.stopPropagation();
+    
+    // Set state for selection
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
     setHighlightedCells(new Set([getCellKey(row, col)]));
@@ -219,8 +221,8 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
 
-    // Note: We're not calling preventDefault() here anymore
-    // as it causes issues with passive event listeners in modern browsers
+    // Stop propagation to prevent other handlers from interfering
+    e.stopPropagation();
     
     const touch = e.touches[0];
     
@@ -258,8 +260,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
     }
   }, [isSelecting, currentSelection, highlightedCells]);
 
-  const handleTouchEnd = useCallback((_e: React.TouchEvent) => {
-    // Don't prevent default here to allow the touch event to complete normally
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Stop propagation to prevent other handlers from interfering
+    e.stopPropagation();
+    
+    // Process the selection
     handleMouseUp();
   }, [handleMouseUp]);
 
@@ -658,17 +663,18 @@ export const WordGrid: React.FC<WordGridProps> = ({
       
       <div
         ref={gridContainerRef}
-        className={isMobile ? 'word-grid-container' : ''}
+        className="word-grid-container"
         style={{
           display: 'inline-block',
           padding: isMobile ? '12px' : '16px',
           borderRadius: '12px',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
           backgroundColor: theme.gridBg,
-          touchAction: 'auto', // Let the touch events be handled by our handlers
+          touchAction: 'none', // Prevent scrolling/zooming on touch
           maxHeight: isMobile ? '70vh' : 'auto',
           overflowY: isMobile ? 'auto' : 'visible',
-          position: 'relative'
+          position: 'relative',
+          WebkitOverflowScrolling: 'touch'
         }}
       >
         <div

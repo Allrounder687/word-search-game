@@ -168,9 +168,9 @@ export function setupMobileViewport(): void {
     document.head.appendChild(viewportMeta);
   }
 
-  // Set appropriate viewport content
+  // Set appropriate viewport content with stronger restrictions for iOS
   viewportMeta.setAttribute('content',
-    'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
 
   // Add other mobile-specific meta tags
   const metaTags = [

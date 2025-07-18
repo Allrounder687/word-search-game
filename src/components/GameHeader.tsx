@@ -50,10 +50,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       style={{ 
         width: '100%',
         padding: isMobile ? padding : '24px',
+        paddingRight: isMobile ? '8px' : '24px', // Ensure enough padding on the right side
         borderRadius: '12px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         marginBottom: isMobile ? '12px' : '24px',
-        backgroundColor: theme.gridBg 
+        backgroundColor: theme.gridBg,
+        boxSizing: 'border-box' // Ensure padding is included in width calculation
       }}
     >
       <div style={{
@@ -61,7 +63,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         flexDirection: isMobile ? 'row' : 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: isMobile ? '8px' : '16px'
+        gap: isMobile ? '8px' : '16px',
+        maxWidth: '100%',
+        overflow: 'hidden'
       }}>
         {/* Title */}
         <div style={{ 
@@ -200,10 +204,13 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: isMobile ? '3px' : '8px', 
+          gap: isMobile ? '2px' : '8px', 
           flexWrap: 'nowrap',
           flexShrink: 0,
-          minWidth: 'fit-content'
+          marginLeft: isMobile ? '0' : 0,
+          marginRight: isMobile ? '0' : 0,
+          position: isMobile ? 'relative' : 'static',
+          right: isMobile ? '0' : 'auto'
         }}>
           {/* Click Mode Button (Mobile only) */}
           {isMobile && onToggleClickMode && (

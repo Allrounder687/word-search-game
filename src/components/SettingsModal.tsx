@@ -84,8 +84,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
+  // Define all callback functions before early return
   const handleSave = useCallback(() => {
     // If custom theme is selected, save custom colors
     const updatedSettings = { ...localSettings };
@@ -134,6 +133,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       customWords: words.filter((_, i) => i !== index)
     });
   }, [localSettings]);
+
+  // Memoize static configuration arrays to prevent recreation on every render
+  const difficulties = useMemo(() => [
+    { value: 'easy' as const, label: 'Easy', description: '10x10 grid, simple words' },
+    { value: 'medium' as const, label: 'Medium', description: '12x12 grid, moderate words' },
+    { value: 'hard' as const, label: 'Hard', description: '15x15 grid, complex words' },
+    { value: 'custom' as const, label: 'Custom', description: 'Your own words and settings' }
+  ], []);
+
+  const wordCategories = useMemo(() => [
+    { value: 'general', label: 'General', description: 'Standard word lists' },
+    { value: 'animals', label: 'Animals', description: 'Various animal names' },
+    { value: 'islamicPlaces', label: 'Islamic Places', description: 'Important locations in Islam' },
+    { value: 'islamicProphets', label: 'Islamic Prophets', description: 'Prophets mentioned in Islamic tradition' },
+    { value: 'fivePillars', label: 'Five Pillars', description: 'The five pillars of Islam and related terms' },
+    { value: 'islamicTerms', label: 'Islamic Terms', description: 'Common Islamic terminology' },
+    { value: 'custom', label: 'Custom Words', description: 'Your own custom word list' }
+  ], []);
+
+  if (!isOpen) return null;
 
   const generateRandomWords = () => {
     // Generate 5-10 random words for custom mode
@@ -200,24 +219,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     localStorage.setItem('wordSearchSavedLists', JSON.stringify(updatedLists));
     setSavedLists(updatedLists);
   };
-
-  // Memoize static configuration arrays to prevent recreation on every render
-  const difficulties = useMemo(() => [
-    { value: 'easy' as const, label: 'Easy', description: '10x10 grid, simple words' },
-    { value: 'medium' as const, label: 'Medium', description: '12x12 grid, moderate words' },
-    { value: 'hard' as const, label: 'Hard', description: '15x15 grid, complex words' },
-    { value: 'custom' as const, label: 'Custom', description: 'Your own words and settings' }
-  ], []);
-
-  const wordCategories = useMemo(() => [
-    { value: 'general', label: 'General', description: 'Standard word lists' },
-    { value: 'animals', label: 'Animals', description: 'Various animal names' },
-    { value: 'islamicPlaces', label: 'Islamic Places', description: 'Important locations in Islam' },
-    { value: 'islamicProphets', label: 'Islamic Prophets', description: 'Prophets mentioned in Islamic tradition' },
-    { value: 'fivePillars', label: 'Five Pillars', description: 'The five pillars of Islam and related terms' },
-    { value: 'islamicTerms', label: 'Islamic Terms', description: 'Common Islamic terminology' },
-    { value: 'custom', label: 'Custom Words', description: 'Your own custom word list' }
-  ], []);
 
   const themes: { value: Theme; label: string; colors: string[] }[] = [
     { value: 'midnight', label: 'Midnight', colors: ['#000000', '#1e1b4b', '#a855f7', '#ec4899'] },

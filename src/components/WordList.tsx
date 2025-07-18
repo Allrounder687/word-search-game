@@ -1,870 +1,399 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import type { WordPlacement } from '../types/game';
-import { Check, Search, Star, Sparkles, Info, BookOpen, MapPin, Globe } from 'lucide-react';
+import type { WordPlacement, ThemeColors } from '../types/game';
+import { Search, Sparkles } from 'lucide-react';
 import { FIVE_PILLARS_DESCRIPTIONS, PROPHETS_DESCRIPTIONS, ISLAMIC_MONTHS_DESCRIPTIONS, MUSLIM_SCIENTISTS_DESCRIPTIONS, ISLAMIC_LANDMARKS_DESCRIPTIONS, QURANIC_SURAHS_DESCRIPTIONS, ISLAMIC_VALUES_DESCRIPTIONS } from '../types/islamicDescriptions';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
-import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
-import { AudioPronunciation } from './AudioPronunciation';
-import { VisualIllustration } from './VisualIllustration';
+import { WordListItem } from './WordListItem';
+import { DescriptionBox } from './DescriptionBox';
 
 interface WordListProps {
-    words: WordPlacement[];
-    theme: any;
-    showDescriptions?: boolean;
-    kidsMode?: boolean;
-    isMobileLayout?: boolean;
-    descriptions?: Record<string, string>;
+  words: WordPlacement[];
+  theme: ThemeColors;
+  showDescriptions?: boolean;
+  kidsMode?: boolean;
+  isMobileLayout?: boolean;
+  descriptions?: Record<string, string>;
+  selectedWord?: string | null;
+  setSelectedWord?: (word: string | null) => void;
 }
 
-interface DescriptionBoxProps {
-    word: string;
-    color: string;
-    onClose: () => void;
-    kidsMode?: boolean;
-    theme?: any;
-    descriptions?: Record<string, string>;
-}
+export const WordList: React.FC<WordListProps> = ({ 
+  words, 
+  theme, 
+  showDescriptions = true, 
+  kidsMode = false, 
+  isMobileLayout = false, 
+  descriptions,
+  selectedWord: externalSelectedWord,
+  setSelectedWord: externalSetSelectedWord
+}) => {
+  // Use internal state if external state is not provided
+  const [internalSelectedWord, setInternalSelectedWord] = useState<string | null>(null);
+  
+  // Use either external or internal state
+  const selectedWord = externalSelectedWord !== undefined ? externalSelectedWord : internalSelectedWord;
+  const setSelectedWord = externalSetSelectedWord || setInternalSelectedWord;
+  
+  const prevWordsRef = useRef<WordPlacement[]>([]);
+  const isInitialMount = useRef(true);
+  const isAutoShowingRef = useRef(false); // Track if description is being shown automatically
+  
+  // Combine all description sources
+  const allDescriptions = useMemo(() => ({
+    ...FIVE_PILLARS_DESCRIPTIONS,
+    ...PROPHETS_DESCRIPTIONS,
+    ...ISLAMIC_MONTHS_DESCRIPTIONS,
+    ...MUSLIM_SCIENTISTS_DESCRIPTIONS,
+    ...ISLAMIC_LANDMARKS_DESCRIPTIONS,
+    ...QURANIC_SURAHS_DESCRIPTIONS,
+    ...ISLAMIC_VALUES_DESCRIPTIONS,
+    ...ISLAMIC_PLACES_DESCRIPTIONS,
+    ...(descriptions || {})
+  }), [descriptions]);
 
-// Description Box Component
-const DescriptionBox: React.FC<DescriptionBoxProps> = ({ word, color, onClose, kidsMode = false, theme, descriptions }) => {
-    // Check if we should use kids mode description
-    let description;
-    let descriptionType;
-    let urduDescription;
+  // Effect to show description when a new word is found
+  useEffect(() => {
+    // Skip the initial render
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevWordsRef.current = [...words];
+      return;
+    }
+
+    // Find newly found words by comparing with previous words
+    const newlyFoundWord = words.find(w => (
+      w.found && 
+      !prevWordsRef.current.some(pw => pw.word === w.word && pw.found) &&
+      allDescriptions[w.word] !== undefined
+    ));
     
-    if (kidsMode && shouldUseKidsDescription(word, kidsMode)) {
-        // Use simplified description for kids
-        description = getKidsDescription(word);
-        descriptionType = 'kidsMode';
-    } else if (descriptions) {
-        // Use provided descriptions mapping
-        description = descriptions[word] || '';
-        descriptionType = 'category';
-    } else {
-        // Fallback to previous hardcoded logic
-        description = FIVE_PILLARS_DESCRIPTIONS[word] || 
-            (ISLAMIC_PLACES_DESCRIPTIONS[word]?.description || '');
-        urduDescription = ISLAMIC_PLACES_DESCRIPTIONS[word]?.urduDescription;
-        descriptionType = FIVE_PILLARS_DESCRIPTIONS[word] ? 'fivePillars' : 'islamicPlaces';
+    // Update the state for the next render
+    let timeoutId: number;
+    if (newlyFoundWord && !isAutoShowingRef.current) {
+      isAutoShowingRef.current = true; // Set flag to prevent duplicate showing
+      setSelectedWord(newlyFoundWord.word);
+      
+      // Auto-close description after 5 seconds
+      timeoutId = window.setTimeout(() => {
+        setSelectedWord(null);
+        isAutoShowingRef.current = false; // Reset flag after closing
+      }, 5000);
     }
     
+    // Always update the ref with current words for next comparison
+    prevWordsRef.current = [...words];
+    
+    // Cleanup function to prevent memory leaks
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [words, allDescriptions]);
+  
+  // Memoize expensive calculations
+  const { foundCount, totalCount, hasDescription } = useMemo(() => {
+    const foundCount = words.filter(w => w.found).length;
+    const totalCount = words.length;
+    const hasDescription = (word: string) => {
+      return allDescriptions[word] !== undefined;
+    };
+    
+    return { foundCount, totalCount, hasDescription };
+  }, [words, allDescriptions]);
+
+  // Memoize completion percentage
+  const completionPercentage = useMemo(() => {
+    return totalCount > 0 ? (foundCount / totalCount) * 100 : 0;
+  }, [foundCount, totalCount]);
+
+  // Optimize for mobile layout at the top of the screen
+  if (isMobileLayout) {
     return (
-        <div style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: '16px'
+      <div
+        style={{ 
+          padding: '8px 12px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.15)',
+          width: '100%',
+          boxSizing: 'border-box',
+          backgroundColor: `${theme.gridBg}90`,
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${theme.accent}20`
+        }}
+      >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '6px' 
         }}>
-            <div style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                backdropFilter: 'blur(8px)',
-                borderRadius: '16px',
-                padding: window.innerWidth < 480 ? '16px' : '20px',
-                maxWidth: '90%',
-                width: window.innerWidth < 480 ? '95%' : '400px',
-                boxShadow: `0 0 30px ${color}80, 0 0 10px rgba(0, 0, 0, 0.3)`,
-                border: `2px solid ${color}`,
-                animation: 'bounce-in 0.6s ease-out forwards',
-                textAlign: 'center',
-                position: 'relative',
-                maxHeight: window.innerWidth < 480 ? '90vh' : 'auto',
-                overflowY: window.innerWidth < 480 ? 'auto' : 'visible'
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '4px'
+          }}>
+            <Search size={14} style={{ color: theme.secondary }} />
+            <h3 style={{ 
+              fontSize: '14px', 
+              fontWeight: '600', 
+              margin: 0,
+              color: theme.primary 
             }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '12px'
-                }}>
-                    {descriptionType === 'islamicPlaces' ? (
-                        <MapPin 
-                            size={24} 
-                            style={{ 
-                                color: color,
-                                marginRight: '8px'
-                            }} 
-                        />
-                    ) : descriptionType === 'kidsMode' ? (
-                        <BookOpen 
-                            size={24} 
-                            style={{ 
-                                color: color,
-                                marginRight: '8px'
-                            }} 
-                        />
-                    ) : (
-                        <BookOpen 
-                            size={24} 
-                            style={{ 
-                                color: color,
-                                marginRight: '8px'
-                            }} 
-                        />
-                    )}
-                    <div style={{ 
-                        fontSize: '24px',
-                        fontWeight: 'bold',
-                        color: color
-                    }}>
-                        {word}
-                    </div>
-                    
-                    {/* Audio pronunciation for Kids Mode */}
-                    {kidsMode && (
-                        <div style={{ marginLeft: '8px' }}>
-                            <AudioPronunciation 
-                                word={word} 
-                                color={color} 
-                                kidsMode={kidsMode} 
-                            />
-                        </div>
-                    )}
-                </div>
-                
-                {/* English description */}
-                <div style={{
-                    color: '#ffffff',
-                    fontSize: '16px',
-                    lineHeight: '1.5',
-                    padding: '8px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
-                    marginBottom: urduDescription ? '8px' : '12px',
-                    textAlign: 'left'
-                }}>
-                    {description}
-                </div>
-                
-                {/* Urdu description (only for Islamic Places) */}
-                {urduDescription && (
-                    <div style={{
-                        color: '#ffffff',
-                        fontSize: '16px',
-                        lineHeight: '1.5',
-                        padding: '8px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        borderRadius: '8px',
-                        marginBottom: '12px',
-                        direction: 'rtl',
-                        fontFamily: "'Noto Nastaliq Urdu', serif",
-                        textAlign: 'right'
-                    }}>
-                        {urduDescription}
-                    </div>
-                )}
-                
-                {/* Visual illustration for Kids Mode */}
-                {kidsMode && descriptionType === 'kidsMode' && (
-                    <VisualIllustration 
-                        word={word} 
-                        kidsMode={kidsMode} 
-                        theme={theme} 
-                    />
-                )}
-                
-                <div style={{
-                    fontSize: '12px',
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    fontStyle: 'italic',
-                    marginTop: '12px'
-                }}>
-                    {descriptionType === 'islamicPlaces' 
-                        ? 'Sacred Place in Islam' 
-                        : descriptionType === 'kidsMode'
-                        ? 'Islamic Term for Kids'
-                        : FIVE_PILLARS_DESCRIPTIONS[word] 
-                        ? 'Five Pillars of Islam'
-                        : ISLAMIC_PLACES_DESCRIPTIONS[word] 
-                        ? 'Sacred Place in Islam'
-                        : descriptions && descriptions[word] 
-                        ? descriptions[word].split(':')[0] || 'Custom Category'
-                        : 'Islamic Term'}
-                </div>
-                
-                {/* Close button - optimized for touch */}
-                <button
-                    onClick={onClose}
-                    style={{
-                        position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: 'none',
-                        color: 'white',
-                        fontSize: window.innerWidth < 480 ? '24px' : '20px',
-                        cursor: 'pointer',
-                        padding: '5px',
-                        borderRadius: '50%',
-                        width: window.innerWidth < 480 ? '44px' : '30px',
-                        height: window.innerWidth < 480 ? '44px' : '30px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)',
-                        touchAction: 'manipulation'
-                    }}
-                    aria-label="Close"
-                >
-                    �
-                </button>
-                
-                {/* Decorative elements */}
-                <div style={{
-                    position: 'absolute',
-                    top: '-10px',
-                    right: '-10px',
-                    color: color,
-                    animation: 'pulse-glow 2s ease-in-out infinite'
-                }}>
-                    {descriptionType === 'islamicPlaces' ? (
-                        <Globe size={24} />
-                    ) : (
-                        <Sparkles size={24} />
-                    )}
-                </div>
-                <div style={{
-                    position: 'absolute',
-                    bottom: '-10px',
-                    left: '-10px',
-                    color: color,
-                    animation: 'pulse-glow 2s ease-in-out infinite',
-                    animationDelay: '0.5s'
-                }}>
-                    {descriptionType === 'islamicPlaces' ? (
-                        <MapPin size={24} />
-                    ) : (
-                        <Sparkles size={24} />
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptions = true, kidsMode = false, isMobileLayout = false, descriptions }) => {
-    const [selectedWord, setSelectedWord] = useState<string | null>(null);
-    const prevWordsRef = useRef<WordPlacement[]>([]);
-    const isInitialMount = useRef(true);
-    
-    // Effect to show description when a new word is found
-    useEffect(() => {
-        // Skip the initial render
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            prevWordsRef.current = [...words];
-            return;
-        }
-
-        // Find newly found words by comparing with previous words
-        const newlyFoundWord = words.find(w => (
-            w.found && 
-            !prevWordsRef.current.some(pw => pw.word === w.word && pw.found) &&
-            allDescriptions[w.word] !== undefined
-        ));
-        
-        // Update the ref for the next render
-        if (newlyFoundWord) {
-            setSelectedWord(newlyFoundWord.word);
-        }
-        
-        // Always update the ref with current words for next comparison
-        prevWordsRef.current = [...words];
-    }, [words, descriptions]);
-    
-    // Combine all description sources
-    const allDescriptions = useMemo(() => ({
-        ...FIVE_PILLARS_DESCRIPTIONS,
-        ...PROPHETS_DESCRIPTIONS,
-        ...ISLAMIC_MONTHS_DESCRIPTIONS,
-        ...MUSLIM_SCIENTISTS_DESCRIPTIONS,
-        ...ISLAMIC_LANDMARKS_DESCRIPTIONS,
-        ...QURANIC_SURAHS_DESCRIPTIONS,
-        ...ISLAMIC_VALUES_DESCRIPTIONS,
-        ...ISLAMIC_PLACES_DESCRIPTIONS,
-        ...(descriptions || {})
-    }), [descriptions]);
-
-    // Memoize expensive calculations
-    const { foundCount, totalCount, hasDescription } = useMemo(() => {
-        const foundCount = words.filter(w => w.found).length;
-        const totalCount = words.length;
-        const hasDescription = (word: string) => {
-            return allDescriptions[word] !== undefined;
-        };
-        
-        return { foundCount, totalCount, hasDescription };
-    }, [words, allDescriptions]);
-
-    // Memoize completion percentage
-    const completionPercentage = useMemo(() => {
-        return totalCount > 0 ? (foundCount / totalCount) * 100 : 0;
-    }, [foundCount, totalCount]);
-
-    // Optimize for mobile layout at the top of the screen
-    if (isMobileLayout) {
-        return (
+              {foundCount}/{totalCount}
+            </h3>
+          </div>
+          
+          {/* Compact progress bar */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '6px',
+            flexGrow: 1,
+            marginLeft: '8px',
+            maxWidth: '100px'
+          }}>
             <div
-                style={{ 
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.15)',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    backgroundColor: `${theme.gridBg}90`,
-                    backdropFilter: 'blur(8px)',
-                    border: `1px solid ${theme.accent}20`
-                }}
+              style={{ 
+                flexGrow: 1, 
+                height: '4px', 
+                borderRadius: '2px', 
+                overflow: 'hidden',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)' 
+              }}
             >
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '6px' 
-                }}>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '4px'
-                    }}>
-                        <Search size={14} style={{ color: theme.secondary }} />
-                        <h3 style={{ 
-                            fontSize: '14px', 
-                            fontWeight: '600', 
-                            margin: 0,
-                            color: theme.primary 
-                        }}>
-                            {foundCount}/{totalCount}
-                        </h3>
-                    </div>
-                    
-                    {/* Compact progress bar */}
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '6px',
-                        flexGrow: 1,
-                        marginLeft: '8px',
-                        maxWidth: '100px'
-                    }}>
-                        <div
-                            style={{ 
-                                flexGrow: 1, 
-                                height: '4px', 
-                                borderRadius: '2px', 
-                                overflow: 'hidden',
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)' 
-                            }}
-                        >
-                            <div
-                                className="animate-rainbow"
-                                style={{
-                                    height: '100%',
-                                    width: `${completionPercentage}%`,
-                                    transition: 'all 0.5s ease-out'
-                                }}
-                            />
-                        </div>
-                        <span style={{
-                            fontSize: '12px',
-                            color: theme.primary,
-                            opacity: 0.8
-                        }}>
-                            {Math.round(completionPercentage)}%
-                        </span>
-                    </div>
-                </div>
-
-                {/* Horizontal scrolling word list for mobile */}
-                <div style={{ 
-                    display: 'flex',
-                    flexDirection: 'row',
-                    gap: '6px',
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    padding: '2px 0',
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                }}>
-                {words.map((word, index) => {
-                    const isFound = word.found;
-                    return (
-                        <div
-                            key={`${word.word}-${index}`}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                transition: 'all 0.3s',
-                                backgroundColor: isFound ? word.color + '20' : theme.cellBg,
-                                borderBottom: isFound ? `2px solid ${word.color}` : '2px solid transparent',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
-                                minHeight: '36px',
-                                minWidth: 'fit-content',
-                                flexShrink: 0,
-                                touchAction: 'manipulation' // Improve touch handling
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isFound) {
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isFound) {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }
-                            }}
-                            onTouchStart={(e) => {
-                                if (!isFound) {
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                }
-                            }}
-                            onTouchEnd={(e) => {
-                                if (!isFound) {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }
-                            }}
-                        >
-                            {/* Animated background for found words */}
-                            {isFound && (
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        opacity: 0.2,
-                                        background: `linear-gradient(90deg, transparent, ${word.color}60, transparent)`,
-                                        backgroundSize: '200% 100%',
-                                        animation: 'word-trail 2s ease-in-out infinite'
-                                    }}
-                                />
-                            )}
-
-                            <div
-                                style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.3s',
-                                    backgroundColor: isFound ? word.color : 'rgba(255, 255, 255, 0.1)',
-                                    color: isFound ? '#ffffff' : theme.primary,
-                                    zIndex: 1,
-                                    animation: isFound ? 'word-found 0.6s ease-out' : 'none'
-                                }}
-                            >
-                                {isFound ? (
-                                    <Check size={14} style={{ animation: 'bounce 1s infinite' }} />
-                                ) : (
-                                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{index + 1}</span>
-                                )}
-                            </div>
-
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                zIndex: 1
-                            }}>
-                                <span
-                                    style={{
-                                        fontFamily: 'JetBrains Mono, monospace',
-                                        fontWeight: '500',
-                                        transition: 'all 0.3s',
-                                        textDecoration: isFound ? 'line-through' : 'none',
-                                        color: isFound ? word.color : theme.primary,
-                                        textShadow: isFound ? `0 0 10px ${word.color}40` : 'none'
-                                    }}
-                                >
-                                    {word.word}
-                                </span>
-                                
-                                {/* Info icon for words with descriptions */}
-                                {showDescriptions && hasDescription(word.word) && (
-                                    <div 
-                                        title={isFound ? "Click to view description" : "Find this word to unlock its description"}
-                                        onClick={() => {
-                                            // Only show description if the word is found
-                                            if (isFound) {
-                                                setSelectedWord(word.word);
-                                            }
-                                        }}
-                                        style={{
-                                            cursor: isFound ? 'pointer' : 'not-allowed'
-                                        }}
-                                    >
-                                        <Info 
-                                            size={14} 
-                                            style={{ 
-                                                color: isFound ? word.color : 'rgba(255, 255, 255, 0.4)',
-                                                opacity: isFound ? 1 : 0.5,
-                                                transition: 'all 0.3s'
-                                            }} 
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {isFound && (
-                                <div style={{ 
-                                    marginLeft: 'auto', 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '8px' 
-                                }}>
-                                    {Math.random() > 0.5 ? (
-                                        <Star 
-                                            size={14} 
-                                            style={{ 
-                                                color: word.color,
-                                                animation: 'pulse-glow 2s ease-in-out infinite'
-                                            }} 
-                                        />
-                                    ) : (
-                                        <Sparkles 
-                                            size={14} 
-                                            style={{ 
-                                                color: word.color,
-                                                animation: 'pulse-glow 2s ease-in-out infinite'
-                                            }} 
-                                        />
-                                    )}
-                                    <div
-                                        style={{ 
-                                            width: '8px', 
-                                            height: '8px', 
-                                            borderRadius: '50%', 
-                                            backgroundColor: word.color,
-                                            animation: 'pulse-glow 2s ease-in-out infinite'
-                                        }}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+              <div
+                className="animate-rainbow"
+                style={{
+                  height: '100%',
+                  width: `${completionPercentage}%`,
+                  transition: 'all 0.5s ease-out'
+                }}
+              />
             </div>
-
-            {foundCount === totalCount && (
-                <div style={{ 
-                    marginTop: '16px', 
-                    padding: '16px', 
-                    borderRadius: '8px', 
-                    textAlign: 'center',
-                    background: 'linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff)',
-                    backgroundSize: '400% 400%',
-                    animation: 'rainbow-shift 3s ease infinite'
-                }}>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
-                        ?? Congratulations! ??
-                    </div>
-                    <div style={{ fontSize: '14px', opacity: 0.9 }}>
-                        All words found!
-                    </div>
-                    <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
-                        <Sparkles 
-                            size={20} 
-                            style={{ animation: 'float 3s ease-in-out infinite' }} 
-                        />
-                    </div>
-                </div>
-            )}
-            
-            {/* Render the description box when a word is selected */}
-            {selectedWord && (
-                <DescriptionBox
-                    word={selectedWord}
-                    color={words.find(w => w.word === selectedWord)?.color || theme.secondary}
-                    onClose={() => setSelectedWord(null)}
-                    kidsMode={kidsMode}
-                    theme={theme}
-                    descriptions={descriptions}
-                />
-            )}
+            <span style={{
+              fontSize: '12px',
+              color: theme.primary,
+              opacity: 0.8
+            }}>
+              {Math.round(completionPercentage)}%
+            </span>
+          </div>
         </div>
-        );
-    }
 
-    // Desktop layout (standard vertical list)
-    return (
-        <div
-            style={{ 
-                padding: '24px',
-                borderRadius: '12px',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                minWidth: '256px',
-                width: 'auto',
-                boxSizing: 'border-box',
-                backgroundColor: theme.gridBg 
+        {/* Horizontal scrolling word list for mobile */}
+        <div style={{ 
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '6px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          padding: '2px 0',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}>
+          {words.map((word, index) => (
+            <WordListItem
+              key={`${word.word}-${index}`}
+              word={word}
+              index={index}
+              theme={theme}
+              showDescriptions={showDescriptions}
+              hasDescription={hasDescription}
+              onSelectWord={(word) => {
+                // Only set selected word if not already showing automatically
+                if (!isAutoShowingRef.current) {
+                  setSelectedWord(word);
+                }
+              }}
+              isMobileLayout={true}
+            />
+          ))}
+        </div>
+
+        {foundCount === totalCount && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '16px', 
+            borderRadius: '8px', 
+            textAlign: 'center',
+            background: 'linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff)',
+            backgroundSize: '400% 400%',
+            animation: 'rainbow-shift 3s ease infinite'
+          }}>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+              🎉 Congratulations! 🎉
+            </div>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              All words found!
+            </div>
+            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
+              <Sparkles 
+                size={20} 
+                style={{ animation: 'float 3s ease-in-out infinite' }} 
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Render the description box when a word is selected - only in mobile layout */}
+        {selectedWord && isMobileLayout && (
+          <DescriptionBox
+            word={selectedWord}
+            color={words.find(w => w.word === selectedWord)?.color || theme.secondary}
+            onClose={() => {
+              setSelectedWord(null);
+              isAutoShowingRef.current = false; // Reset flag when manually closed
             }}
-        >
-            <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                marginBottom: '16px' 
-            }}>
-                <Search size={20} style={{ color: theme.secondary }} />
-                <h3 style={{ 
-                    fontSize: '18px', 
-                    fontWeight: '600', 
-                    margin: 0,
-                    color: theme.primary 
-                }}>
-                    Words to Find
-                </h3>
-            </div>
-
-            <div style={{ 
-                marginBottom: '16px', 
-                padding: '12px', 
-                borderRadius: '8px', 
-                backgroundColor: theme.cellBg 
-            }}>
-                <div style={{ 
-                    fontSize: '14px', 
-                    opacity: 0.75, 
-                    marginBottom: '4px',
-                    color: theme.primary 
-                }}>
-                    Progress
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div
-                        style={{ 
-                            flexGrow: 1, 
-                            height: '8px', 
-                            borderRadius: '4px', 
-                            overflow: 'hidden',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)' 
-                        }}
-                    >
-                        <div
-                            className="animate-rainbow"
-                            style={{
-                                height: '100%',
-                                width: `${(foundCount / totalCount) * 100}%`,
-                                transition: 'all 0.5s ease-out'
-                            }}
-                        />
-                    </div>
-                    <span style={{ 
-                        fontSize: '14px', 
-                        fontFamily: 'JetBrains Mono, monospace', 
-                        fontWeight: '600',
-                        color: theme.primary 
-                    }}>
-                        {foundCount}/{totalCount}
-                    </span>
-                </div>
-            </div>
-
-            <div style={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '8px', 
-                maxHeight: '384px', 
-                overflowY: 'auto' 
-            }}>
-                {words.map((word, index) => {
-                    const isFound = word.found;
-                    return (
-                        <div
-                            key={`${word.word}-${index}`}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                padding: '12px',
-                                borderRadius: '8px',
-                                transition: 'all 0.3s',
-                                backgroundColor: isFound ? word.color + '20' : theme.cellBg,
-                                borderLeft: isFound ? `4px solid ${word.color}` : '4px solid transparent',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
-                                minHeight: '44px',
-                                touchAction: 'manipulation'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!isFound) {
-                                    e.currentTarget.style.transform = 'scale(1.05)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isFound) {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }
-                            }}
-                        >
-                            {/* Animated background for found words */}
-                            {isFound && (
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        opacity: 0.2,
-                                        background: `linear-gradient(90deg, transparent, ${word.color}60, transparent)`,
-                                        backgroundSize: '200% 100%',
-                                        animation: 'word-trail 2s ease-in-out infinite'
-                                    }}
-                                />
-                            )}
-
-                            <div
-                                style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    borderRadius: '50%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.3s',
-                                    backgroundColor: isFound ? word.color : 'rgba(255, 255, 255, 0.1)',
-                                    color: isFound ? '#ffffff' : theme.primary,
-                                    zIndex: 1,
-                                    animation: isFound ? 'word-found 0.6s ease-out' : 'none'
-                                }}
-                            >
-                                {isFound ? (
-                                    <Check size={14} style={{ animation: 'bounce 1s infinite' }} />
-                                ) : (
-                                    <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{index + 1}</span>
-                                )}
-                            </div>
-
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                zIndex: 1
-                            }}>
-                                <span
-                                    style={{
-                                        fontFamily: 'JetBrains Mono, monospace',
-                                        fontWeight: '500',
-                                        transition: 'all 0.3s',
-                                        textDecoration: isFound ? 'line-through' : 'none',
-                                        color: isFound ? word.color : theme.primary,
-                                        textShadow: isFound ? `0 0 10px ${word.color}40` : 'none'
-                                    }}
-                                >
-                                    {word.word}
-                                </span>
-                                
-                                {/* Info icon for words with descriptions */}
-                                {showDescriptions && hasDescription(word.word) && (
-                                    <div 
-                                        title={isFound ? "Click to view description" : "Find this word to unlock its description"}
-                                        onClick={() => {
-                                            // Only show description if the word is found
-                                            if (isFound) {
-                                                setSelectedWord(word.word);
-                                            }
-                                        }}
-                                        style={{
-                                            cursor: isFound ? 'pointer' : 'not-allowed'
-                                        }}
-                                    >
-                                        <Info 
-                                            size={14} 
-                                            style={{ 
-                                                color: isFound ? word.color : 'rgba(255, 255, 255, 0.4)',
-                                                opacity: isFound ? 1 : 0.5,
-                                                transition: 'all 0.3s'
-                                            }} 
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {isFound && (
-                                <div style={{ 
-                                    marginLeft: 'auto', 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '8px' 
-                                }}>
-                                    {Math.random() > 0.5 ? (
-                                        <Star 
-                                            size={14} 
-                                            style={{ 
-                                                color: word.color,
-                                                animation: 'pulse-glow 2s ease-in-out infinite'
-                                            }} 
-                                        />
-                                    ) : (
-                                        <Sparkles 
-                                            size={14} 
-                                            style={{ 
-                                                color: word.color,
-                                                animation: 'pulse-glow 2s ease-in-out infinite'
-                                            }} 
-                                        />
-                                    )}
-                                    <div
-                                        style={{ 
-                                            width: '8px', 
-                                            height: '8px', 
-                                            borderRadius: '50%', 
-                                            backgroundColor: word.color,
-                                            animation: 'pulse-glow 2s ease-in-out infinite'
-                                        }}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {foundCount === totalCount && (
-                <div style={{ 
-                    marginTop: '16px', 
-                    padding: '16px', 
-                    borderRadius: '8px', 
-                    textAlign: 'center',
-                    background: 'linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff)',
-                    backgroundSize: '400% 400%',
-                    animation: 'rainbow-shift 3s ease infinite'
-                }}>
-                    <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
-                        ?? Congratulations! ??
-                    </div>
-                    <div style={{ fontSize: '14px', opacity: 0.9 }}>
-                        All words found!
-                    </div>
-                    <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
-                        <Sparkles 
-                            size={20} 
-                            style={{ animation: 'float 3s ease-in-out infinite' }} 
-                        />
-                    </div>
-                </div>
-            )}
-            
-            {/* Render the description box when a word is selected */}
-            {selectedWord && (
-                <DescriptionBox
-                    word={selectedWord}
-                    color={words.find(w => w.word === selectedWord)?.color || theme.secondary}
-                    onClose={() => setSelectedWord(null)}
-                    kidsMode={kidsMode}
-                    theme={theme}
-                    descriptions={descriptions}
-                />
-            )}
-        </div>
+            kidsMode={kidsMode}
+            theme={theme}
+            descriptions={descriptions}
+          />
+        )}
+      </div>
     );
+  }
+
+  // Desktop layout (standard vertical list)
+  return (
+    <div
+      style={{ 
+        padding: '24px',
+        borderRadius: '12px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        minWidth: '256px',
+        width: 'auto',
+        boxSizing: 'border-box',
+        backgroundColor: theme.gridBg 
+      }}
+    >
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px', 
+        marginBottom: '16px' 
+      }}>
+        <Search size={20} style={{ color: theme.secondary }} />
+        <h3 style={{ 
+          fontSize: '18px', 
+          fontWeight: '600', 
+          margin: 0,
+          color: theme.primary 
+        }}>
+          Words to Find
+        </h3>
+      </div>
+
+      <div style={{ 
+        marginBottom: '16px', 
+        padding: '12px', 
+        borderRadius: '8px', 
+        backgroundColor: theme.cellBg 
+      }}>
+        <div style={{ 
+          fontSize: '14px', 
+          opacity: 0.75, 
+          marginBottom: '4px',
+          color: theme.primary 
+        }}>
+          Progress
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div
+            style={{ 
+              flexGrow: 1, 
+              height: '8px', 
+              borderRadius: '4px', 
+              overflow: 'hidden',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)' 
+            }}
+          >
+            <div
+              className="animate-rainbow"
+              style={{
+                height: '100%',
+                width: `${(foundCount / totalCount) * 100}%`,
+                transition: 'all 0.5s ease-out'
+              }}
+            />
+          </div>
+          <span style={{ 
+            fontSize: '14px', 
+            fontFamily: 'JetBrains Mono, monospace', 
+            fontWeight: '600',
+            color: theme.primary 
+          }}>
+            {foundCount}/{totalCount}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '8px', 
+        maxHeight: '384px', 
+        overflowY: 'auto' 
+      }}>
+        {words.map((word, index) => (
+          <WordListItem
+            key={`${word.word}-${index}`}
+            word={word}
+            index={index}
+            theme={theme}
+            showDescriptions={showDescriptions}
+            hasDescription={hasDescription}
+            onSelectWord={(word) => {
+              // Only set selected word if not already showing automatically
+              if (!isAutoShowingRef.current) {
+                setSelectedWord(word);
+              }
+            }}
+            isMobileLayout={false}
+          />
+        ))}
+      </div>
+
+      {foundCount === totalCount && (
+        <div style={{ 
+          marginTop: '16px', 
+          padding: '16px', 
+          borderRadius: '8px', 
+          textAlign: 'center',
+          background: 'linear-gradient(-45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3, #54a0ff)',
+          backgroundSize: '400% 400%',
+          animation: 'rainbow-shift 3s ease infinite'
+        }}>
+          <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+            🎉 Congratulations! 🎉
+          </div>
+          <div style={{ fontSize: '14px', opacity: 0.9 }}>
+            All words found!
+          </div>
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
+            <Sparkles 
+              size={20} 
+              style={{ animation: 'float 3s ease-in-out infinite' }} 
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Render the description box when a word is selected - only in desktop layout */}
+      {selectedWord && !isMobileLayout && (
+        <DescriptionBox
+          word={selectedWord}
+          color={words.find(w => w.word === selectedWord)?.color || theme.secondary}
+          onClose={() => {
+            setSelectedWord(null);
+            isAutoShowingRef.current = false; // Reset flag when manually closed
+          }}
+          kidsMode={kidsMode}
+          theme={theme}
+          descriptions={descriptions}
+        />
+      )}
+    </div>
+  );
 };

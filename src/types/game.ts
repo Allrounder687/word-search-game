@@ -54,6 +54,17 @@ export interface GameSettings {
   };
 }
 
+export interface ThemeColors {
+  background: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+  gridBg: string;
+  cellBg: string;
+  cellHover: string;
+  font: string;
+}
+
 export interface GameState {
   grid: Cell[][];
   words: WordPlacement[];

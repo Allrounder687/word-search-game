@@ -108,12 +108,10 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
   ], []);
 
   const handleCategoryChange = useCallback((categoryKey: string) => {
-    console.log('Changing category to:', categoryKey);
     const newSettings = {
       ...settings,
       wordCategory: categoryKey as WordCategory
     };
-    console.log('New settings:', newSettings);
     onSettingsChange(newSettings);
     setShowCategoryDropdown(false);
     setShowDropdownMenu(false);
@@ -174,25 +172,23 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
           <ChevronDown size={iconSize} style={{ color: theme.primary }} />
         </button>
 
-        {isMobile && (
-          <MobileDropdown
-            isOpen={showDropdownMenu}
-            onClose={() => setShowDropdownMenu(false)}
-            settings={settings}
-            wordCategories={wordCategories}
-            themes={themes}
-            onCategoryChange={handleCategoryChange}
-            onThemeChange={handleThemeChange}
-            theme={theme}
-            iconSize={iconSize}
-            onReset={onReset}
-            onToggleZoom={onToggleZoom}
-            onToggleClickMode={onToggleClickMode}
-            isZoomed={isZoomed}
-            isClickMode={isClickMode}
-            key={wordCategories.length} // Force re-render when categories change
-          />
-        )}
+        <MobileDropdown
+          isOpen={showDropdownMenu}
+          onClose={() => setShowDropdownMenu(false)}
+          settings={settings}
+          wordCategories={wordCategories}
+          themes={themes}
+          onCategoryChange={handleCategoryChange}
+          onThemeChange={handleThemeChange}
+          theme={theme}
+          iconSize={iconSize}
+          onReset={onReset}
+          onToggleZoom={onToggleZoom}
+          onToggleClickMode={onToggleClickMode}
+          isZoomed={isZoomed}
+          isClickMode={isClickMode}
+          key={wordCategories.length} // Force re-render when categories change
+        />
       </div>
     );
   }

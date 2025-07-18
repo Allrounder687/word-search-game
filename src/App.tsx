@@ -57,6 +57,10 @@ function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [isClickMode, setIsClickMode] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
+  const [selectedDescriptionWord, setSelectedDescriptionWord] = useState<string | null>(null);
 
   // Use responsive hook for better performance and maintainability
   const breakpoints = useResponsive();
@@ -182,7 +186,7 @@ function App() {
   }, [gameState, savedState]);
 
   const handleWordFound = useCallback((word: WordPlacement) => {
-    // Update state with the found word
+    // Update state with the found word in a single setState call
     setGameState(prev => {
       const newFoundWords = new Set(prev.foundWords);
       newFoundWords.add(word.word);
@@ -199,29 +203,13 @@ function App() {
 
       const isComplete = newFoundWords.size === prev.words.length;
 
-      // Create the new state
-      const newState = {
-        ...prev,
-        words: updatedWords,
-        foundWords: newFoundWords,
-        score: newScore,
-        isComplete
-      };
-
-      // Save the state immediately
-      saveGameState(newState);
-
-      // Return the new state
-      return newState;
-    });
-
-    // Handle achievements and celebrations after state update
-    setGameState(prev => {
-      const isComplete = prev.isComplete;
+      // Handle celebrations and achievements if game is complete
       if (isComplete) {
-        // Show celebration animation
-        setShowCelebration(true);
-        setTimeout(() => setShowCelebration(false), 3000);
+        // Show celebration animation (in a setTimeout to avoid state updates during render)
+        setTimeout(() => {
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 3000);
+        }, 0);
 
         // Unlock achievements
         if (window.achievementSystem) {
@@ -239,9 +227,23 @@ function App() {
           }
         }
       }
-      return prev;
+
+      // Create the new state
+      const newState = {
+        ...prev,
+        words: updatedWords,
+        foundWords: newFoundWords,
+        score: newScore,
+        isComplete
+      };
+
+      // Save the state immediately
+      saveGameState(newState);
+
+      // Return the new state
+      return newState;
     });
-  }, [calculateScore, setShowCelebration]);
+  }, []);
 
   const handleSettingsChange = useCallback((newSettings: GameSettings) => {
     initializeGame(newSettings);
@@ -298,6 +300,18 @@ function App() {
       setHintsRemaining(difficultyHints[gameState.settings.difficulty] || 3);
     }
   }, [gameState.settings.difficulty, gameState.settings.hintsCount]);
+  
+  // Handle zoom toggle
+  const onToggleZoom = useCallback(() => {
+    setIsZoomed(prev => !prev);
+  }, []);
+  
+  // Handle click mode toggle
+  const handleToggleClickMode = useCallback(() => {
+    const newMode = selectionMode === 'drag' ? 'click-start-end' : 'drag';
+    setSelectionMode(newMode);
+    setIsClickMode(newMode === 'click-start-end');
+  }, [selectionMode]);
 
   return (
     <div
@@ -322,6 +336,10 @@ function App() {
           totalWords={gameState.words.length}
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
+          onToggleZoom={onToggleZoom}
+          onToggleClickMode={handleToggleClickMode}
+          isZoomed={isZoomed}
+          isClickMode={isClickMode}
           theme={currentTheme}
           isDesktop={breakpoints.isDesktop}
           timeRemaining={timeRemaining}
@@ -349,6 +367,9 @@ function App() {
               theme={currentTheme}
               showDescriptions={gameState.settings.showDescriptions}
               kidsMode={gameState.settings.kidsMode}
+              isZoomed={isZoomed}
+              selectionMode={selectionMode}
+              onSelectionModeChange={setSelectionMode}
             />
           </div>
 
@@ -363,6 +384,11 @@ function App() {
               settings={gameState.settings}
               onSettingsChange={handleSettingsChange}
               theme={currentTheme}
+              onReset={handleReset}
+              onToggleZoom={onToggleZoom}
+              onToggleClickMode={handleToggleClickMode}
+              isZoomed={isZoomed}
+              isClickMode={isClickMode}
             />
 
             {/* Get descriptions based on the current category */}
@@ -390,22 +416,13 @@ function App() {
                 descriptions = ISLAMIC_VALUES_DESCRIPTIONS;
               }
               
+              // Determine which WordList to render based on screen size
+              const isMobileLayout = !breakpoints.isDesktop;
+              
               return (
                 <>
-                  {/* Desktop WordList - Only displayed on desktop */}
-                  {breakpoints.isDesktop && (
-                    <WordList
-                      words={gameState.words}
-                      theme={currentTheme}
-                      showDescriptions={gameState.settings.showDescriptions}
-                      kidsMode={gameState.settings.kidsMode}
-                      isMobileLayout={false}
-                      descriptions={descriptions}
-                    />
-                  )}
-
-                  {/* Mobile WordList - Displayed at the top on mobile devices */}
-                  {!breakpoints.isDesktop && (
+                  {/* Conditionally render either desktop or mobile WordList */}
+                  {isMobileLayout ? (
                     <div style={{
                       width: '100%',
                       marginTop: layoutConfig.spacing.marginTop,
@@ -418,8 +435,21 @@ function App() {
                         kidsMode={gameState.settings.kidsMode}
                         isMobileLayout={true}
                         descriptions={descriptions}
+                        selectedWord={selectedDescriptionWord}
+                        setSelectedWord={setSelectedDescriptionWord}
                       />
                     </div>
+                  ) : (
+                    <WordList
+                      words={gameState.words}
+                      theme={currentTheme}
+                      showDescriptions={gameState.settings.showDescriptions}
+                      kidsMode={gameState.settings.kidsMode}
+                      isMobileLayout={false}
+                      descriptions={descriptions}
+                      selectedWord={selectedDescriptionWord}
+                      setSelectedWord={setSelectedDescriptionWord}
+                    />
                   )}
                 </>
               );

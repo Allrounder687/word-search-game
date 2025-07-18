@@ -1,5 +1,5 @@
 import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
-import { getResponsiveIconSize, getCompactMobilePadding } from '../utils/responsiveLayout';
+import { getResponsiveIconSize } from '../utils/responsiveLayout';
 
 interface GameHeaderProps {
   score: number;
@@ -39,23 +39,22 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   };
 
   const completionPercentage = (foundWords / totalWords) * 100;
-  
+
   // Get responsive sizes for mobile
   const iconSize = getResponsiveIconSize(20);
-  const padding = getCompactMobilePadding(24);
   const isMobile = !isDesktop;
 
   return (
-    <div 
-      style={{ 
+    <div
+      style={{
         width: '100%',
-        padding: isMobile ? padding : '24px',
-        paddingRight: isMobile ? '8px' : '24px', // Ensure enough padding on the right side
+        padding: isMobile ? '8px' : '24px',
         borderRadius: '12px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         marginBottom: isMobile ? '12px' : '24px',
         backgroundColor: theme.gridBg,
-        boxSizing: 'border-box' // Ensure padding is included in width calculation
+        boxSizing: 'border-box',
+        overflow: 'hidden'
       }}
     >
       <div style={{
@@ -68,9 +67,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         overflow: 'hidden'
       }}>
         {/* Title */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
           gap: isMobile ? '8px' : '12px',
           flexShrink: 0
         }}>
@@ -78,8 +77,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <Zap size={isMobile ? 24 : 32} style={{ color: theme.secondary }} />
           </div>
           <div>
-            <h1 
-              style={{ 
+            <h1
+              style={{
                 fontSize: isMobile ? '20px' : '30px',
                 fontWeight: 'bold',
                 background: 'linear-gradient(to right, #ffffff, #d1d5db)',
@@ -106,10 +105,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         </div>
 
         {/* Stats - Compact for mobile */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: isMobile ? '12px' : '24px', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '12px' : '24px',
           flexWrap: 'nowrap',
           justifyContent: 'center',
           flexGrow: 1
@@ -118,17 +117,17 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
             <Trophy size={iconSize} style={{ color: theme.accent }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: isMobile ? '10px' : '12px', 
-                opacity: 0.75, 
-                color: theme.primary 
+              <div style={{
+                fontSize: isMobile ? '10px' : '12px',
+                opacity: 0.75,
+                color: theme.primary
               }}>Score</div>
-              <div 
-                style={{ 
+              <div
+                style={{
                   fontSize: isMobile ? '14px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
-                  color: theme.primary 
+                  color: theme.primary
                 }}
               >
                 {score.toLocaleString()}
@@ -140,15 +139,15 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
             <Clock size={iconSize} style={{ color: theme.secondary }} />
             <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: isMobile ? '10px' : '12px', 
-                opacity: 0.75, 
-                color: theme.primary 
+              <div style={{
+                fontSize: isMobile ? '10px' : '12px',
+                opacity: 0.75,
+                color: theme.primary
               }}>
-                {timeRemaining !== null ? 'Time' : 'Time'}
+                Time
               </div>
-              <div 
-                style={{ 
+              <div
+                style={{
                   fontSize: isMobile ? '14px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
@@ -163,8 +162,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
           {/* Progress */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
-            <div 
-              style={{ 
+            <div
+              style={{
                 width: isMobile ? '24px' : '32px',
                 height: isMobile ? '24px' : '32px',
                 borderRadius: '50%',
@@ -181,17 +180,17 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               {Math.round(completionPercentage)}%
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: isMobile ? '10px' : '12px', 
-                opacity: 0.75, 
-                color: theme.primary 
+              <div style={{
+                fontSize: isMobile ? '10px' : '12px',
+                opacity: 0.75,
+                color: theme.primary
               }}>Found</div>
-              <div 
-                style={{ 
+              <div
+                style={{
                   fontSize: isMobile ? '14px' : '18px',
                   fontWeight: 'bold',
                   fontFamily: 'JetBrains Mono, monospace',
-                  color: theme.primary 
+                  color: theme.primary
                 }}
               >
                 {foundWords}/{totalWords}
@@ -201,10 +200,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         </div>
 
         {/* Controls - Single row for mobile */}
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: isMobile ? '2px' : '8px', 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: isMobile ? '2px' : '8px',
           flexWrap: 'nowrap',
           flexShrink: 0,
           marginLeft: isMobile ? '0' : 0,
@@ -216,7 +215,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           {isMobile && onToggleClickMode && (
             <button
               onClick={onToggleClickMode}
-              style={{ 
+              style={{
                 padding: '6px',
                 borderRadius: '6px',
                 transition: 'all 0.2s',
@@ -246,7 +245,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           {isMobile && onToggleZoom && (
             <button
               onClick={onToggleZoom}
-              style={{ 
+              style={{
                 padding: '6px',
                 borderRadius: '6px',
                 transition: 'all 0.2s',
@@ -271,11 +270,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               <ZoomIn size={14} />
             </button>
           )}
-          
+
           {/* Reset Button */}
           <button
             onClick={onReset}
-            style={{ 
+            style={{
               padding: isMobile ? '6px' : '12px',
               borderRadius: isMobile ? '6px' : '8px',
               transition: 'all 0.2s',
@@ -299,11 +298,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           >
             <RotateCcw size={isMobile ? 14 : iconSize} />
           </button>
-          
+
           {/* Settings Button */}
           <button
             onClick={onSettings}
-            style={{ 
+            style={{
               padding: isMobile ? '6px' : '12px',
               borderRadius: isMobile ? '6px' : '8px',
               transition: 'all 0.2s',
@@ -332,18 +331,18 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       {/* Progress Bar - More vibrant for mobile */}
       <div style={{ marginTop: isMobile ? '12px' : '16px' }}>
-        <div 
-          style={{ 
+        <div
+          style={{
             width: '100%',
             height: isMobile ? '6px' : '8px',
             borderRadius: '4px',
             overflow: 'hidden',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)' 
+            backgroundColor: 'rgba(255, 255, 255, 0.1)'
           }}
         >
           <div
             className="animate-rainbow"
-            style={{ 
+            style={{
               height: '100%',
               transition: 'all 0.5s ease-out',
               width: `${completionPercentage}%`,

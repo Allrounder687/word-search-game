@@ -1,122 +1,83 @@
-import React, { useMemo, useCallback } from 'react';
+import React from 'react';
 import { Check, Star, Sparkles, Info } from 'lucide-react';
-import type { WordPlacement } from '../types/game';
-
-interface ThemeColors {
-  primary: string;
-  secondary: string;
-  cellBg: string;
-  [key: string]: string;
-}
+import type { WordPlacement, ThemeColors } from '../types/game';
 
 interface WordListItemProps {
   word: WordPlacement;
   index: number;
-  isFound: boolean;
   theme: ThemeColors;
   showDescriptions: boolean;
   hasDescription: (word: string) => boolean;
-  onWordClick: (word: string) => void;
-  isMobile?: boolean;
+  onSelectWord: (word: string) => void;
+  isMobileLayout: boolean;
 }
 
-// Static styles to avoid recreation
-const STATIC_STYLES = {
-  display: 'flex',
-  alignItems: 'center',
-  borderRadius: '8px',
-  transition: 'all 0.3s',
-  position: 'relative' as const,
-  overflow: 'hidden' as const,
-  touchAction: 'manipulation' as const
-};
-
-// Custom hook for hover effects
-const useHoverEffect = (isFound: boolean) => {
-  const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1.05)';
-    }
-  }, [isFound]);
-
-  const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1)';
-    }
-  }, [isFound]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1.05)';
-    }
-  }, [isFound]);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isFound) {
-      e.currentTarget.style.transform = 'scale(1)';
-    }
-  }, [isFound]);
-
-  return { handleMouseEnter, handleMouseLeave, handleTouchStart, handleTouchEnd };
-};
-
-const WordListItemComponent: React.FC<WordListItemProps> = ({
+export const WordListItem: React.FC<WordListItemProps> = ({
   word,
   index,
-  isFound,
   theme,
   showDescriptions,
   hasDescription,
-  onWordClick,
-  isMobile = false
+  onSelectWord,
+  isMobileLayout
 }) => {
-  // Memoize the icon selection based on word hash for consistency
-  const iconType = useMemo(() => {
-    const hash = word.word.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return hash % 2 === 0 ? 'star' : 'sparkles';
-  }, [word.word]);
+  const isFound = word.found;
 
-  // Memoize dynamic styles to prevent recreation on every render
-  const baseStyles = useMemo(() => ({
-    ...STATIC_STYLES,
-    gap: isMobile ? '8px' : '12px',
-    padding: isMobile ? '8px 12px' : '12px',
-    backgroundColor: isFound ? word.color + '20' : theme.cellBg,
-    ...(isMobile 
-      ? { borderBottom: isFound ? `2px solid ${word.color}` : '2px solid transparent' }
-      : { borderLeft: isFound ? `4px solid ${word.color}` : '4px solid transparent' }
-    ),
-    boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
-    minHeight: isMobile ? '36px' : '44px',
-    minWidth: isMobile ? 'fit-content' : undefined,
-    flexShrink: isMobile ? 0 : undefined,
-  }), [isMobile, isFound, word.color, theme.cellBg]);
-
-  // Use the custom hook for hover effects
-  const { handleMouseEnter, handleMouseLeave, handleTouchStart, handleTouchEnd } = useHoverEffect(isFound);
-
-  // Memoize keyboard handler for accessibility
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (isFound && hasDescription(word.word)) {
-        onWordClick(word.word);
-      }
+  // Handle click on info button
+  const handleInfoClick = () => {
+    if (isFound) {
+      onSelectWord(word.word);
     }
-  }, [isFound, hasDescription, word.word, onWordClick]);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === 'Enter' || e.key === ' ') && isFound) {
+      onSelectWord(word.word);
+    }
+  };
 
   return (
     <div
-      role="listitem"
-      aria-label={`Word: ${word.word}, ${isFound ? 'found' : 'not found'}`}
-      aria-describedby={showDescriptions && hasDescription(word.word) ? `desc-${word.word}` : undefined}
-      tabIndex={0}
-      style={baseStyles}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onKeyDown={handleKeyDown}
+      key={`${word.word}-${index}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: isMobileLayout ? '8px' : '12px',
+        padding: isMobileLayout ? '8px 12px' : '12px',
+        borderRadius: '8px',
+        transition: 'all 0.3s',
+        backgroundColor: isFound ? word.color + '20' : theme.cellBg,
+        borderBottom: isFound ? `2px solid ${word.color}` : '2px solid transparent',
+        borderLeft: !isMobileLayout && isFound ? `4px solid ${word.color}` : isMobileLayout ? undefined : '4px solid transparent',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: isFound ? `0 0 10px rgba(255, 255, 255, 0.3)` : 'none',
+        minHeight: isMobileLayout ? '36px' : '44px',
+        minWidth: isMobileLayout ? 'fit-content' : undefined,
+        flexShrink: isMobileLayout ? 0 : undefined,
+        touchAction: 'manipulation'
+      }}
+      onMouseEnter={(e) => {
+        if (!isFound) {
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isFound) {
+          e.currentTarget.style.transform = 'scale(1)';
+        }
+      }}
+      onTouchStart={(e) => {
+        if (!isFound) {
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }
+      }}
+      onTouchEnd={(e) => {
+        if (!isFound) {
+          e.currentTarget.style.transform = 'scale(1)';
+        }
+      }}
     >
       {/* Animated background for found words */}
       {isFound && (
@@ -132,11 +93,10 @@ const WordListItemComponent: React.FC<WordListItemProps> = ({
         />
       )}
 
-      {/* Status indicator */}
       <div
         style={{
-          width: '24px',
-          height: '24px',
+          width: isMobileLayout ? '24px' : '24px',
+          height: isMobileLayout ? '24px' : '24px',
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -149,13 +109,12 @@ const WordListItemComponent: React.FC<WordListItemProps> = ({
         }}
       >
         {isFound ? (
-          <Check size={14} style={{ animation: 'bounce 1s infinite' }} />
+          <Check size={isMobileLayout ? 14 : 14} style={{ animation: 'bounce 1s infinite' }} />
         ) : (
           <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{index + 1}</span>
         )}
       </div>
 
-      {/* Word text and info */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -174,62 +133,67 @@ const WordListItemComponent: React.FC<WordListItemProps> = ({
         >
           {word.word}
         </span>
-        
+
         {/* Info icon for words with descriptions */}
         {showDescriptions && hasDescription(word.word) && (
-          <div 
+          <button
             title={isFound ? "Click to view description" : "Find this word to unlock its description"}
-            onClick={() => {
-              if (isFound) {
-                onWordClick(word.word);
-              }
-            }}
+            onClick={handleInfoClick}
+            onKeyDown={handleKeyDown}
             style={{
-              cursor: isFound ? 'pointer' : 'not-allowed'
+              cursor: isFound ? 'pointer' : 'not-allowed',
+              background: 'transparent',
+              border: 'none',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
+            disabled={!isFound}
+            aria-label={isFound ? `View description for ${word.word}` : `Description for ${word.word} locked`}
+            tabIndex={isFound ? 0 : -1}
           >
-            <Info 
-              size={14} 
-              style={{ 
+            <Info
+              size={14}
+              style={{
                 color: isFound ? word.color : 'rgba(255, 255, 255, 0.4)',
                 opacity: isFound ? 1 : 0.5,
                 transition: 'all 0.3s'
-              }} 
+              }}
             />
-          </div>
+          </button>
         )}
       </div>
 
-      {/* Decorative elements for found words */}
       {isFound && (
-        <div style={{ 
-          marginLeft: 'auto', 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: '8px' 
+        <div style={{
+          marginLeft: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
         }}>
-          {iconType === 'star' ? (
-            <Star 
-              size={14} 
-              style={{ 
+          {Math.random() > 0.5 ? (
+            <Star
+              size={14}
+              style={{
                 color: word.color,
                 animation: 'pulse-glow 2s ease-in-out infinite'
-              }} 
+              }}
             />
           ) : (
-            <Sparkles 
-              size={14} 
-              style={{ 
+            <Sparkles
+              size={14}
+              style={{
                 color: word.color,
                 animation: 'pulse-glow 2s ease-in-out infinite'
-              }} 
+              }}
             />
           )}
           <div
-            style={{ 
-              width: '8px', 
-              height: '8px', 
-              borderRadius: '50%', 
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
               backgroundColor: word.color,
               animation: 'pulse-glow 2s ease-in-out infinite'
             }}
@@ -239,22 +203,3 @@ const WordListItemComponent: React.FC<WordListItemProps> = ({
     </div>
   );
 };
-
-// Memoize the component with proper comparison function for performance
-const arePropsEqual = (prevProps: WordListItemProps, nextProps: WordListItemProps) => {
-  return (
-    prevProps.word.word === nextProps.word.word &&
-    prevProps.word.found === nextProps.word.found &&
-    prevProps.word.color === nextProps.word.color &&
-    prevProps.index === nextProps.index &&
-    prevProps.isFound === nextProps.isFound &&
-    prevProps.isMobile === nextProps.isMobile &&
-    prevProps.showDescriptions === nextProps.showDescriptions &&
-    // Theme comparison - only check properties we actually use
-    prevProps.theme.primary === nextProps.theme.primary &&
-    prevProps.theme.secondary === nextProps.theme.secondary &&
-    prevProps.theme.cellBg === nextProps.theme.cellBg
-  );
-};
-
-export const WordListItem = React.memo(WordListItemComponent, arePropsEqual);

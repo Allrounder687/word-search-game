@@ -53,7 +53,7 @@ function App() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [isClickMode, setIsClickMode] = useState(false);
+  const [isClickMode] = useState(false);
   const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
   const [selectedDescriptionWord, setSelectedDescriptionWord] = useState<string | null>(null);
 
@@ -337,12 +337,7 @@ function App() {
     setIsZoomed(prev => !prev);
   }, []);
 
-  // Handle click mode toggle
-  const handleToggleClickMode = useCallback(() => {
-    const newMode = selectionMode === 'drag' ? 'click-start-end' : 'drag';
-    setSelectionMode(newMode);
-    setIsClickMode(newMode === 'click-start-end');
-  }, [selectionMode]);
+
 
   return (
     <div

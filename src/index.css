@@ -323,7 +323,7 @@ body {
   }
 }
 
-/* Fix for iOS audio playback */
+/* Fix for iOS audio playbook */
 .audio-enabled {
   position: fixed;
   top: -100px;
@@ -331,4 +331,36 @@ body {
   width: 1px;
   height: 1px;
   opacity: 0;
+}
+
+/* Ripple effect for touch devices */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Responsive improvements for iPad landscape */
+@media screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: landscape) {
+  .word-grid-container {
+    max-height: calc(100vh - 120px) !important;
+    overflow: hidden;
+  }
+}
+
+/* General mobile landscape improvements */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .game-container {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
+  .word-grid-container {
+    max-height: calc(100vh - 100px) !important;
+  }
 }

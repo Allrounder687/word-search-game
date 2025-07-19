@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen, Type } from 'lucide-react';
+import { X, Palette, Grid, Zap, Plus, Trash2, Brush, Sparkles, Shuffle, Save, FolderOpen, Edit, Lightbulb, Clock, BookOpen, Type, ChevronDown, ChevronRight } from 'lucide-react';
 import type { GameSettings, Theme, TimerMode, WordCategory } from '../types/game';
 import { THEMES } from '../types/game';
 
@@ -46,6 +46,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     accent: localSettings.customColors?.accent || '#ec4899'
   });
   const [selectedFont, setSelectedFont] = useState<string>("'Inter', sans-serif");
+  
+  // Collapsible sections state
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    difficulty: false,
+    wordCategory: false,
+    timer: false,
+    theme: false,
+    customWords: false,
+    font: false,
+    display: false,
+    advanced: false
+  });
 
   // Update local settings when settings prop changes
   useEffect(() => {
@@ -83,6 +95,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
     }
   }, [isOpen]);
+
+  // Toggle collapsible section
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   // Define all callback functions before early return
   const handleSave = useCallback(() => {
@@ -338,20 +358,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Difficulty */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <Zap size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.secondary }} />
-              <h3 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: isWhiteTheme ? '#ffffff' : theme.primary,
-                margin: 0
-              }}>
-                Difficulty
-              </h3>
-            </div>
+          <div style={{
+            border: `1px solid ${isWhiteTheme ? 'rgba(255, 255, 255, 0.2)' : theme.secondary + '30'}`,
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }}>
+            <button
+              onClick={() => toggleSection('difficulty')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                padding: '16px',
+                backgroundColor: isWhiteTheme ? 'rgba(255, 255, 255, 0.1)' : theme.cellBg,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isWhiteTheme ? 'rgba(255, 255, 255, 0.15)' : theme.cellHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isWhiteTheme ? 'rgba(255, 255, 255, 0.1)' : theme.cellBg;
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Zap size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.secondary }} />
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: isWhiteTheme ? '#ffffff' : theme.primary,
+                  margin: 0
+                }}>
+                  Difficulty
+                </h3>
+              </div>
+              {collapsedSections.difficulty ? 
+                <ChevronRight size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.primary }} /> : 
+                <ChevronDown size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.primary }} />
+              }
+            </button>
+            {!collapsedSections.difficulty && (
+              <div style={{ padding: '16px' }}>
             <div style={{
               display: 'grid',
               gridTemplateColumns: window.innerWidth >= 768 ? '1fr 1fr' : '1fr',
@@ -392,21 +444,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </button>
               ))}
             </div>
+              </div>
+            )}
           </div>
 
           {/* Word Category */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <Sparkles size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.secondary }} />
-              <h3 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: isWhiteTheme ? '#ffffff' : theme.primary,
-                margin: 0
-              }}>
-                Word Category
-              </h3>
-            </div>
+          <div style={{
+            border: `1px solid ${isWhiteTheme ? 'rgba(255, 255, 255, 0.2)' : theme.secondary + '30'}`,
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }}>
+            <button
+              onClick={() => toggleSection('wordCategory')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                padding: '16px',
+                backgroundColor: isWhiteTheme ? 'rgba(255, 255, 255, 0.1)' : theme.cellBg,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = isWhiteTheme ? 'rgba(255, 255, 255, 0.15)' : theme.cellHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = isWhiteTheme ? 'rgba(255, 255, 255, 0.1)' : theme.cellBg;
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.secondary }} />
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: isWhiteTheme ? '#ffffff' : theme.primary,
+                  margin: 0
+                }}>
+                  Word Category
+                </h3>
+              </div>
+              {collapsedSections.wordCategory ? 
+                <ChevronRight size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.primary }} /> : 
+                <ChevronDown size={20} style={{ color: isWhiteTheme ? '#ffffff' : theme.primary }} />
+              }
+            </button>
+            {!collapsedSections.wordCategory && (
+              <div style={{ padding: '16px' }}>
             <div style={{
               display: 'grid',
               gridTemplateColumns: window.innerWidth >= 768 ? '1fr 1fr' : '1fr',
@@ -452,6 +538,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </button>
               ))}
             </div>
+              </div>
+            )}
           </div>
 
           {/* Grid Size (for custom difficulty) */}
@@ -1718,56 +1806,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         )}
 
-        {/* Footer */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: '12px',
-          padding: '24px',
-          borderTop: `1px solid ${isWhiteTheme ? 'rgba(255, 255, 255, 0.2)' : theme.secondary + '40'}`
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px 24px',
-              borderRadius: '8px',
-              backgroundColor: isWhiteTheme ? 'rgba(255, 255, 255, 0.1)' : theme.cellBg,
-              color: isWhiteTheme ? '#ffffff' : theme.primary,
-              border: `1px solid ${isWhiteTheme ? 'rgba(255, 255, 255, 0.3)' : theme.secondary + '40'}`,
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            style={{
-              padding: '8px 24px',
-              borderRadius: '8px',
-              backgroundColor: isWhiteTheme ? '#ffffff' : theme.secondary,
-              color: isWhiteTheme ? '#1e3a8a' : 'white',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            Save Settings
-          </button>
-        </div>
+        {/* Floating Save Button */}
+        <button
+          onClick={handleSave}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            padding: '16px 24px',
+            borderRadius: '50px',
+            backgroundColor: isWhiteTheme ? '#ffffff' : theme.secondary,
+            color: isWhiteTheme ? '#1e3a8a' : 'white',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.3s',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: '600',
+            fontSize: '16px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1) translateY(0px)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+          }}
+        >
+          <Save size={20} />
+          Save Settings
+        </button>
       </div>
     </div>
   );

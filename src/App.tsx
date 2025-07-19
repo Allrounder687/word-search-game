@@ -346,6 +346,7 @@ function App() {
 
   return (
     <div
+      className="game-container"
       style={{
         minHeight: '100vh',
         padding: '16px',
@@ -500,7 +501,7 @@ function App() {
             </>
           )}
 
-          <div style={{
+          <div className="word-grid-container" style={{
             flexShrink: 0,
             display: 'flex',
             justifyContent: 'center',
@@ -515,13 +516,16 @@ function App() {
               const isLandscape = window.innerWidth > window.innerHeight;
               
               if (isIPad) {
-                // Use more space for iPad
-                return isLandscape ? 'calc(100vh - 180px)' : 'calc(100vh - 200px)';
+                // Improved spacing for iPad in landscape mode to prevent cutoff
+                return isLandscape ? 'calc(100vh - 120px)' : 'calc(100vh - 180px)';
               } else if (breakpoints.isTablet) {
-                // Other tablets
-                return 'calc(100vh - 200px)';
+                // Other tablets - also improved for landscape
+                return isLandscape ? 'calc(100vh - 140px)' : 'calc(100vh - 200px)';
+              } else if (breakpoints.isMobile) {
+                // Mobile devices
+                return isLandscape ? 'calc(100vh - 100px)' : 'calc(100vh - 220px)';
               } else {
-                // Default for other devices
+                // Desktop/default
                 return 'calc(100vh - 220px)';
               }
             })(),

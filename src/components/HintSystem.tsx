@@ -193,19 +193,30 @@ export const HintSystem: React.FC<HintSystemProps> = ({
 
   // Get dialog position styles based on calculated position
   const getDialogPositionStyles = () => {
+    const baseStyles = {
+      borderRadius: '12px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+    };
+
     switch (dialogPosition) {
       case 'bottom':
         return {
-          top: '100%',
+          ...baseStyles,
+          top: isMobile ? 'auto' : '100%',
+          bottom: isMobile ? '0' : 'auto',
           left: isMobile ? '0' : '50%',
           right: isMobile ? '0' : 'auto',
           transform: isMobile ? 'none' : 'translateX(-50%)',
           width: isMobile ? '100%' : 'auto',
-          marginTop: '8px',
-          maxHeight: isMobile ? 'calc(70vh)' : 'auto'
+          marginTop: isMobile ? '0' : '8px',
+          borderRadius: isMobile ? '16px 16px 0 0' : '12px',
+          maxHeight: isMobile ? 'calc(75vh)' : 'auto'
         };
       case 'top':
         return {
+          ...baseStyles,
           bottom: '100%',
           left: '50%',
           transform: 'translateX(-50%)',
@@ -213,6 +224,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         };
       case 'left':
         return {
+          ...baseStyles,
           top: '0',
           right: '100%',
           marginRight: '8px'
@@ -220,6 +232,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
       case 'right':
       default:
         return {
+          ...baseStyles,
           top: '0',
           left: '100%',
           marginLeft: '8px'
@@ -232,22 +245,24 @@ export const HintSystem: React.FC<HintSystemProps> = ({
     if (isMobile) {
       return {
         width: '100%',
-        maxHeight: 'calc(70vh)',
-        borderRadius: dialogPosition === 'bottom' ? '16px 16px 0 0' : '16px'
+        maxHeight: 'calc(75vh)',
+        minHeight: '200px'
       };
     } else if (isTablet) {
       return {
         width: 'auto',
-        minWidth: '280px',
-        maxWidth: '320px',
-        maxHeight: '400px'
+        minWidth: '320px',
+        maxWidth: '380px',
+        maxHeight: '450px',
+        minHeight: '200px'
       };
     } else {
       return {
         width: 'auto',
-        minWidth: '280px',
-        maxWidth: '320px',
-        maxHeight: '500px'
+        minWidth: '320px',
+        maxWidth: '400px',
+        maxHeight: '500px',
+        minHeight: '200px'
       };
     }
   };
@@ -286,20 +301,30 @@ export const HintSystem: React.FC<HintSystemProps> = ({
       </button>
 
       {showHintMenu && (
-        <div
-          ref={dialogRef}
-          className="fixed md:absolute shadow-2xl z-50"
-          style={{
-            backgroundColor: theme.gridBg,
-            border: `1px solid ${theme.secondary}40`,
-            ...getDialogPositionStyles(),
-            ...getDialogSizeStyles()
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="hint-dialog-title"
-          id="hint-dialog"
-        >
+        <>
+          {/* Mobile overlay */}
+          {isMobile && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              onClick={() => setShowHintMenu(false)}
+              aria-hidden="true"
+            />
+          )}
+          
+          <div
+            ref={dialogRef}
+            className="fixed md:absolute shadow-2xl z-50"
+            style={{
+              backgroundColor: `${theme.gridBg}F0`, // Add transparency
+              border: `1px solid ${theme.secondary}60`,
+              ...getDialogPositionStyles(),
+              ...getDialogSizeStyles()
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="hint-dialog-title"
+            id="hint-dialog"
+          >
           <div className="flex items-center justify-between p-3 md:p-4 border-b border-gray-700">
             <div className="flex items-center gap-2">
               <Eye size={isMobile ? 18 : 16} style={{ color: theme.secondary }} />
@@ -415,6 +440,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   );

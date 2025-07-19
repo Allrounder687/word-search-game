@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Trophy, ArrowRight, Star, Award } from 'lucide-react';
 import type { GameSettings } from '../types/game';
 
@@ -17,10 +17,16 @@ interface LevelSystemProps {
   theme: any;
   onStartLevel: (level: number, settings: GameSettings) => void;
   currentSettings: GameSettings;
+  onLevelComplete?: () => void;
 }
 
-export const LevelSystem: React.FC<LevelSystemProps> = ({ theme, onStartLevel, currentSettings }) => {
-  const [currentLevel, _setCurrentLevel] = useState<number>(() => {
+export interface LevelSystemRef {
+  completeLevel: () => void;
+  getCurrentLevel: () => number;
+}
+
+export const LevelSystem = forwardRef<LevelSystemRef, LevelSystemProps>(({ theme, onStartLevel, currentSettings, onLevelComplete }, ref) => {
+  const [currentLevel, setCurrentLevel] = useState<number>(() => {
     const savedLevel = localStorage.getItem('wordSearchCurrentLevel');
     return savedLevel ? parseInt(savedLevel) : 1;
   });
@@ -44,6 +50,9 @@ export const LevelSystem: React.FC<LevelSystemProps> = ({ theme, onStartLevel, c
   
   // Start a level with the appropriate settings
   const startLevel = (level: number) => {
+    // Update current level
+    setCurrentLevel(level);
+    
     // Get difficulty based on level
     const difficulty = level < 5 ? 'easy' : level < 10 ? 'medium' : 'hard';
     
@@ -64,6 +73,27 @@ export const LevelSystem: React.FC<LevelSystemProps> = ({ theme, onStartLevel, c
     setShowLevelSelector(false);
   };
   
+  // Complete current level and advance to next
+  const completeCurrentLevel = () => {
+    const nextLevel = currentLevel + 1;
+    if (nextLevel > highestLevel) {
+      setHighestLevel(nextLevel);
+      localStorage.setItem('wordSearchHighestLevel', nextLevel.toString());
+    }
+    setCurrentLevel(nextLevel);
+    localStorage.setItem('wordSearchCurrentLevel', nextLevel.toString());
+    
+    if (onLevelComplete) {
+      onLevelComplete();
+    }
+  };
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    completeLevel: completeCurrentLevel,
+    getCurrentLevel: () => currentLevel
+  }));
+
   // Calculate stars for a level (1-3 stars based on completion)
   const getStarsForLevel = (level: number): number => {
     if (level > highestLevel) return 0;
@@ -402,4 +432,4 @@ export const LevelSystem: React.FC<LevelSystemProps> = ({ theme, onStartLevel, c
       )}
     </>
   );
-};
+});

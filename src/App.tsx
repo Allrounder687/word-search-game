@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { WordGrid } from './components/WordGrid';
-import { WordList } from './components/WordList';
-import { GameHeader } from './components/GameHeader';
-import { SettingsModal } from './components/SettingsModal';
-import { HintSystem } from './components/HintSystem';
-import { AchievementSystem } from './components/AchievementSystem';
-import { LeaderboardSystem } from './components/LeaderboardSystem';
 import { LevelSystem } from './components/LevelSystem';
 import { KidsAchievements } from './components/KidsAchievements';
 import { OrientationWarning } from './components/OrientationWarning';
 import { QuickSettings } from './components/QuickSettings';
+import {
+  MemoizedWordGrid as WordGrid,
+  MemoizedWordList as WordList,
+  MemoizedGameHeader as GameHeader,
+  MemoizedSettingsModal as SettingsModal,
+  MemoizedHintSystem as HintSystem,
+  MemoizedAchievementSystem as AchievementSystem,
+  MemoizedLeaderboardSystem as LeaderboardSystem
+} from './components/MemoizedComponents';
 import { WordSearchGenerator, calculateScore } from './utils/gameLogic';
 import { initializeMobileOptimizations } from './utils/mobileOptimizations';
 import { setupMobileViewport } from './utils/responsiveLayout';
@@ -17,21 +19,8 @@ import { useResponsive } from './hooks/useResponsive';
 import { getLayoutConfig } from './utils/layoutConfig';
 import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
-import {
-  FIVE_PILLARS_DESCRIPTIONS,
-  ISLAMIC_MONTHS_DESCRIPTIONS,
-  MUSLIM_SCIENTISTS_DESCRIPTIONS,
-  PROPHETS_DESCRIPTIONS,
-  QURANIC_SURAHS_DESCRIPTIONS,
-  ISLAMIC_VALUES_DESCRIPTIONS
-} from './types/islamicDescriptions';
-import {
-  ISLAMIC_ANGELS_DESCRIPTIONS,
-  ISLAMIC_BOOKS_DESCRIPTIONS,
-  ISLAMIC_EVENTS_DESCRIPTIONS,
-  ISLAMIC_VIRTUES_DESCRIPTIONS
-} from './types/islamicNewCategories';
-import { ISLAMIC_PLACES_DESCRIPTIONS } from './types/islamicPlacesDescriptions';
+import { getCachedDescriptions, preloadCriticalDescriptions } from './utils/lazyDataLoader';
+import { usePerformanceMonitor } from './utils/performanceMonitor';
 import { Sparkles, Trophy, Info, Clock, Settings } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
@@ -70,6 +59,9 @@ function App() {
 
   // Use responsive hook for better performance and maintainability
   const breakpoints = useResponsive();
+  
+  // Performance monitoring
+  const { markGameStart, logReport } = usePerformanceMonitor();
 
   // Memoize theme and layout calculations
   const currentTheme = useMemo(() =>
@@ -82,41 +74,38 @@ function App() {
     [breakpoints, currentTheme]
   );
 
-  // Memoize descriptions based on the current category
-  const descriptions = useMemo(() => {
-    const category = gameState.settings.wordCategory;
-    let descriptionMap: Record<string, string> = {};
+  // State for lazy-loaded descriptions
+  const [descriptions, setDescriptions] = useState<Record<string, string>>({});
 
-    // Import descriptions based on the selected category
-    if (category === 'fivePillars') {
-      descriptionMap = FIVE_PILLARS_DESCRIPTIONS;
-    } else if (category === 'islamicPlaces') {
-      // Convert the places descriptions to the expected format
-      Object.entries(ISLAMIC_PLACES_DESCRIPTIONS).forEach(([key, value]: [string, { description: string; urduDescription?: string }]) => {
-        descriptionMap[key] = value.description;
-      });
-    } else if (category === 'islamicProphets') {
-      descriptionMap = PROPHETS_DESCRIPTIONS;
-    } else if (category === 'islamicMonths') {
-      descriptionMap = ISLAMIC_MONTHS_DESCRIPTIONS;
-    } else if (category === 'muslimScientists') {
-      descriptionMap = MUSLIM_SCIENTISTS_DESCRIPTIONS;
-    } else if (category === 'quranicSurahs') {
-      descriptionMap = QURANIC_SURAHS_DESCRIPTIONS;
-    } else if (category === 'islamicValues') {
-      descriptionMap = ISLAMIC_VALUES_DESCRIPTIONS;
-    } else if (category === 'islamicAngels') {
-      descriptionMap = ISLAMIC_ANGELS_DESCRIPTIONS;
-    } else if (category === 'islamicBooks') {
-      descriptionMap = ISLAMIC_BOOKS_DESCRIPTIONS;
-    } else if (category === 'islamicEvents') {
-      descriptionMap = ISLAMIC_EVENTS_DESCRIPTIONS;
-    } else if (category === 'islamicVirtues') {
-      descriptionMap = ISLAMIC_VIRTUES_DESCRIPTIONS;
-    }
+  // Load descriptions dynamically when category changes
+  useEffect(() => {
+    const loadCategoryDescriptions = async () => {
+      try {
+        if (gameState.settings.wordCategory) {
+          const newDescriptions = await getCachedDescriptions(gameState.settings.wordCategory);
+          setDescriptions(newDescriptions);
+        }
+      } catch (error) {
+        console.warn('Failed to load descriptions:', error);
+        setDescriptions({});
+      }
+    };
 
-    return descriptionMap;
+    loadCategoryDescriptions();
   }, [gameState.settings.wordCategory]);
+
+  // Preload critical descriptions on app start
+  useEffect(() => {
+    preloadCriticalDescriptions().catch(console.warn);
+    markGameStart();
+    
+    // Log performance report after 5 seconds
+    const timer = setTimeout(() => {
+      logReport();
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [markGameStart, logReport]);
 
   // Initialize timer based on settings
   useEffect(() => {

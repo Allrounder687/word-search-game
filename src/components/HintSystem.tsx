@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Lightbulb, Eye, Zap, X, Target } from 'lucide-react';
+import { Lightbulb, Eye, Zap, X, Target, CheckCircle } from 'lucide-react';
 import type { WordPlacement } from '../types/game';
 import { useResponsive } from '../hooks/useResponsive';
 
@@ -16,11 +16,10 @@ export const HintSystem: React.FC<HintSystemProps> = ({
   theme,
   hintsRemaining
 }) => {
-  const [showHintMenu, setShowHintMenu] = useState(false);
-  const [dialogPosition, setDialogPosition] = useState<'top' | 'bottom' | 'left' | 'right' | 'center'>('center');
-  const hintButtonRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-
+  const [currentHintWord, setCurrentHintWord] = useState<WordPlacement | null>(null);
+  const [showHintMessage, setShowHintMessage] = useState(false);
+  const [hintMessageTimeout, setHintMessageTimeout] = useState<NodeJS.Timeout | null>(null);
+  
   // Use responsive hook for better device detection
   const breakpoints = useResponsive();
   const { isMobile, isTablet, isDesktop } = breakpoints;
@@ -33,167 +32,30 @@ export const HintSystem: React.FC<HintSystemProps> = ({
 
   const unFoundWords = words.filter(w => !w.found);
 
-  // Calculate optimal dialog position with improved logic for iPad
-  const calculateDialogPosition = useCallback(() => {
-    if (!hintButtonRef.current || !dialogRef.current) return;
-
-    const buttonRect = hintButtonRef.current.getBoundingClientRect();
-    const dialogRect = dialogRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate available space in each direction
-    const spaceBelow = viewportHeight - buttonRect.bottom;
-    const spaceAbove = buttonRect.top;
-    const spaceRight = viewportWidth - buttonRect.right;
-    const spaceLeft = buttonRect.left;
-
-    const safetyMargin = 20;
-    const minSpaceNeeded = 200;
-
-    // For iPad in landscape mode, use center modal to prevent touch issues
-    if (isIPad && isLandscape) {
-      setDialogPosition('center');
-      return;
-    }
-
-    // For mobile phones, always use bottom sheet
-    if (isMobile && !isTablet) {
-      setDialogPosition('bottom');
-      return;
-    }
-
-    // For tablets (including iPad in portrait), use smart positioning
-    if (isTablet || isIPad) {
-      // Prefer bottom positioning for touch accessibility
-      if (spaceBelow >= Math.max(dialogRect.height + safetyMargin, minSpaceNeeded)) {
-        setDialogPosition('bottom');
-      } else if (spaceAbove >= Math.max(dialogRect.height + safetyMargin, minSpaceNeeded)) {
-        setDialogPosition('top');
-      } else {
-        // Use center modal if insufficient vertical space
-        setDialogPosition('center');
-      }
-      return;
-    }
-
-    // For desktop, use horizontal positioning
-    if (isDesktop) {
-      if (spaceRight >= Math.max(dialogRect.width + safetyMargin, minSpaceNeeded)) {
-        setDialogPosition('right');
-      } else if (spaceLeft >= Math.max(dialogRect.width + safetyMargin, minSpaceNeeded)) {
-        setDialogPosition('left');
-      } else if (spaceBelow > spaceAbove) {
-        setDialogPosition('bottom');
-      } else {
-        setDialogPosition('top');
-      }
-    }
-  }, [isMobile, isTablet, isDesktop, isIPad, isLandscape]);
-
-  // Handle click outside to close dialog with better touch handling
-  useEffect(() => {
-    if (!showHintMenu) return;
-
-    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node;
+  const useHint = () => {
+    if (hintsRemaining > 0 && unFoundWords.length > 0) {
+      // Get a random unfound word
+      const randomIndex = Math.floor(Math.random() * unFoundWords.length);
+      const selectedWord = unFoundWords[randomIndex];
       
-      if (
-        dialogRef.current &&
-        !dialogRef.current.contains(target) &&
-        hintButtonRef.current &&
-        !hintButtonRef.current.contains(target)
-      ) {
-        setShowHintMenu(false);
+      setCurrentHintWord(selectedWord);
+      onHintUsed(selectedWord);
+      
+      // Show prominent hint message
+      setShowHintMessage(true);
+      
+      // Clear previous timeout
+      if (hintMessageTimeout) {
+        clearTimeout(hintMessageTimeout);
       }
-    };
-
-    // Handle keyboard navigation
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowHintMenu(false);
-      } else if (event.key === 'Tab' && dialogRef.current) {
-        // Improved focus trapping
-        const focusableElements = dialogRef.current.querySelectorAll(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
-        );
-
-        if (focusableElements.length > 0) {
-          const firstElement = focusableElements[0] as HTMLElement;
-          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-          if (event.shiftKey && document.activeElement === firstElement) {
-            event.preventDefault();
-            lastElement.focus();
-          } else if (!event.shiftKey && document.activeElement === lastElement) {
-            event.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    };
-
-    // Use both mouse and touch events for better compatibility
-    document.addEventListener('mousedown', handleOutsideInteraction);
-    document.addEventListener('touchstart', handleOutsideInteraction, { passive: true });
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Auto-focus first element with delay for better UX
-    if (dialogRef.current) {
-      setTimeout(() => {
-        const focusableElements = dialogRef.current?.querySelectorAll(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
-        );
-        if (focusableElements && focusableElements.length > 0) {
-          (focusableElements[0] as HTMLElement).focus();
-        }
-      }, 100);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideInteraction);
-      document.removeEventListener('touchstart', handleOutsideInteraction);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showHintMenu]);
-
-  // Calculate position when dialog opens
-  useEffect(() => {
-    if (showHintMenu) {
-      // Use requestAnimationFrame for smoother positioning
-      requestAnimationFrame(() => {
-        calculateDialogPosition();
-      });
-    }
-  }, [showHintMenu, calculateDialogPosition]);
-
-  // Recalculate on window resize with debouncing
-  useEffect(() => {
-    let resizeTimer: number;
-    
-    const handleResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        if (showHintMenu) {
-          calculateDialogPosition();
-        }
-      }, 150);
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    
-    return () => {
-      clearTimeout(resizeTimer);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [showHintMenu, calculateDialogPosition]);
-
-  const useHint = (word: WordPlacement) => {
-    if (hintsRemaining > 0) {
-      onHintUsed(word);
-      setShowHintMenu(false);
+      
+      // Auto-hide hint message after 4 seconds
+      const timeout = setTimeout(() => {
+        setShowHintMessage(false);
+        setCurrentHintWord(null);
+      }, 4000);
+      
+      setHintMessageTimeout(timeout);
       
       // Add haptic feedback for hint usage
       if (isTouchDevice && navigator.vibrate) {
@@ -201,6 +63,15 @@ export const HintSystem: React.FC<HintSystemProps> = ({
       }
     }
   };
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hintMessageTimeout) {
+        clearTimeout(hintMessageTimeout);
+      }
+    };
+  }, [hintMessageTimeout]);
 
   const getDirectionIcon = (direction: string) => {
     switch (direction) {
@@ -212,80 +83,12 @@ export const HintSystem: React.FC<HintSystemProps> = ({
     }
   };
 
-  // Get dialog position styles with center modal support
-  const getDialogPositionStyles = () => {
-    const baseStyles = {
-      borderRadius: '16px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      border: `1px solid ${theme.secondary}40`,
-    };
-
-    switch (dialogPosition) {
-      case 'center':
-        return {
-          ...baseStyles,
-          position: 'fixed' as const,
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: isMobile ? '90vw' : isTablet ? '400px' : '450px',
-          maxWidth: '90vw',
-          maxHeight: '80vh',
-          zIndex: 1000
-        };
-      case 'bottom':
-        return {
-          ...baseStyles,
-          top: isMobile ? 'auto' : '100%',
-          bottom: isMobile ? '0' : 'auto',
-          left: isMobile ? '0' : '50%',
-          right: isMobile ? '0' : 'auto',
-          transform: isMobile ? 'none' : 'translateX(-50%)',
-          width: isMobile ? '100%' : 'auto',
-          marginTop: isMobile ? '0' : '8px',
-          borderRadius: isMobile ? '16px 16px 0 0' : '16px',
-          maxHeight: isMobile ? '75vh' : '500px'
-        };
-      case 'top':
-        return {
-          ...baseStyles,
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: '8px',
-          maxHeight: '400px'
-        };
-      case 'left':
-        return {
-          ...baseStyles,
-          top: '0',
-          right: '100%',
-          marginRight: '8px',
-          maxHeight: '500px',
-          maxWidth: '380px'
-        };
-      case 'right':
-      default:
-        return {
-          ...baseStyles,
-          top: '0',
-          left: '100%',
-          marginLeft: '8px',
-          maxHeight: '500px',
-          maxWidth: '380px'
-        };
-    }
-  };
-
   if (unFoundWords.length === 0) return null;
 
   return (
     <div className="relative">
       <button
-        ref={hintButtonRef}
-        onClick={() => setShowHintMenu(!showHintMenu)}
+        onClick={useHint}
         disabled={hintsRemaining === 0}
         className={`rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 ${
           hintsRemaining === 0 ? 'opacity-50 cursor-not-allowed' : ''
@@ -303,11 +106,8 @@ export const HintSystem: React.FC<HintSystemProps> = ({
           minWidth: '44px', // Minimum touch target
           minHeight: '44px'
         }}
-        title={`Hints remaining: ${hintsRemaining}`}
-        aria-label={`Use hint - ${hintsRemaining} hints remaining`}
-        aria-haspopup="dialog"
-        aria-expanded={showHintMenu}
-        aria-controls={showHintMenu ? "hint-dialog" : undefined}
+        title={`Get hint - ${hintsRemaining} hints remaining`}
+        aria-label={`Get hint - ${hintsRemaining} hints remaining`}
       >
         <div className="flex items-center gap-1">
           <Lightbulb size={isMobile ? 16 : 20} />
@@ -317,151 +117,105 @@ export const HintSystem: React.FC<HintSystemProps> = ({
         </div>
       </button>
 
-      {showHintMenu && (
+      {/* Prominent Hint Message Overlay */}
+      {showHintMessage && currentHintWord && (
         <>
-          {/* Overlay for center modal and mobile */}
-          {(dialogPosition === 'center' || isMobile) && (
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-              onClick={() => setShowHintMenu(false)}
-              aria-hidden="true"
-              style={{
-                background: isIPad && isLandscape 
-                  ? 'rgba(0, 0, 0, 0.7)' 
-                  : 'rgba(0, 0, 0, 0.5)'
-              }}
-            />
-          )}
-          
+          {/* Backdrop */}
           <div
-            ref={dialogRef}
-            className={dialogPosition === 'center' ? 'fixed' : 'absolute'}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
             style={{
-              backgroundColor: `${theme.gridBg}F5`,
-              ...getDialogPositionStyles(),
-              zIndex: dialogPosition === 'center' ? 1000 : 50
+              animation: 'fadeIn 0.3s ease-out'
             }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="hint-dialog-title"
-            id="hint-dialog"
+          />
+          
+          {/* Hint Message */}
+          <div
+            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+            style={{
+              backgroundColor: `${theme.gridBg}F8`,
+              border: `2px solid ${theme.accent}`,
+              borderRadius: '20px',
+              padding: isMobile ? '24px' : '32px',
+              maxWidth: isMobile ? '90vw' : '400px',
+              width: isMobile ? '90vw' : 'auto',
+              boxShadow: `0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px ${theme.accent}40`,
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              animation: 'hintPulse 0.5s ease-out'
+            }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <div className="flex items-center gap-3">
-                <Target size={20} style={{ color: theme.secondary }} />
-                <span
-                  id="hint-dialog-title"
-                  className="text-lg font-semibold"
-                  style={{ color: theme.primary }}
-                >
-                  Choose Word for Hint
-                </span>
-              </div>
-              <button
-                onClick={() => setShowHintMenu(false)}
-                className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-                style={{ 
-                  minWidth: '44px', 
-                  minHeight: '44px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-                aria-label="Close hint dialog"
-              >
-                <X size={20} style={{ color: theme.secondary }} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div
-              className="overflow-y-auto p-4 scroll-smooth"
-              style={{
-                maxHeight: isMobile 
-                  ? 'calc(70vh - 120px)' 
-                  : isTablet 
-                    ? '350px' 
-                    : '400px',
-                scrollbarWidth: 'thin',
-                scrollbarColor: `${theme.secondary}60 ${theme.gridBg}80`,
-                WebkitOverflowScrolling: 'touch'
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowHintMessage(false);
+                setCurrentHintWord(null);
+                if (hintMessageTimeout) {
+                  clearTimeout(hintMessageTimeout);
+                }
               }}
+              className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-700 transition-colors"
+              style={{ 
+                minWidth: '36px', 
+                minHeight: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: theme.secondary
+              }}
+              aria-label="Close hint"
             >
-              <div className="space-y-3">
-                {unFoundWords.map((word, index) => (
-                  <button
-                    key={`${word.word}-${index}`}
-                    onClick={() => useHint(word)}
-                    className="w-full p-4 rounded-xl text-left transition-all duration-200 hover:scale-102 focus:outline-none focus:ring-2 active:scale-98"
-                    style={{
-                      backgroundColor: theme.cellBg,
-                      color: theme.primary,
-                      border: `1px solid transparent`,
-                      outlineColor: theme.accent,
-                      position: 'relative',
-                      overflow: 'hidden',
-                      minHeight: '44px', // Touch target
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = theme.secondary;
-                      e.currentTarget.style.backgroundColor = `${theme.cellBg}90`;
-                      e.currentTarget.style.boxShadow = `0 4px 12px ${theme.secondary}30`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'transparent';
-                      e.currentTarget.style.backgroundColor = theme.cellBg;
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                    onTouchStart={(e) => {
-                      // Enhanced touch feedback
-                      const button = e.currentTarget;
-                      button.style.borderColor = theme.accent;
-                      button.style.backgroundColor = `${theme.cellBg}95`;
-                      button.style.transform = 'scale(0.98)';
-                      
-                      // Haptic feedback
-                      if (navigator.vibrate) {
-                        navigator.vibrate(10);
-                      }
-                    }}
-                    onTouchEnd={(e) => {
-                      const button = e.currentTarget;
-                      setTimeout(() => {
-                        button.style.borderColor = 'transparent';
-                        button.style.backgroundColor = theme.cellBg;
-                        button.style.transform = 'scale(1)';
-                      }, 150);
-                    }}
-                    aria-label={`Use hint for word ${word.word}, ${word.word.length} letters, ${word.direction} direction`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-medium text-lg">
-                        {word.word}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm opacity-75">
-                          {getDirectionIcon(word.direction)}
-                        </span>
-                        <Zap size={16} style={{ color: theme.accent }} />
-                      </div>
-                    </div>
-                    <div className="text-sm opacity-70">
-                      {word.word.length} letters • {word.direction.replace('-', ' ')}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+              <X size={20} />
+            </button>
 
-            {/* Footer */}
-            <div className="p-4 border-t border-gray-700 text-center">
-              <div className="flex items-center justify-center gap-2 text-sm opacity-75">
-                <Eye size={16} style={{ color: theme.secondary }} />
-                <span>Hints highlight the first letter of the word</span>
+            {/* Hint Content */}
+            <div className="text-center">
+              {/* Hint Icon */}
+              <div 
+                className="flex items-center justify-center mb-4"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: `${theme.accent}20`,
+                  margin: '0 auto'
+                }}
+              >
+                <Target size={32} style={{ color: theme.accent }} />
+              </div>
+
+              {/* Hint Title */}
+              <h3 
+                className="text-xl font-bold mb-3"
+                style={{ color: theme.primary }}
+              >
+                💡 Hint Revealed!
+              </h3>
+
+              {/* Word Information */}
+              <div 
+                className="bg-opacity-20 rounded-xl p-4 mb-4"
+                style={{ backgroundColor: theme.accent }}
+              >
+                <div className="text-lg font-mono font-bold mb-2" style={{ color: theme.accent }}>
+                  {currentHintWord.word}
+                </div>
+                <div className="text-sm opacity-80 mb-2" style={{ color: theme.primary }}>
+                  {currentHintWord.word.length} letters • {currentHintWord.direction.replace('-', ' ')}
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-lg">
+                    {getDirectionIcon(currentHintWord.direction)}
+                  </span>
+                  <span className="text-sm" style={{ color: theme.secondary }}>
+                    Look for the first letter highlighted in the grid!
+                  </span>
+                </div>
+              </div>
+
+              {/* Encouragement */}
+              <div className="flex items-center justify-center gap-2 text-sm" style={{ color: theme.secondary }}>
+                <Eye size={16} />
+                <span>The first letter is now highlighted in the grid</span>
               </div>
             </div>
           </div>
@@ -470,14 +224,22 @@ export const HintSystem: React.FC<HintSystemProps> = ({
 
       {/* CSS for animations */}
       <style>{`
-        @keyframes ripple {
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes hintPulse {
           0% {
-            transform: scale(0);
-            opacity: 0.7;
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.05);
           }
           100% {
-            transform: scale(4);
-            opacity: 0;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
           }
         }
       `}</style>

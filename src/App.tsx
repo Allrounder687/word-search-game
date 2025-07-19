@@ -7,7 +7,6 @@ import {
   MemoizedWordGrid as WordGrid,
   MemoizedWordList as WordList,
   MemoizedGameHeader as GameHeader,
-  MemoizedSettingsModal as SettingsModal,
   MemoizedHintSystem as HintSystem,
   MemoizedAchievementSystem as AchievementSystem,
   MemoizedLeaderboardSystem as LeaderboardSystem
@@ -21,6 +20,8 @@ import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
 import { getCachedDescriptions, preloadCriticalDescriptions } from './utils/lazyDataLoader';
 import { usePerformanceMonitor } from './utils/performanceMonitor';
+import { setupViewportHandling, injectLandscapeCSS } from './utils/viewportHelper';
+import { CollapsibleSettingsModal } from './components/CollapsibleSettingsModal';
 import { Sparkles, Trophy, Info, Clock, Settings } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
@@ -94,17 +95,24 @@ function App() {
     loadCategoryDescriptions();
   }, [gameState.settings.wordCategory]);
 
-  // Preload critical descriptions on app start
+  // Preload critical descriptions on app start and setup viewport handling
   useEffect(() => {
     preloadCriticalDescriptions().catch(console.warn);
     markGameStart();
+    
+    // Setup viewport handling for landscape mode fixes
+    const cleanupViewport = setupViewportHandling();
+    injectLandscapeCSS();
     
     // Log performance report after 5 seconds
     const timer = setTimeout(() => {
       logReport();
     }, 5000);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      cleanupViewport();
+    };
   }, [markGameStart, logReport]);
 
   // Initialize timer based on settings
@@ -646,6 +654,8 @@ function App() {
                 {/* Level System */}
                 <LevelSystem
                   theme={currentTheme}
+                  isGameComplete={gameState.isComplete}
+                  currentGameLevel={gameState.currentLevel}
                   onStartLevel={(currentLevel, settings) => {
                     // Update settings with level-specific words
                     const levelSettings = {
@@ -659,8 +669,8 @@ function App() {
                       timerDuration: gameState.settings.timerDuration
                     };
 
-                    // Log the current level (using the parameter to avoid the warning)
-                    console.log(`Starting level ${currentLevel}`);
+                    // Store current level in game state
+                    setGameState(prev => ({ ...prev, currentLevel }));
 
                     // Initialize game with the level settings
                     initializeGame(levelSettings);
@@ -934,7 +944,7 @@ function App() {
           </div>
         )}
 
-        <SettingsModal
+        <CollapsibleSettingsModal
           isOpen={showSettings}
           onClose={() => setShowSettings(false)}
           settings={gameState.settings}

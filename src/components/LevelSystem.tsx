@@ -17,10 +17,18 @@ interface LevelSystemProps {
   theme: any;
   onStartLevel: (level: number, settings: GameSettings) => void;
   currentSettings: GameSettings;
+  isGameComplete?: boolean;
+  currentGameLevel?: number;
 }
 
-export const LevelSystem: React.FC<LevelSystemProps> = ({ theme, onStartLevel, currentSettings }) => {
-  const [currentLevel, _setCurrentLevel] = useState<number>(() => {
+export const LevelSystem: React.FC<LevelSystemProps> = ({ 
+  theme, 
+  onStartLevel, 
+  currentSettings, 
+  isGameComplete = false,
+  currentGameLevel 
+}) => {
+  const [currentLevel, setCurrentLevel] = useState<number>(() => {
     const savedLevel = localStorage.getItem('wordSearchCurrentLevel');
     return savedLevel ? parseInt(savedLevel) : 1;
   });
@@ -41,9 +49,25 @@ export const LevelSystem: React.FC<LevelSystemProps> = ({ theme, onStartLevel, c
       localStorage.setItem('wordSearchHighestLevel', currentLevel.toString());
     }
   }, [currentLevel, highestLevel]);
+
+  // Handle level completion
+  useEffect(() => {
+    if (isGameComplete && currentGameLevel && currentGameLevel >= currentLevel) {
+      const nextLevel = currentGameLevel + 1;
+      setCurrentLevel(nextLevel);
+      
+      if (nextLevel > highestLevel) {
+        setHighestLevel(nextLevel);
+        localStorage.setItem('wordSearchHighestLevel', nextLevel.toString());
+      }
+    }
+  }, [isGameComplete, currentGameLevel, currentLevel, highestLevel]);
   
   // Start a level with the appropriate settings
   const startLevel = (level: number) => {
+    // Update current level
+    setCurrentLevel(level);
+    
     // Get difficulty based on level
     const difficulty = level < 5 ? 'easy' : level < 10 ? 'medium' : 'hard';
     

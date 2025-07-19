@@ -74,6 +74,7 @@ export interface GameState {
   isComplete: boolean;
   currentSelection: Position[];
   settings: GameSettings;
+  currentLevel?: number;
 }
 
 export const WORD_LISTS = {

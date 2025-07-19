@@ -7,6 +7,7 @@ import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions'
 import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
 import { provideHapticFeedback } from '../utils/mobileOptimizations';
 import { createGridMiniMap } from '../utils/responsiveLayout';
+import { getOptimalGridHeight } from '../utils/viewportHelper';
 import { AudioPronunciation } from './AudioPronunciation';
 import { VisualIllustration } from './VisualIllustration';
 
@@ -889,7 +890,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
         
         <div
           ref={gridContainerRef}
-          className="word-grid-container"
+          className="word-grid-container grid-container"
           style={{
             display: 'inline-block',
             padding: isMobile ? '10px' : '16px',
@@ -897,7 +898,13 @@ export const WordGrid: React.FC<WordGridProps> = ({
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             backgroundColor: theme.gridBg,
             touchAction: 'auto', // Let the touch events be handled by our handlers
-            maxHeight: isMobile ? '55vh' : 'auto', // Reduced from 65vh to 55vh to show more of the grid
+            maxHeight: (() => {
+              if (isMobile) {
+                const optimalHeight = getOptimalGridHeight(grid.length);
+                return `${Math.min(optimalHeight, window.innerHeight * 0.6)}px`;
+              }
+              return 'auto';
+            })(),
             overflowY: isMobile ? 'auto' : 'visible',
             position: 'relative',
             WebkitOverflowScrolling: 'touch',

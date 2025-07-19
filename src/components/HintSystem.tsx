@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Lightbulb, Eye, Zap, X } from 'lucide-react';
 import type { WordPlacement } from '../types/game';
 import { useResponsive } from '../hooks/useResponsive';
+import { getViewportDimensions } from '../utils/viewportHelper';
 
 interface HintSystemProps {
   words: WordPlacement[];
@@ -17,405 +18,347 @@ export const HintSystem: React.FC<HintSystemProps> = ({
   hintsRemaining
 }) => {
   const [showHintMenu, setShowHintMenu] = useState(false);
-  const [dialogPosition, setDialogPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('top');
+  const [selectedHintType] = useState<'letter' | 'direction' | 'highlight'>('letter');
   const hintButtonRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Use responsive hook for better device detection
   const breakpoints = useResponsive();
   const { isMobile, isTablet } = breakpoints;
+  const viewport = getViewportDimensions();
 
   const unFoundWords = words.filter(w => !w.found);
 
-  // Calculate optimal dialog position based on available space
-  const calculateDialogPosition = useCallback(() => {
-    if (!hintButtonRef.current || !dialogRef.current) return;
-
-    const buttonRect = hintButtonRef.current.getBoundingClientRect();
-    const dialogRect = dialogRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Calculate available space in each direction
-    const spaceBelow = viewportHeight - buttonRect.bottom;
-    const spaceAbove = buttonRect.top;
-    const spaceRight = viewportWidth - buttonRect.right;
-    const spaceLeft = buttonRect.left;
-
-    // Add safety margins
-    const safetyMargin = 20;
-    const minSpaceNeeded = 100; // Minimum space needed to show dialog in a direction
-
-    // Determine best position based on device type and available space
-    if (isMobile) {
-      // On mobile, always use bottom sheet for consistency and better UX
-      setDialogPosition('bottom');
-    } else if (isTablet) {
-      // On iPad/tablet, prioritize vertical positioning (top/bottom)
-      // This works better for touch interfaces
-
-      // Check if we have enough space below
-      if (spaceBelow >= dialogRect.height + safetyMargin ||
-        (spaceBelow > spaceAbove && spaceBelow > minSpaceNeeded)) {
-        setDialogPosition('bottom');
-      }
-      // Otherwise check if we have enough space above
-      else if (spaceAbove >= dialogRect.height + safetyMargin ||
-        spaceAbove > minSpaceNeeded) {
-        setDialogPosition('top');
-      }
-      // If neither above nor below has enough space, use the side with more space
-      else if (spaceRight > spaceLeft) {
-        setDialogPosition('right');
-      } else {
-        setDialogPosition('left');
-      }
-    } else {
-      // On desktop, prioritize horizontal positioning (left/right)
-      // This is more natural for mouse interaction
-
-      // Check if we have enough space to the right
-      if (spaceRight >= dialogRect.width + safetyMargin ||
-        (spaceRight > spaceLeft && spaceRight > minSpaceNeeded)) {
-        setDialogPosition('right');
-      }
-      // Otherwise check if we have enough space to the left
-      else if (spaceLeft >= dialogRect.width + safetyMargin ||
-        spaceLeft > minSpaceNeeded) {
-        setDialogPosition('left');
-      }
-      // If neither left nor right has enough space, use the vertical direction with more space
-      else if (spaceBelow > spaceAbove) {
-        setDialogPosition('bottom');
-      } else {
-        setDialogPosition('top');
-      }
-    }
-  }, [isMobile, isTablet]);
-
-  // Handle click outside to close dialog
+  // Close menu when clicking outside
   useEffect(() => {
-    if (!showHintMenu) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dialogRef.current &&
-        !dialogRef.current.contains(event.target as Node) &&
-        hintButtonRef.current &&
-        !hintButtonRef.current.contains(event.target as Node)
-      ) {
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target) &&
+          hintButtonRef.current && !hintButtonRef.current.contains(target)) {
         setShowHintMenu(false);
       }
     };
 
-    // Handle keyboard navigation
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        // Close dialog on Escape key
-        setShowHintMenu(false);
-      } else if (event.key === 'Tab' && dialogRef.current) {
-        // Trap focus within dialog
-        const focusableElements = dialogRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-
-        if (focusableElements.length > 0) {
-          const firstElement = focusableElements[0] as HTMLElement;
-          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-          if (event.shiftKey && document.activeElement === firstElement) {
-            // Shift+Tab on first element should focus last element
-            event.preventDefault();
-            lastElement.focus();
-          } else if (!event.shiftKey && document.activeElement === lastElement) {
-            // Tab on last element should focus first element
-            event.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Focus first focusable element in dialog when it opens
-    if (dialogRef.current) {
-      const focusableElements = dialogRef.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusableElements.length > 0) {
-        (focusableElements[0] as HTMLElement).focus();
-      }
+    if (showHintMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [showHintMenu]);
 
-  // Calculate position when dialog opens
-  useEffect(() => {
-    if (showHintMenu) {
-      calculateDialogPosition();
-    }
-  }, [showHintMenu, calculateDialogPosition]);
+  const getRandomUnfoundWord = useCallback(() => {
+    if (unFoundWords.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * unFoundWords.length);
+    return unFoundWords[randomIndex];
+  }, [unFoundWords]);
 
-  // Recalculate on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (showHintMenu) {
-        calculateDialogPosition();
-      }
+  const useHint = useCallback((type: 'letter' | 'direction' | 'highlight') => {
+    if (hintsRemaining <= 0) return;
+    
+    const word = getRandomUnfoundWord();
+    if (!word) return;
+
+    // Create a hint-specific word object
+    const hintWord = {
+      ...word,
+      hintType: type,
+      hintUsed: true
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [showHintMenu, calculateDialogPosition]);
+    onHintUsed(hintWord);
+    setShowHintMenu(false);
+  }, [hintsRemaining, getRandomUnfoundWord, onHintUsed]);
 
-  const useHint = (word: WordPlacement) => {
-    if (hintsRemaining > 0) {
-      onHintUsed(word);
-      setShowHintMenu(false);
-    }
-  };
-
-  const getDirectionIcon = (direction: string) => {
-    switch (direction) {
-      case 'horizontal': return '→';
-      case 'vertical': return '↓';
-      case 'diagonal-down': return '↘';
-      case 'diagonal-up': return '↗';
-      default: return '→';
-    }
-  };
-
-  // Get dialog position styles based on calculated position
-  const getDialogPositionStyles = () => {
-    switch (dialogPosition) {
-      case 'bottom':
-        return {
-          top: '100%',
-          left: isMobile ? '0' : '50%',
-          right: isMobile ? '0' : 'auto',
-          transform: isMobile ? 'none' : 'translateX(-50%)',
-          width: isMobile ? '100%' : 'auto',
-          marginTop: '8px',
-          maxHeight: isMobile ? 'calc(70vh)' : 'auto'
-        };
-      case 'top':
-        return {
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: '8px'
-        };
-      case 'left':
-        return {
-          top: '0',
-          right: '100%',
-          marginRight: '8px'
-        };
-      case 'right':
-      default:
-        return {
-          top: '0',
-          left: '100%',
-          marginLeft: '8px'
-        };
-    }
-  };
-
-  // Get dialog size based on device type
-  const getDialogSizeStyles = () => {
-    if (isMobile) {
-      return {
-        width: '100%',
-        maxHeight: 'calc(70vh)',
-        borderRadius: dialogPosition === 'bottom' ? '16px 16px 0 0' : '16px'
-      };
-    } else if (isTablet) {
-      return {
-        width: 'auto',
-        minWidth: '280px',
-        maxWidth: '320px',
-        maxHeight: '400px'
-      };
-    } else {
-      return {
-        width: 'auto',
-        minWidth: '280px',
-        maxWidth: '320px',
-        maxHeight: '500px'
-      };
-    }
-  };
-
-  if (unFoundWords.length === 0) return null;
-
-  return (
-    <div className="relative">
-      <button
-        ref={hintButtonRef}
-        onClick={() => setShowHintMenu(!showHintMenu)}
-        disabled={hintsRemaining === 0}
-        className={`rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 ${hintsRemaining === 0 ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        style={{
-          backgroundColor: theme.cellBg,
-          color: theme.primary,
-          border: `1px solid ${theme.secondary}40`,
-          padding: isMobile ? '6px' : '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: isMobile ? '32px' : '44px',
-          height: isMobile ? '32px' : '44px'
-        }}
-        title={`Hints remaining: ${hintsRemaining}`}
-        aria-label={`Hints remaining: ${hintsRemaining}`}
-        aria-haspopup="dialog"
-        aria-expanded={showHintMenu}
-        aria-controls={showHintMenu ? "hint-dialog" : undefined}
-      >
-        <div className="flex items-center gap-1">
-          <Lightbulb size={isMobile ? 14 : 20} />
-          <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold`}>{hintsRemaining}</span>
-        </div>
-      </button>
-
-      {showHintMenu && (
+  // Render hint button
+  const renderHintButton = () => (
+    <button
+      ref={hintButtonRef}
+      onClick={() => setShowHintMenu(!showHintMenu)}
+      disabled={hintsRemaining <= 0 || unFoundWords.length === 0}
+      style={{
+        position: 'relative',
+        padding: isMobile ? '12px' : '10px',
+        borderRadius: '50%',
+        backgroundColor: hintsRemaining > 0 ? theme.secondary : theme.cellBg,
+        color: hintsRemaining > 0 ? 'white' : theme.primary + '60',
+        border: 'none',
+        cursor: hintsRemaining > 0 ? 'pointer' : 'not-allowed',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.3s ease',
+        boxShadow: hintsRemaining > 0 ? '0 4px 12px rgba(0, 0, 0, 0.3)' : 'none',
+        width: isMobile ? '48px' : '44px',
+        height: isMobile ? '48px' : '44px',
+        zIndex: 1000
+      }}
+      onMouseEnter={(e) => {
+        if (hintsRemaining > 0) {
+          e.currentTarget.style.transform = 'scale(1.1)';
+          e.currentTarget.style.backgroundColor = theme.accent;
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+        e.currentTarget.style.backgroundColor = hintsRemaining > 0 ? theme.secondary : theme.cellBg;
+      }}
+    >
+      <Lightbulb size={isMobile ? 24 : 20} />
+      {hintsRemaining > 0 && (
         <div
-          ref={dialogRef}
-          className="fixed md:absolute shadow-2xl z-50"
           style={{
-            backgroundColor: theme.gridBg,
-            border: `1px solid ${theme.secondary}40`,
-            ...getDialogPositionStyles(),
-            ...getDialogSizeStyles()
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            backgroundColor: theme.accent,
+            color: 'white',
+            borderRadius: '50%',
+            width: '20px',
+            height: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            border: '2px solid ' + theme.gridBg
           }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="hint-dialog-title"
-          id="hint-dialog"
         >
-          <div className="flex items-center justify-between p-3 md:p-4 border-b border-gray-700">
-            <div className="flex items-center gap-2">
-              <Eye size={isMobile ? 18 : 16} style={{ color: theme.secondary }} />
-              <span
-                id="hint-dialog-title"
-                className={`${isMobile ? 'text-base' : 'text-sm'} font-semibold`}
-                style={{ color: theme.primary }}
-              >
-                Choose a word for hint
-              </span>
-            </div>
-            <button
-              onClick={() => setShowHintMenu(false)}
-              className="p-1 rounded-full hover:bg-gray-700 transition-colors"
-              aria-label="Close hint dialog"
-            >
-              <X size={isMobile ? 18 : 16} style={{ color: theme.secondary }} />
-            </button>
-          </div>
-
-          <div
-            className="overflow-y-auto p-2 md:p-3 scroll-smooth"
-            style={{
-              maxHeight: isMobile ? 'calc(70vh - 60px)' : isTablet ? '300px' : '400px',
-              scrollbarWidth: 'thin',
-              scrollbarColor: `${theme.secondary}60 ${theme.gridBg}80`,
-              WebkitOverflowScrolling: 'touch' // Enable momentum scrolling on iOS
-            }}
-          >
-            <div className="space-y-2">
-              {unFoundWords.map((word, index) => (
-                <button
-                  key={`${word.word}-${index}`}
-                  onClick={() => useHint(word)}
-                  className="w-full p-3 rounded-lg text-left transition-all duration-200 hover:scale-102 focus:outline-none focus:ring-2 active:scale-98"
-                  style={{
-                    backgroundColor: theme.cellBg,
-                    color: theme.primary,
-                    border: `1px solid transparent`,
-                    outlineColor: theme.accent,
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = theme.secondary;
-                    e.currentTarget.style.backgroundColor = `${theme.cellBg}80`;
-                    e.currentTarget.style.boxShadow = `0 2px 8px ${theme.secondary}30`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'transparent';
-                    e.currentTarget.style.backgroundColor = theme.cellBg;
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                  onTouchStart={(e) => {
-                    // Create ripple effect for touch devices
-                    const button = e.currentTarget;
-                    const ripple = document.createElement('span');
-                    const rect = button.getBoundingClientRect();
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.touches[0].clientX - rect.left - size / 2;
-                    const y = e.touches[0].clientY - rect.top - size / 2;
-
-                    ripple.style.width = ripple.style.height = `${size}px`;
-                    ripple.style.left = `${x}px`;
-                    ripple.style.top = `${y}px`;
-                    ripple.style.position = 'absolute';
-                    ripple.style.borderRadius = '50%';
-                    ripple.style.backgroundColor = `${theme.accent}30`;
-                    ripple.style.transform = 'scale(0)';
-                    ripple.style.animation = 'ripple 0.6s linear';
-
-                    button.appendChild(ripple);
-
-                    setTimeout(() => {
-                      if (ripple.parentNode === button) {
-                        button.removeChild(ripple);
-                      }
-                    }, 600);
-
-                    // Add visual feedback
-                    button.style.borderColor = theme.accent;
-                    button.style.backgroundColor = `${theme.cellBg}90`;
-                    button.style.transform = 'scale(0.98)';
-
-                    setTimeout(() => {
-                      button.style.borderColor = 'transparent';
-                      button.style.backgroundColor = theme.cellBg;
-                      button.style.transform = 'scale(1)';
-                    }, 300);
-                  }}
-                  aria-label={`Use hint for word ${word.word}, ${word.word.length} letters, ${word.direction} direction`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-medium">{word.word}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs opacity-75">
-                        {getDirectionIcon(word.direction)}
-                      </span>
-                      <Zap size={12} style={{ color: theme.accent }} />
-                    </div>
-                  </div>
-                  <div className="text-xs opacity-60 mt-1">
-                    {word.word.length} letters • {word.direction}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-3 md:p-4 border-t border-gray-700">
-            <div className="text-xs opacity-75 text-center">
-              Hints will highlight the first letter of the word
-            </div>
-          </div>
+          {hintsRemaining}
         </div>
       )}
+    </button>
+  );
+
+  // Render hint menu based on device type
+  const renderHintMenu = () => {
+    if (!showHintMenu) return null;
+
+    const menuStyle: React.CSSProperties = {
+      position: 'absolute',
+      zIndex: 1001,
+      backgroundColor: theme.cellBg,
+      borderRadius: '12px',
+      padding: '16px',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+      border: `1px solid ${theme.secondary}40`,
+      minWidth: '280px',
+      maxWidth: isMobile ? '90vw' : '400px'
+    };
+
+    // Position menu based on device type and available space
+    if (isMobile) {
+      // Bottom sheet for mobile
+      Object.assign(menuStyle, {
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 'calc(100vw - 40px)',
+        maxWidth: '360px',
+        borderRadius: '16px'
+      });
+    } else if (isTablet && viewport.isLandscape) {
+      // Side menu for tablet landscape
+      Object.assign(menuStyle, {
+        position: 'fixed',
+        right: '20px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: '280px'
+      });
+    } else {
+      // Floating menu for tablet portrait and desktop
+      Object.assign(menuStyle, {
+        position: 'absolute',
+        top: '60px',
+        right: '0px',
+        width: '300px'
+      });
+    }
+
+    return (
+      <div ref={menuRef} style={menuStyle}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px'
+        }}>
+          <h3 style={{
+            margin: 0,
+            color: theme.primary,
+            fontSize: '18px',
+            fontWeight: 'bold'
+          }}>
+            Hint Options
+          </h3>
+          <button
+            onClick={() => setShowHintMenu(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: theme.primary,
+              cursor: 'pointer',
+              padding: '4px',
+              borderRadius: '4px'
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Hint options */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          {/* Letter hint */}
+          <button
+            onClick={() => useHint('letter')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px',
+              backgroundColor: selectedHintType === 'letter' ? theme.secondary + '20' : 'transparent',
+              border: `1px solid ${theme.secondary}40`,
+              borderRadius: '8px',
+              color: theme.primary,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'left',
+              width: '100%'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme.secondary + '30';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = selectedHintType === 'letter' ? theme.secondary + '20' : 'transparent';
+            }}
+          >
+            <div style={{
+              backgroundColor: theme.secondary,
+              borderRadius: '50%',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>A</span>
+            </div>
+            <div>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>First Letter</div>
+              <div style={{ fontSize: '12px', opacity: 0.7 }}>Reveals the first letter of a word</div>
+            </div>
+          </button>
+
+          {/* Direction hint */}
+          <button
+            onClick={() => useHint('direction')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px',
+              backgroundColor: selectedHintType === 'direction' ? theme.secondary + '20' : 'transparent',
+              border: `1px solid ${theme.secondary}40`,
+              borderRadius: '8px',
+              color: theme.primary,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'left',
+              width: '100%'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme.secondary + '30';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = selectedHintType === 'direction' ? theme.secondary + '20' : 'transparent';
+            }}
+          >
+            <div style={{
+              backgroundColor: theme.accent,
+              borderRadius: '50%',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Zap size={16} color="white" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Direction</div>
+              <div style={{ fontSize: '12px', opacity: 0.7 }}>Shows the direction of a word</div>
+            </div>
+          </button>
+
+          {/* Highlight hint */}
+          <button
+            onClick={() => useHint('highlight')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '12px',
+              backgroundColor: selectedHintType === 'highlight' ? theme.secondary + '20' : 'transparent',
+              border: `1px solid ${theme.secondary}40`,
+              borderRadius: '8px',
+              color: theme.primary,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              textAlign: 'left',
+              width: '100%'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = theme.secondary + '30';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = selectedHintType === 'highlight' ? theme.secondary + '20' : 'transparent';
+            }}
+          >
+            <div style={{
+              backgroundColor: theme.primary,
+              borderRadius: '50%',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Eye size={16} color={theme.gridBg} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Highlight</div>
+              <div style={{ fontSize: '12px', opacity: 0.7 }}>Temporarily highlights a word</div>
+            </div>
+          </button>
+        </div>
+
+        {/* Footer info */}
+        <div style={{
+          marginTop: '16px',
+          padding: '12px',
+          backgroundColor: theme.secondary + '10',
+          borderRadius: '8px',
+          fontSize: '12px',
+          color: theme.primary,
+          opacity: 0.8,
+          textAlign: 'center'
+        }}>
+          {hintsRemaining} hint{hintsRemaining !== 1 ? 's' : ''} remaining
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {renderHintButton()}
+      {renderHintMenu()}
     </div>
   );
 };

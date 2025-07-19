@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Lightbulb, Eye, Zap, X, Target, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Lightbulb, Eye, X, Target } from 'lucide-react';
 import type { WordPlacement } from '../types/game';
 import { useResponsive } from '../hooks/useResponsive';
 
@@ -18,16 +18,12 @@ export const HintSystem: React.FC<HintSystemProps> = ({
 }) => {
   const [currentHintWord, setCurrentHintWord] = useState<WordPlacement | null>(null);
   const [showHintMessage, setShowHintMessage] = useState(false);
-  const [hintMessageTimeout, setHintMessageTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [hintMessageTimeout, setHintMessageTimeout] = useState<number | null>(null);
   
   // Use responsive hook for better device detection
   const breakpoints = useResponsive();
-  const { isMobile, isTablet, isDesktop } = breakpoints;
+  const { isMobile } = breakpoints;
 
-  // Improved device detection
-  const isIPad = /iPad/i.test(navigator.userAgent) || 
-                (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
-  const isLandscape = window.innerWidth > window.innerHeight;
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   const unFoundWords = words.filter(w => !w.found);

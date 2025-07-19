@@ -21,7 +21,7 @@ import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
 import { getCachedDescriptions, preloadCriticalDescriptions } from './utils/lazyDataLoader';
 import { usePerformanceMonitor } from './utils/performanceMonitor';
-import { Sparkles, Trophy, Info, Clock, Settings } from 'lucide-react';
+import { Sparkles, Trophy, Clock, Settings } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
 function App() {
@@ -49,7 +49,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [hintsRemaining, setHintsRemaining] = useState(3);
-  const [showInfo, setShowInfo] = useState(false);
+
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -812,6 +812,26 @@ function App() {
                     {/* Level System */}
                     <LevelSystem
                       theme={currentTheme}
+                      onStartLevel={(currentLevel, settings) => {
+                        // Update settings with level-specific words
+                        const levelSettings = {
+                          ...settings,
+                          // Set categories based on current word category
+                          wordCategory: gameState.settings.wordCategory,
+                          // Keep user preferences
+                          theme: gameState.settings.theme,
+                          showDescriptions: gameState.settings.showDescriptions,
+                          timerMode: gameState.settings.timerMode,
+                          timerDuration: gameState.settings.timerDuration
+                        };
+
+                        // Log the current level (using the parameter to avoid the warning)
+                        console.log(`Starting level ${currentLevel}`);
+
+                        // Initialize game with the level settings
+                        handleSettingsChange(levelSettings);
+                      }}
+                      currentSettings={gameState.settings}
                     />
                   </div>
 

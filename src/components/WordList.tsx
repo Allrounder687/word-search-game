@@ -51,11 +51,17 @@ export const WordList: React.FC<WordListProps> = ({
     ...(descriptions || {})
   }), [descriptions]);
 
-  // Effect to show description when a new word is found
+  // Effect to show description when a new word is found (only when showDescriptions is enabled)
   useEffect(() => {
     // Skip the initial render
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      prevWordsRef.current = [...words];
+      return;
+    }
+
+    // Only show descriptions if showDescriptions is enabled
+    if (!showDescriptions) {
       prevWordsRef.current = [...words];
       return;
     }
@@ -89,7 +95,7 @@ export const WordList: React.FC<WordListProps> = ({
         window.clearTimeout(timeoutId);
       }
     };
-  }, [words, allDescriptions]);
+  }, [words, allDescriptions, showDescriptions]);
   
   // Memoize expensive calculations
   const { foundCount, totalCount, hasDescription } = useMemo(() => {
@@ -241,8 +247,8 @@ export const WordList: React.FC<WordListProps> = ({
           </div>
         )}
         
-        {/* Render the description box when a word is selected - only in mobile layout */}
-        {selectedWord && isMobileLayout && (
+        {/* Render the description box when a word is selected - only in mobile layout and when showDescriptions is enabled */}
+        {selectedWord && isMobileLayout && showDescriptions && (
           <DescriptionBox
             word={selectedWord}
             color={words.find(w => w.word === selectedWord)?.color || theme.secondary}
@@ -384,8 +390,8 @@ export const WordList: React.FC<WordListProps> = ({
         </div>
       )}
       
-      {/* Render the description box when a word is selected - only in desktop layout */}
-      {selectedWord && !isMobileLayout && (
+      {/* Render the description box when a word is selected - only in desktop layout and when showDescriptions is enabled */}
+      {selectedWord && !isMobileLayout && showDescriptions && (
         <DescriptionBox
           word={selectedWord}
           color={words.find(w => w.word === selectedWord)?.color || theme.secondary}

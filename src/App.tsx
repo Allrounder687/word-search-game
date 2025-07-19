@@ -53,7 +53,7 @@ function App() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [isClickMode, setIsClickMode] = useState(false);
+  const [isClickMode] = useState(false);
   const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
   const [selectedDescriptionWord, setSelectedDescriptionWord] = useState<string | null>(null);
 
@@ -337,12 +337,7 @@ function App() {
     setIsZoomed(prev => !prev);
   }, []);
 
-  // Handle click mode toggle
-  const handleToggleClickMode = useCallback(() => {
-    const newMode = selectionMode === 'drag' ? 'click-start-end' : 'drag';
-    setSelectionMode(newMode);
-    setIsClickMode(newMode === 'click-start-end');
-  }, [selectionMode]);
+
 
   return (
     <div
@@ -369,7 +364,6 @@ function App() {
           onReset={handleReset}
           onSettings={() => setShowSettings(true)}
           onToggleZoom={onToggleZoom}
-          onToggleClickMode={handleToggleClickMode}
           isZoomed={isZoomed}
           isClickMode={isClickMode}
           theme={currentTheme}
@@ -417,7 +411,6 @@ function App() {
                         theme={currentTheme}
                         onReset={handleReset}
                         onToggleZoom={onToggleZoom}
-                        onToggleClickMode={handleToggleClickMode}
                         isZoomed={isZoomed}
                         isClickMode={isClickMode}
                       />
@@ -583,7 +576,6 @@ function App() {
                         theme={currentTheme}
                         onReset={handleReset}
                         onToggleZoom={onToggleZoom}
-                        onToggleClickMode={handleToggleClickMode}
                         isZoomed={isZoomed}
                         isClickMode={isClickMode}
                       />
@@ -736,12 +728,11 @@ function App() {
                     theme={currentTheme}
                     onReset={handleReset}
                     onToggleZoom={onToggleZoom}
-                    onToggleClickMode={handleToggleClickMode}
                     isZoomed={isZoomed}
                     isClickMode={isClickMode}
                   />
 
-                  {/* Desktop Controls */}
+                  {/* Desktop Controls - Only Timer and Hint System */}
                   <div
                     style={{
                       padding: '16px',
@@ -789,7 +780,34 @@ function App() {
                         </span>
                       </div>
                     )}
+                  </div>
 
+                  {/* Word List */}
+                  <WordList
+                    words={gameState.words}
+                    theme={currentTheme}
+                    showDescriptions={gameState.settings.showDescriptions}
+                    kidsMode={gameState.settings.kidsMode}
+                    isMobileLayout={false}
+                    descriptions={descriptions}
+                    selectedWord={selectedDescriptionWord}
+                    setSelectedWord={setSelectedDescriptionWord}
+                  />
+
+                  {/* Achievement Icons - Moved below Word List */}
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      display: 'flex',
+                      flexWrap: 'nowrap',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      backgroundColor: currentTheme.gridBg
+                    }}
+                  >
                     {/* Achievement System */}
                     <AchievementSystem
                       theme={currentTheme}
@@ -834,18 +852,6 @@ function App() {
                       currentSettings={gameState.settings}
                     />
                   </div>
-
-                  {/* Word List */}
-                  <WordList
-                    words={gameState.words}
-                    theme={currentTheme}
-                    showDescriptions={gameState.settings.showDescriptions}
-                    kidsMode={gameState.settings.kidsMode}
-                    isMobileLayout={false}
-                    descriptions={descriptions}
-                    selectedWord={selectedDescriptionWord}
-                    setSelectedWord={setSelectedDescriptionWord}
-                  />
                 </div>
               </div>
             );

@@ -169,7 +169,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
 
   // Recalculate on window resize with debouncing
   useEffect(() => {
-    let resizeTimer: NodeJS.Timeout;
+    let resizeTimer: number;
     
     const handleResize = () => {
       clearTimeout(resizeTimer);
@@ -469,7 +469,7 @@ export const HintSystem: React.FC<HintSystemProps> = ({
       )}
 
       {/* CSS for animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes ripple {
           0% {
             transform: scale(0);

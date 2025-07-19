@@ -52,7 +52,6 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
   onCategoryChange,
   onThemeChange,
   theme,
-  iconSize,
   onReset,
   onToggleZoom,
   onToggleClickMode,
@@ -70,9 +69,8 @@ export const MobileDropdown: React.FC<MobileDropdownProps> = ({
 
   // Create a map of category keys to their descriptions
   const categoryDescriptions = ISLAMIC_CATEGORIES.reduce((acc, category) => {
-    // Use the category description or first word description
-    const description = category.description ||
-      (category.words[0] && category.descriptions[category.words[0]]) ||
+    // Use the first word description or fallback
+    const description = (category.words[0] && category.descriptions[category.words[0]]) ||
       `Learn about ${category.name.toLowerCase()}`;
     acc[category.key] = description;
     return acc;

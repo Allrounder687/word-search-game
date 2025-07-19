@@ -49,7 +49,6 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const [pathAnimationCells, setPathAnimationCells] = useState<Position[]>([]);
   const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
   const [selectionArrow, setSelectionArrow] = useState<{start: Position, end: Position} | null>(null);
-  const [floatingPreview, setFloatingPreview] = useState<{x: number, y: number, text: string} | null>(null);
 
   // Update selection mode when prop changes
   useEffect(() => {
@@ -523,25 +522,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
     return `${baseFontSize}px`;
   };
 
-  // Floating word preview for touch devices
-  const showFloatingWordPreview = useCallback((x: number, y: number, selection: Position[]) => {
-    if (selection.length < 2) {
-      setFloatingPreview(null);
-      return;
-    }
 
-    // Build the word from the selection
-    const word = selection.map(pos => grid[pos.row]?.[pos.col]?.letter || '').join('');
-    
-    if (word.length > 1) {
-      setFloatingPreview({ x, y, text: word });
-      
-      // Clear preview after a short delay
-      setTimeout(() => {
-        setFloatingPreview(null);
-      }, 1000);
-    }
-  }, [grid]);
 
   // State for pinch-to-zoom
   const [zoomScale, setZoomScale] = useState(1);
@@ -1324,31 +1305,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
         </div>
       )}
 
-      {/* Floating Word Preview for Touch Devices */}
-      {floatingPreview && (
-        <div
-          style={{
-            position: 'fixed',
-            left: floatingPreview.x - 25,
-            top: floatingPreview.y - 40,
-            background: theme.gridBg + 'E6',
-            color: theme.primary,
-            padding: '8px 12px',
-            borderRadius: '8px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            border: `1px solid ${theme.secondary}60`,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 1000,
-            pointerEvents: 'none',
-            transform: 'translateZ(0)',
-            animation: 'fadeIn 0.2s ease-out'
-          }}
-        >
-          {floatingPreview.text.toUpperCase()}
-        </div>
-      )}
+
 
       {/* CSS Animations */}
       <style>

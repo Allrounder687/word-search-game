@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   Palette, Sparkles, X, ChevronDown, RefreshCw, ZoomIn, ZoomOut,
-  MousePointer, Hand, Volume2, VolumeX, Eye, EyeOff, Timer,
+  MousePointer, Hand, Eye, EyeOff, Timer,
   RotateCcw, Settings, Gamepad2, Moon, Sun
 } from 'lucide-react';
 import type { GameSettings, Theme } from '../types/game';
@@ -52,7 +52,6 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
 
   // Device detection
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  const [isTablet, setIsTablet] = useState(() => window.innerWidth >= 768 && window.innerWidth < 1024);
   const isIPad = /iPad/i.test(navigator.userAgent) ||
                 (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
   const isLandscape = window.innerWidth > window.innerHeight;
@@ -62,7 +61,6 @@ export const QuickSettings: React.FC<QuickSettingsProps> = ({
     const handleResize = () => {
       try {
         setIsMobile(window.innerWidth < 768);
-        setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
       } catch (error) {
         console.warn('Error handling window resize:', error);
       }

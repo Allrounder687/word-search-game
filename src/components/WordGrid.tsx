@@ -49,6 +49,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const [pathAnimationCells, setPathAnimationCells] = useState<Position[]>([]);
   const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
   const [selectionArrow, setSelectionArrow] = useState<{start: Position, end: Position} | null>(null);
+  const [floatingPreview, setFloatingPreview] = useState<{x: number, y: number, text: string} | null>(null);
 
   // Update selection mode when prop changes
   useEffect(() => {
@@ -208,9 +209,26 @@ export const WordGrid: React.FC<WordGridProps> = ({
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, [isSelecting, handleMouseUp]);
 
-  // Touch support
-  const handleTouchStart = useCallback((row: number, col: number, _e: React.TouchEvent) => {
-    // Don't prevent default here to allow the touch event to be registered normally
+  // Enhanced touch support with iPad landscape fixes
+  const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
+    // Prevent default only for iPad landscape to prevent screen movement
+    const isIPad = /iPad/i.test(navigator.userAgent) || 
+                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    if (isIPad && isLandscape) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Add selecting class to prevent screen movement
+      if (gridContainerRef.current) {
+        gridContainerRef.current.classList.add('selecting');
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+      }
+    }
     
     // Set state for selection
     setIsSelecting(true);
@@ -241,13 +259,20 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!isSelecting || currentSelection.length === 0) return;
 
-    // Note: We're not calling preventDefault() here anymore
-    // as it causes issues with passive event listeners in modern browsers
+    // Enhanced touch move handling for iPad landscape
+    const isIPad = /iPad/i.test(navigator.userAgent) || 
+                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    if (isIPad && isLandscape) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     const touch = e.touches[0];
     
-    // Apply touch offset to show word above finger (30px up)
-    const offsetY = 30;
+    // Apply touch offset to show word above finger - larger offset for iPad
+    const offsetY = isIPad ? 40 : 30;
     const adjustedY = touch.clientY - offsetY;
     
     const element = document.elementFromPoint(touch.clientX, adjustedY);
@@ -279,15 +304,32 @@ export const WordGrid: React.FC<WordGridProps> = ({
           element.classList.add('cell-tap-feedback');
           setTimeout(() => element.classList.remove('cell-tap-feedback'), 200);
           
-          // Show floating word preview above finger
-          showFloatingWordPreview(touch.clientX, touch.clientY - 50, newSelection);
+          // Show floating word preview above finger - adjusted for iPad
+          showFloatingWordPreview(touch.clientX, touch.clientY - (isIPad ? 60 : 50), newSelection);
         }
       }
     }
   }, [isSelecting, currentSelection, highlightedCells]);
 
-  const handleTouchEnd = useCallback((_e: React.TouchEvent) => {
-    // Don't prevent default here to allow the touch event to complete normally
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    // Enhanced touch end handling for iPad landscape
+    const isIPad = /iPad/i.test(navigator.userAgent) || 
+                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    if (isIPad && isLandscape) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Remove selecting class and restore body styles
+      if (gridContainerRef.current) {
+        gridContainerRef.current.classList.remove('selecting');
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
+    }
     
     // Process the selection
     handleMouseUp();
@@ -480,6 +522,26 @@ export const WordGrid: React.FC<WordGridProps> = ({
 
     return `${baseFontSize}px`;
   };
+
+  // Floating word preview for touch devices
+  const showFloatingWordPreview = useCallback((x: number, y: number, selection: Position[]) => {
+    if (selection.length < 2) {
+      setFloatingPreview(null);
+      return;
+    }
+
+    // Build the word from the selection
+    const word = selection.map(pos => grid[pos.row]?.[pos.col]?.letter || '').join('');
+    
+    if (word.length > 1) {
+      setFloatingPreview({ x, y, text: word });
+      
+      // Clear preview after a short delay
+      setTimeout(() => {
+        setFloatingPreview(null);
+      }, 1000);
+    }
+  }, [grid]);
 
   // State for pinch-to-zoom
   const [zoomScale, setZoomScale] = useState(1);
@@ -1262,9 +1324,40 @@ export const WordGrid: React.FC<WordGridProps> = ({
         </div>
       )}
 
+      {/* Floating Word Preview for Touch Devices */}
+      {floatingPreview && (
+        <div
+          style={{
+            position: 'fixed',
+            left: floatingPreview.x - 25,
+            top: floatingPreview.y - 40,
+            background: theme.gridBg + 'E6',
+            color: theme.primary,
+            padding: '8px 12px',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            border: `1px solid ${theme.secondary}60`,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            pointerEvents: 'none',
+            transform: 'translateZ(0)',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          {floatingPreview.text.toUpperCase()}
+        </div>
+      )}
+
       {/* CSS Animations */}
       <style>
         {`
+          @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+          }
+          
           @keyframes bounce-in {
             0% { transform: scale(0.3); opacity: 0; }
             50% { transform: scale(1.05); opacity: 1; }
@@ -1330,6 +1423,30 @@ export const WordGrid: React.FC<WordGridProps> = ({
           
           .word-grid-container::-webkit-scrollbar-track {
             background-color: transparent;
+          }
+          
+          /* Enhanced iPad landscape touch handling */
+          @media screen and (min-device-width: 768px) and (max-device-width: 1024px) and (orientation: landscape) {
+            .word-grid-container.selecting {
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
+              right: 0 !important;
+              bottom: 0 !important;
+              z-index: 1000 !important;
+              background: transparent !important;
+              pointer-events: none !important;
+            }
+            
+            .word-grid-container.selecting > * {
+              pointer-events: auto !important;
+            }
+            
+            .word-grid-container.selecting .word-grid-cell {
+              touch-action: none !important;
+              user-select: none !important;
+              -webkit-user-select: none !important;
+            }
           }
         `}
       </style>

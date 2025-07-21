@@ -314,12 +314,12 @@ export function setupMobileViewport(): void {
   }
 
   // Enhanced viewport content with device-specific optimizations
-  const isIPad = isIPad();
+  const isIPadDevice = isIPad();
   const isLandscape = isLandscapeOrientation();
   
   let viewportContent = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
   
-  if (isIPad) {
+  if (isIPadDevice) {
     // iPad-specific viewport optimizations
     viewportContent += ', viewport-fit=cover, minimal-ui';
     if (isLandscape) {

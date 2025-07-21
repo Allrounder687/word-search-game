@@ -164,7 +164,6 @@ export class PerformanceMonitor {
   };
 
   private lastFrameTime: number = performance.now();
-  private frameStartTime: number = performance.now();
   private isMonitoring: boolean = false;
   private rafId: number | null = null;
 
@@ -172,7 +171,6 @@ export class PerformanceMonitor {
     if (this.isMonitoring) return;
     
     this.isMonitoring = true;
-    this.frameStartTime = performance.now();
     this.monitorFrame();
   }
 

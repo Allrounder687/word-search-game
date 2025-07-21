@@ -121,7 +121,7 @@ export const preventDefaultTouchBehavior = (element: HTMLElement): void => {
 // Optimize scrolling for mobile with enhanced performance
 export const optimizeScrolling = (): void => {
   document.body.style.overscrollBehavior = 'none';
-  document.body.style.WebkitOverscrollBehavior = 'none';
+  (document.body.style as any).WebkitOverscrollBehavior = 'none';
   
   // Add momentum scrolling to elements with scroll-container class
   const scrollContainers = document.querySelectorAll('.scroll-container');
@@ -129,7 +129,7 @@ export const optimizeScrolling = (): void => {
     const element = container as HTMLElement;
     (element.style as any)['webkitOverflowScrolling'] = 'touch';
     element.style.scrollbarWidth = 'none';
-    element.style.msOverflowStyle = 'none';
+    (element.style as any).msOverflowStyle = 'none';
   });
 };
 
@@ -288,10 +288,8 @@ export const initializeMobileOptimizations = (): void => {
     // Optimize touch events
     optimizeTouchEvents();
     
-    // Monitor performance in development
-    if (process.env.NODE_ENV === 'development') {
-      monitorMobilePerformance();
-    }
+    // Monitor performance (can be enabled manually for debugging)
+    // monitorMobilePerformance();
     
     // Add resize handler for orientation changes
     const handleResize = () => {

@@ -5,7 +5,7 @@ import { Sparkles, BookOpen, MapPin, Globe } from 'lucide-react';
 import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
 import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
 import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
-import { provideHapticFeedback } from '../utils/mobileOptimizations';
+// Removed unused import
 import { createGridMiniMap } from '../utils/responsiveLayout';
 import { AudioPronunciation } from './AudioPronunciation';
 import { VisualIllustration } from './VisualIllustration';
@@ -472,8 +472,8 @@ export const WordGrid: React.FC<WordGridProps> = ({
       fontFamily: theme.font || "'Inter', sans-serif",
       // Performance optimizations
       willChange: 'transform, background-color, box-shadow',
-      backfaceVisibility: 'hidden',
-      WebkitBackfaceVisibility: 'hidden'
+      backfaceVisibility: 'hidden' as const,
+      WebkitBackfaceVisibility: 'hidden' as const
     };
   }, [highlightedCells, words, theme, showPathAnimation, pathAnimationCells, pathAnimationColor, lastFoundWord]);
 

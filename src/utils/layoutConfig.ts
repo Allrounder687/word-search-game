@@ -68,7 +68,6 @@ const getDeviceInfo = (): DeviceInfo => {
 
 // Calculate optimal spacing based on device and screen size
 const calculateSpacing = (breakpoints: ResponsiveBreakpoints, deviceInfo: DeviceInfo) => {
-  const { width, height } = breakpoints;
   const { isIPad, isIPadPro, isIPhone, isLandscape } = deviceInfo;
   
   // Base spacing values
@@ -113,10 +112,9 @@ const calculateSpacing = (breakpoints: ResponsiveBreakpoints, deviceInfo: Device
 
 // Calculate optimal word grid configuration
 const calculateWordGridConfig = (breakpoints: ResponsiveBreakpoints, deviceInfo: DeviceInfo, theme: any) => {
-  const { width, height } = breakpoints;
   const { isIPad, isIPadPro, isIPhone, isLandscape } = deviceInfo;
   
-  let config: Partial<LayoutConfig['wordGrid']> = {
+  let config: LayoutConfig['wordGrid'] = {
     width: breakpoints.isDesktop ? 'auto' : '100%'
   };
   

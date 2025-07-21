@@ -1,7 +1,10 @@
 /**
  * Responsive Layout Utilities for Word Search Game
  * This file contains utility functions to handle responsive layouts for different screen sizes
+ * with enhanced performance optimizations for mobile drag interactions
  */
+
+import { PerformanceThrottler, RAFThrottler } from './performanceOptimizations';
 
 // Screen size breakpoints
 export const BREAKPOINTS = {
@@ -19,6 +22,33 @@ interface ResponsiveSizes<T> {
   md: T;
   lg: T;
   xl: T;
+}
+
+// Device capabilities interface
+interface DeviceCapabilities {
+  supportsTouch: boolean;
+  supportsHardwareAcceleration: boolean;
+  maxConcurrentAnimations: number;
+  recommendedThrottleMs: number;
+  preferredScrollBehavior: 'smooth' | 'auto';
+}
+
+/**
+ * Get device capabilities for optimization purposes
+ */
+export function getDeviceCapabilities(): DeviceCapabilities {
+  const userAgent = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+  const isAndroid = /Android/.test(userAgent);
+  const isDesktop = !isIOS && !isAndroid && !('ontouchstart' in window);
+  
+  return {
+    supportsTouch: 'ontouchstart' in window,
+    supportsHardwareAcceleration: !isAndroid || window.innerWidth >= 768, // Avoid HA on low-end Android
+    maxConcurrentAnimations: isIOS ? 4 : (isAndroid ? 2 : 6),
+    recommendedThrottleMs: isIOS ? 16 : (isAndroid ? 20 : 12),
+    preferredScrollBehavior: isDesktop ? 'smooth' : 'auto'
+  };
 }
 
 /**
@@ -270,7 +300,7 @@ export function getIPadInfo(): {
 }
 
 /**
- * Add viewport meta tags for better mobile experience
+ * Enhanced viewport setup for better mobile experience with performance optimizations
  */
 export function setupMobileViewport(): void {
   // Find existing viewport meta tag
@@ -283,16 +313,31 @@ export function setupMobileViewport(): void {
     document.head.appendChild(viewportMeta);
   }
 
-  // Set appropriate viewport content
-  viewportMeta.setAttribute('content',
-    'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  // Enhanced viewport content with device-specific optimizations
+  const isIPad = isIPad();
+  const isLandscape = isLandscapeOrientation();
+  
+  let viewportContent = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+  
+  if (isIPad) {
+    // iPad-specific viewport optimizations
+    viewportContent += ', viewport-fit=cover, minimal-ui';
+    if (isLandscape) {
+      viewportContent += ', shrink-to-fit=no';
+    }
+  }
 
-  // Add other mobile-specific meta tags
+  viewportMeta.setAttribute('content', viewportContent);
+
+  // Add other mobile-specific meta tags with performance considerations
   const metaTags = [
     { name: 'apple-mobile-web-app-capable', content: 'yes' },
     { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
     { name: 'format-detection', content: 'telephone=no' },
-    { name: 'mobile-web-app-capable', content: 'yes' }
+    { name: 'mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-touch-fullscreen', content: 'yes' },
+    { name: 'theme-color', content: '#000000' },
+    { name: 'msapplication-TileColor', content: '#000000' }
   ];
 
   metaTags.forEach(meta => {
@@ -303,6 +348,21 @@ export function setupMobileViewport(): void {
       document.head.appendChild(metaTag);
     }
   });
+
+  // Set CSS custom properties for viewport height (handles mobile browser toolbar issues)
+  const setViewportHeight = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  };
+  
+  setViewportHeight();
+  
+  // Throttled resize handler for better performance
+  const throttler = new PerformanceThrottler(100);
+  const throttledResize = throttler.throttle(setViewportHeight);
+  
+  window.addEventListener('resize', throttledResize);
+  window.addEventListener('orientationchange', throttledResize);
 }
 
 // Extended Screen interface for better type safety
@@ -445,7 +505,7 @@ interface Theme {
   [key: string]: string;
 }
 
-// Mini-map configuration
+// Mini-map configuration with performance optimizations
 interface MiniMapConfig {
   width: number;
   height: number;
@@ -456,6 +516,8 @@ interface MiniMapConfig {
     right: string;
     top: string;
   };
+  enableHardwareAcceleration: boolean;
+  throttleUpdates: boolean;
 }
 
 // Default mini-map configuration
@@ -468,11 +530,13 @@ const DEFAULT_MINIMAP_CONFIG: MiniMapConfig = {
   position: {
     right: '8px',
     top: '50%'
-  }
+  },
+  enableHardwareAcceleration: true,
+  throttleUpdates: true
 };
 
 /**
- * Create a mini-map indicator for grid navigation with improved performance and type safety
+ * Create a mini-map indicator for grid navigation with enhanced performance optimizations
  * @param gridElement - The grid element to create a mini-map for
  * @param containerElement - The container element to append the mini-map to
  * @param theme - The current theme object
@@ -486,6 +550,7 @@ export function createGridMiniMap(
   config: Partial<MiniMapConfig> = {}
 ): () => void {
   const finalConfig = { ...DEFAULT_MINIMAP_CONFIG, ...config };
+  const capabilities = getDeviceCapabilities();
   
   // Remove any existing mini-map
   const existingMiniMap = document.getElementById('grid-mini-map');
@@ -493,12 +558,12 @@ export function createGridMiniMap(
     existingMiniMap.remove();
   }
 
-  // Create mini-map container with improved styling
+  // Create mini-map container with improved styling and hardware acceleration
   const miniMap = document.createElement('div');
   miniMap.id = 'grid-mini-map';
   
   // Apply styles using Object.assign for better performance
-  Object.assign(miniMap.style, {
+  const baseStyles: Partial<CSSStyleDeclaration> = {
     position: 'absolute',
     right: finalConfig.position.right,
     top: finalConfig.position.top,
@@ -515,14 +580,25 @@ export function createGridMiniMap(
     padding: `${finalConfig.padding}px`,
     opacity: '0.7',
     transition: 'opacity 0.3s ease',
-    pointerEvents: 'none' // Prevent interference with user interactions
-  });
+    pointerEvents: 'none'
+  };
 
-  // Create indicator with improved styling
+  // Add hardware acceleration if supported and enabled
+  if (finalConfig.enableHardwareAcceleration && capabilities.supportsHardwareAcceleration) {
+    Object.assign(baseStyles, {
+      transform: 'translateY(-50%) translateZ(0)',
+      willChange: 'opacity, transform',
+      backfaceVisibility: 'hidden'
+    });
+  }
+
+  Object.assign(miniMap.style, baseStyles);
+
+  // Create indicator with improved styling and performance
   const indicator = document.createElement('div');
   const indicatorSize = finalConfig.width - (finalConfig.padding * 2);
   
-  Object.assign(indicator.style, {
+  const indicatorStyles: Partial<CSSStyleDeclaration> = {
     width: `${indicatorSize}px`,
     height: `${indicatorSize}px`,
     backgroundColor: theme.secondary,
@@ -532,20 +608,32 @@ export function createGridMiniMap(
     top: `${finalConfig.padding}px`,
     transition: 'top 0.3s ease',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-  });
+  };
+
+  // Add hardware acceleration for indicator if supported
+  if (finalConfig.enableHardwareAcceleration && capabilities.supportsHardwareAcceleration) {
+    Object.assign(indicatorStyles, {
+      transform: 'translateZ(0)',
+      willChange: 'top, transform',
+      backfaceVisibility: 'hidden'
+    });
+  }
+
+  Object.assign(indicator.style, indicatorStyles);
 
   miniMap.appendChild(indicator);
   containerElement.appendChild(miniMap);
 
-  // Throttle scroll updates for better performance
+  // Performance-optimized scroll updates
   let scrollUpdateFrame: number | null = null;
+  const throttler = finalConfig.throttleUpdates ? new RAFThrottler() : null;
   
   const updateIndicatorPosition = () => {
     if (scrollUpdateFrame) {
       cancelAnimationFrame(scrollUpdateFrame);
     }
     
-    scrollUpdateFrame = requestAnimationFrame(() => {
+    const doUpdate = () => {
       const gridHeight = gridElement.scrollHeight;
       const containerHeight = containerElement.clientHeight;
       const scrollTop = containerElement.scrollTop;
@@ -560,7 +648,13 @@ export function createGridMiniMap(
       
       indicator.style.top = `${indicatorTop}px`;
       scrollUpdateFrame = null;
-    });
+    };
+
+    if (throttler) {
+      throttler.throttle(doUpdate)();
+    } else {
+      scrollUpdateFrame = requestAnimationFrame(doUpdate);
+    }
   };
 
   // Debounce hide functionality for better UX
@@ -596,6 +690,9 @@ export function createGridMiniMap(
     }
     if (scrollUpdateFrame) {
       cancelAnimationFrame(scrollUpdateFrame);
+    }
+    if (throttler) {
+      throttler.cancel();
     }
     const miniMapElement = document.getElementById('grid-mini-map');
     if (miniMapElement) {

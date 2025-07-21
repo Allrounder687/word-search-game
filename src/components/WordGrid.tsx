@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Position, Cell, WordPlacement } from '../types/game';
 import { checkWordSelection } from '../utils/gameLogic';
 import { Sparkles, BookOpen, MapPin, Globe } from 'lucide-react';
@@ -50,6 +50,12 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
   const [selectionArrow, setSelectionArrow] = useState<{start: Position, end: Position} | null>(null);
 
+  // Performance optimization refs
+  const animationFrameRef = useRef<number | null>(null);
+  const lastMoveTimeRef = useRef<number>(0);
+  const isDraggingRef = useRef<boolean>(false);
+  const currentTouchIdRef = useRef<number | null>(null);
+
   // Update selection mode when prop changes
   useEffect(() => {
     if (propSelectionMode) {
@@ -59,31 +65,56 @@ export const WordGrid: React.FC<WordGridProps> = ({
 
   const getCellKey = (row: number, col: number) => `${row},${col}`;
 
-  const handleMouseDown = useCallback((row: number, col: number) => {
-    setIsSelecting(true);
-    setCurrentSelection([{ row, col }]);
-    setHighlightedCells(new Set([getCellKey(row, col)]));
-    
-    // Add tap feedback
-    const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
-    if (cell) {
-      cell.classList.add('cell-tap-feedback');
-      setTimeout(() => cell.classList.remove('cell-tap-feedback'), 300);
+  // Optimized throttled update function using requestAnimationFrame
+  const throttledUpdateSelection = useCallback((newSelection: Position[], highlighted: Set<string>) => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
     
+    animationFrameRef.current = requestAnimationFrame(() => {
+      setCurrentSelection(newSelection);
+      setHighlightedCells(highlighted);
+      animationFrameRef.current = null;
+    });
+  }, []);
+
+  const handleMouseDown = useCallback((row: number, col: number) => {
+    isDraggingRef.current = true;
+    setIsSelecting(true);
+    const newSelection = [{ row, col }];
+    const highlighted = new Set([getCellKey(row, col)]);
+    
+    setCurrentSelection(newSelection);
+    setHighlightedCells(highlighted);
+    
+    // Add tap feedback with requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
+      if (cell) {
+        cell.classList.add('cell-tap-feedback');
+        setTimeout(() => cell.classList.remove('cell-tap-feedback'), 300);
+      }
+    });
+    
     // Provide haptic feedback on mobile
-    if (isMobile) {
-      provideHapticFeedback(10);
+    if (isMobile && navigator.vibrate) {
+      navigator.vibrate(10);
     }
   }, [isMobile]);
 
   const handleMouseEnter = useCallback((row: number, col: number) => {
-    if (!isSelecting || currentSelection.length === 0) return;
+    if (!isSelecting || currentSelection.length === 0 || !isDraggingRef.current) return;
+
+    // Throttle mouse enter events for better performance
+    const now = Date.now();
+    if (now - lastMoveTimeRef.current < 16) return; // ~60fps throttling
+    lastMoveTimeRef.current = now;
 
     const start = currentSelection[0];
     const newSelection = getSelectionPath(start, { row, col });
-    setCurrentSelection(newSelection);
-    setHighlightedCells(new Set(newSelection.map(pos => getCellKey(pos.row, pos.col))));
+    const highlighted = new Set(newSelection.map(pos => getCellKey(pos.row, pos.col)));
+    
+    throttledUpdateSelection(newSelection, highlighted);
     
     // Update selection arrow
     setSelectionArrow({
@@ -91,20 +122,24 @@ export const WordGrid: React.FC<WordGridProps> = ({
       end: { row, col }
     });
     
-    // Add tap feedback for the current cell
-    const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
-    if (cell) {
-      cell.classList.add('cell-tap-feedback');
-      setTimeout(() => cell.classList.remove('cell-tap-feedback'), 200);
-    }
+    // Add tap feedback for the current cell with requestAnimationFrame
+    requestAnimationFrame(() => {
+      const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
+      if (cell) {
+        cell.classList.add('cell-tap-feedback');
+        setTimeout(() => cell.classList.remove('cell-tap-feedback'), 200);
+      }
+    });
     
     // Provide subtle haptic feedback on mobile
-    if (isMobile) {
-      provideHapticFeedback(5);
+    if (isMobile && navigator.vibrate) {
+      navigator.vibrate(5);
     }
-  }, [isSelecting, currentSelection, isMobile]);
+  }, [isSelecting, currentSelection, isMobile, throttledUpdateSelection]);
 
   const handleMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+    
     if (currentSelection.length > 1) {
       const foundWord = checkWordSelection(currentSelection, words);
       if (foundWord) {
@@ -154,20 +189,22 @@ export const WordGrid: React.FC<WordGridProps> = ({
         setShowPathAnimation(true);
         
         // Provide strong haptic feedback for word found
-        if (isMobile) {
-          provideHapticFeedback(30);
+        if (isMobile && navigator.vibrate) {
+          navigator.vibrate(30);
         }
 
-        // Add celebration effect
+        // Add celebration effect with requestAnimationFrame for better performance
         wordCells.forEach((pos, index) => {
-          const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
-          if (cell) {
-            // Staggered animation for each cell in the path
-            setTimeout(() => {
-              cell.classList.add('animate-word-found');
-              setTimeout(() => cell.classList.remove('animate-word-found'), 600);
-            }, index * 50); // Stagger by 50ms per cell
-          }
+          requestAnimationFrame(() => {
+            const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
+            if (cell) {
+              // Staggered animation for each cell in the path
+              setTimeout(() => {
+                cell.classList.add('animate-word-found');
+                setTimeout(() => cell.classList.remove('animate-word-found'), 600);
+              }, index * 50); // Stagger by 50ms per cell
+            }
+          });
         });
 
         // Hide path animation after a delay
@@ -176,17 +213,19 @@ export const WordGrid: React.FC<WordGridProps> = ({
         }, 1500);
       } else {
         // Provide error feedback for incorrect selection
-        if (isMobile) {
-          provideHapticFeedback(10);
+        if (isMobile && navigator.vibrate) {
+          navigator.vibrate(10);
         }
         
-        // Visual feedback for incorrect selection
+        // Visual feedback for incorrect selection with requestAnimationFrame
         currentSelection.forEach(pos => {
-          const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
-          if (cell) {
-            cell.classList.add('cell-error-feedback');
-            setTimeout(() => cell.classList.remove('cell-error-feedback'), 300);
-          }
+          requestAnimationFrame(() => {
+            const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
+            if (cell) {
+              cell.classList.add('cell-error-feedback');
+              setTimeout(() => cell.classList.remove('cell-error-feedback'), 300);
+            }
+          });
         });
       }
     }
@@ -205,34 +244,46 @@ export const WordGrid: React.FC<WordGridProps> = ({
     };
 
     document.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      // Cleanup animation frame on unmount
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, [isSelecting, handleMouseUp]);
 
-  // Enhanced touch support with iPad landscape fixes
+  // Enhanced touch support with performance optimizations
   const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Store the touch ID for this interaction
+    if (e.touches.length > 0) {
+      currentTouchIdRef.current = e.touches[0].identifier;
+    }
+    
     // Prevent default only for iPad landscape to prevent screen movement
     const isIPad = /iPad/i.test(navigator.userAgent) || 
                   (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
     const isLandscape = window.innerWidth > window.innerHeight;
     
     if (isIPad && isLandscape) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Add selecting class to prevent screen movement
+      // Add selecting class to prevent screen movement and lock body
       if (gridContainerRef.current) {
         gridContainerRef.current.classList.add('selecting');
-        document.body.style.overflow = 'hidden';
-        document.body.style.position = 'fixed';
-        document.body.style.width = '100%';
-        document.body.style.height = '100%';
+        document.body.classList.add('drag-in-progress');
       }
     }
     
     // Set state for selection
+    isDraggingRef.current = true;
     setIsSelecting(true);
-    setCurrentSelection([{ row, col }]);
-    setHighlightedCells(new Set([getCellKey(row, col)]));
+    const newSelection = [{ row, col }];
+    const highlighted = new Set([getCellKey(row, col)]);
+    
+    setCurrentSelection(newSelection);
+    setHighlightedCells(highlighted);
 
     // Add haptic feedback if available - use requestAnimationFrame for better performance
     requestAnimationFrame(() => {
@@ -256,21 +307,23 @@ export const WordGrid: React.FC<WordGridProps> = ({
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isSelecting || currentSelection.length === 0) return;
+    if (!isSelecting || currentSelection.length === 0 || !isDraggingRef.current) return;
 
-    // Enhanced touch move handling for iPad landscape
-    const isIPad = /iPad/i.test(navigator.userAgent) || 
-                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
-    const isLandscape = window.innerWidth > window.innerHeight;
+    e.preventDefault();
+    e.stopPropagation();
     
-    if (isIPad && isLandscape) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    // Check if this is the same touch that started the interaction
+    const touch = Array.from(e.touches).find(t => t.identifier === currentTouchIdRef.current);
+    if (!touch) return;
     
-    const touch = e.touches[0];
+    // Throttle touch move events for better performance (targeting 60fps)
+    const now = Date.now();
+    if (now - lastMoveTimeRef.current < 16) return;
+    lastMoveTimeRef.current = now;
     
     // Apply touch offset to show word above finger - larger offset for iPad
+    const isIPad = /iPad/i.test(navigator.userAgent) || 
+                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
     const offsetY = isIPad ? 40 : 30;
     const adjustedY = touch.clientY - offsetY;
     
@@ -281,12 +334,14 @@ export const WordGrid: React.FC<WordGridProps> = ({
       if (cellKey) {
         const [row, col] = cellKey.split(',').map(Number);
 
-        // Only update if we're on a different cell
+        // Only update if we're on a different cell to avoid unnecessary re-renders
         if (!highlightedCells.has(cellKey)) {
           const start = currentSelection[0];
           const newSelection = getSelectionPath(start, { row, col });
-          setCurrentSelection(newSelection);
-          setHighlightedCells(new Set(newSelection.map(pos => getCellKey(pos.row, pos.col))));
+          const highlighted = new Set(newSelection.map(pos => getCellKey(pos.row, pos.col)));
+          
+          // Use throttled update for better performance
+          throttledUpdateSelection(newSelection, highlighted);
           
           // Update selection arrow
           setSelectionArrow({
@@ -295,38 +350,41 @@ export const WordGrid: React.FC<WordGridProps> = ({
           });
 
           // Add haptic feedback for iOS and Android if available
-          if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(5); // Very short vibration
+          if (navigator.vibrate) {
+            navigator.vibrate(5); // Very short vibration
           }
           
-          // Add visual feedback
-          element.classList.add('cell-tap-feedback');
-          setTimeout(() => element.classList.remove('cell-tap-feedback'), 200);
+          // Add visual feedback with requestAnimationFrame
+          requestAnimationFrame(() => {
+            element.classList.add('cell-tap-feedback');
+            setTimeout(() => element.classList.remove('cell-tap-feedback'), 200);
+          });
           
           // Show floating word preview above finger - adjusted for iPad
           showFloatingWordPreview(touch.clientX, touch.clientY - (isIPad ? 60 : 50), newSelection);
         }
       }
     }
-  }, [isSelecting, currentSelection, highlightedCells]);
+  }, [isSelecting, currentSelection, highlightedCells, throttledUpdateSelection]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Clear the touch ID
+    currentTouchIdRef.current = null;
+    isDraggingRef.current = false;
+    
     // Enhanced touch end handling for iPad landscape
     const isIPad = /iPad/i.test(navigator.userAgent) || 
                   (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
     const isLandscape = window.innerWidth > window.innerHeight;
     
     if (isIPad && isLandscape) {
-      e.preventDefault();
-      e.stopPropagation();
-      
       // Remove selecting class and restore body styles
       if (gridContainerRef.current) {
         gridContainerRef.current.classList.remove('selecting');
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.height = '';
+        document.body.classList.remove('drag-in-progress');
       }
     }
     
@@ -361,7 +419,8 @@ export const WordGrid: React.FC<WordGridProps> = ({
     return path;
   };
 
-  const getCellStyle = (row: number, col: number, _cell: Cell) => {
+  // Memoize cell style calculations for better performance
+  const getCellStyle = useCallback((row: number, col: number, _cell: Cell) => {
     const cellKey = getCellKey(row, col);
     const isHighlighted = highlightedCells.has(cellKey);
 
@@ -378,7 +437,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
     let color = theme.primary;
     let borderColor = 'rgba(255, 255, 255, 0.2)';
     let boxShadow = 'none';
-    let transform = isHighlighted ? 'scale(1.05)' : 'scale(1)';
+    let transform = isHighlighted ? 'translateZ(0) scale(1.05)' : 'translateZ(0) scale(1)';
 
     if (foundWord) {
       backgroundColor = foundWord.color + '40'; // Add transparency
@@ -388,7 +447,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
       // If this is part of the last found word, add extra effects
       if (lastFoundWord && lastFoundWord.word === foundWord.word) {
         boxShadow = `0 0 15px ${foundWord.color}80`;
-        transform = 'scale(1.05)';
+        transform = 'translateZ(0) scale(1.05)';
       }
     } else if (isHighlighted) {
       backgroundColor = theme.accent + '60';
@@ -400,7 +459,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
     if (isPathAnimationCell) {
       boxShadow = `0 0 15px ${pathAnimationColor}`;
       borderColor = pathAnimationColor;
-      transform = 'scale(1.1)';
+      transform = 'translateZ(0) scale(1.1)';
     }
 
     return {
@@ -408,20 +467,23 @@ export const WordGrid: React.FC<WordGridProps> = ({
       color,
       borderColor,
       boxShadow,
-      transition: 'all 0.2s ease',
+      transition: 'all 0.1s cubic-bezier(0.4, 0, 0.2, 1)',
       transform,
       fontFamily: theme.font || "'Inter', sans-serif",
+      // Performance optimizations
+      willChange: 'transform, background-color, box-shadow',
+      backfaceVisibility: 'hidden',
+      WebkitBackfaceVisibility: 'hidden'
     };
-  };
+  }, [highlightedCells, words, theme, showPathAnimation, pathAnimationCells, pathAnimationColor, lastFoundWord]);
 
-  // Dynamic cell sizing based on grid size and screen width
-  const getCellSize = () => {
+  // Memoized cell size calculation for better performance
+  const cellSizeConfig = useMemo(() => {
     const gridSize = grid.length;
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     
     // Calculate available space for the grid
-    // For desktop, we want to use the available space more intelligently
     let baseSize;
     
     // Check if device is iPad using the user agent
@@ -495,15 +557,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
       baseSize = 22; // Minimum size for touch targets
     }
     
-    return `${baseSize}px`;
-  };
-
-  // Dynamic font size based on cell size
-  const getCellFontSize = () => {
-    const gridSize = grid.length;
-    const screenWidth = window.innerWidth;
-
-    // Base font size calculations
+    // Calculate font size
     let baseFontSize;
     if (screenWidth >= 768) {
       baseFontSize = 16;
@@ -518,11 +572,12 @@ export const WordGrid: React.FC<WordGridProps> = ({
       const scaleFactor = Math.min(1, 10 / gridSize);
       baseFontSize = Math.max(10, Math.floor(baseFontSize * scaleFactor));
     }
-
-    return `${baseFontSize}px`;
-  };
-
-
+    
+    return {
+      size: `${baseSize}px`,
+      fontSize: `${baseFontSize}px`
+    };
+  }, [grid.length, isZoomed, isMobile]);
 
   // State for pinch-to-zoom
   const [zoomScale, setZoomScale] = useState(1);
@@ -541,7 +596,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
         return false;
       };
 
-      gridElement.addEventListener('contextmenu', preventContextMenu);
+      gridElement.addEventListener('contextmenu', preventContextMenu, { passive: false });
 
       // Add meta viewport tag to prevent zooming on double tap
       const viewportMeta = document.querySelector('meta[name=viewport]');
@@ -555,22 +610,6 @@ export const WordGrid: React.FC<WordGridProps> = ({
       if (isIOS) {
         // Add a specific class for iOS devices
         gridElement.classList.add('ios-touch-fix');
-        
-        // Add a style element with iOS-specific CSS
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-          .ios-touch-fix {
-            -webkit-overflow-scrolling: touch;
-            touch-action: manipulation;
-            position: relative;
-          }
-          .ios-touch-fix * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-          }
-        `;
-        document.head.appendChild(styleElement);
         
         // Add pinch-to-zoom handlers for iOS
         const handleTouchStartZoom = (e: TouchEvent) => {
@@ -607,14 +646,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
         
         gridElement.addEventListener('touchstart', handleTouchStartZoom, { passive: false });
         gridElement.addEventListener('touchmove', handleTouchMoveZoom, { passive: false });
-        gridElement.addEventListener('touchend', handleTouchEndZoom);
+        gridElement.addEventListener('touchend', handleTouchEndZoom, { passive: false });
         
         // Return cleanup function for iOS-specific fixes
         return () => {
           gridElement.classList.remove('ios-touch-fix');
-          if (styleElement.parentNode) {
-            styleElement.parentNode.removeChild(styleElement);
-          }
           
           // Clean up event listeners
           gridElement.removeEventListener('contextmenu', preventContextMenu);
@@ -673,12 +709,14 @@ export const WordGrid: React.FC<WordGridProps> = ({
         setCurrentSelection([{ row, col }]);
         setHighlightedCells(new Set([getCellKey(row, col)]));
         
-        // Add visual feedback
-        const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
-        if (cell) {
-          cell.classList.add('cell-tap-feedback');
-          setTimeout(() => cell.classList.remove('cell-tap-feedback'), 300);
-        }
+        // Add visual feedback with requestAnimationFrame
+        requestAnimationFrame(() => {
+          const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
+          if (cell) {
+            cell.classList.add('cell-tap-feedback');
+            setTimeout(() => cell.classList.remove('cell-tap-feedback'), 300);
+          }
+        });
       } else {
         // Second click - set end cell and check for word
         const newSelection = getSelectionPath(startCell, { row, col });
@@ -713,19 +751,21 @@ export const WordGrid: React.FC<WordGridProps> = ({
           setShowPathAnimation(true);
           
           // Provide haptic feedback
-          if (isMobile) {
-            provideHapticFeedback(30);
+          if (isMobile && navigator.vibrate) {
+            navigator.vibrate(30);
           }
 
-          // Add celebration effect with staggered animation
+          // Add celebration effect with staggered animation using requestAnimationFrame
           wordCells.forEach((pos, index) => {
-            const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
-            if (cell) {
-              setTimeout(() => {
-                cell.classList.add('animate-word-found');
-                setTimeout(() => cell.classList.remove('animate-word-found'), 600);
-              }, index * 50);
-            }
+            requestAnimationFrame(() => {
+              const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
+              if (cell) {
+                setTimeout(() => {
+                  cell.classList.add('animate-word-found');
+                  setTimeout(() => cell.classList.remove('animate-word-found'), 600);
+                }, index * 50);
+              }
+            });
           });
           
           // Hide path animation after a delay
@@ -740,17 +780,19 @@ export const WordGrid: React.FC<WordGridProps> = ({
           }, foundWord.description ? 5000 : 2000);
         } else {
           // Provide error feedback
-          if (isMobile) {
-            provideHapticFeedback(10);
+          if (isMobile && navigator.vibrate) {
+            navigator.vibrate(10);
           }
           
-          // Visual feedback for incorrect selection
+          // Visual feedback for incorrect selection using requestAnimationFrame
           newSelection.forEach(pos => {
-            const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
-            if (cell) {
-              cell.classList.add('cell-error-feedback');
-              setTimeout(() => cell.classList.remove('cell-error-feedback'), 300);
-            }
+            requestAnimationFrame(() => {
+              const cell = document.querySelector(`[data-cell="${getCellKey(pos.row, pos.col)}"]`);
+              if (cell) {
+                cell.classList.add('cell-error-feedback');
+                setTimeout(() => cell.classList.remove('cell-error-feedback'), 300);
+              }
+            });
           });
         }
         
@@ -762,7 +804,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
     }
   }, [selectionMode, startCell, words, onWordFound, showDescriptions, kidsMode, isMobile]);
 
-  // Show floating word preview above finger
+  // Show floating word preview above finger with performance optimizations
   const showFloatingWordPreview = useCallback((x: number, y: number, selection: Position[]) => {
     // Remove any existing preview with proper checks
     const existingPreview = document.getElementById('floating-word-preview');
@@ -801,12 +843,16 @@ export const WordGrid: React.FC<WordGridProps> = ({
       transform: 'translateX(-50%)',
       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
       transition: 'opacity 0.2s ease',
-      opacity: '0'
+      opacity: '0',
+      // Performance optimizations
+      willChange: 'opacity',
+      backfaceVisibility: 'hidden',
+      WebkitBackfaceVisibility: 'hidden'
     });
     
     document.body.appendChild(preview);
     
-    // Fade in the preview
+    // Fade in the preview using requestAnimationFrame
     requestAnimationFrame(() => {
       if (preview && preview.parentNode) {
         preview.style.opacity = '1';
@@ -967,8 +1013,8 @@ export const WordGrid: React.FC<WordGridProps> = ({
                   key={getCellKey(rowIndex, colIndex)}
                   data-cell={getCellKey(rowIndex, colIndex)}
                   style={{
-                    width: getCellSize(),
-                    height: getCellSize(),
+                    width: cellSizeConfig.size,
+                    height: cellSizeConfig.size,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -976,7 +1022,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
                     borderRadius: window.innerWidth >= 480 ? '8px' : '6px',
                     cursor: 'pointer',
                     fontWeight: '600',
-                    fontSize: getCellFontSize(),
+                    fontSize: cellSizeConfig.fontSize,
                     // Apply baseStyle which includes: backgroundColor, color, borderColor, boxShadow, transition, transform, fontFamily
                     ...baseStyle
                   }}
@@ -1018,7 +1064,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
             >
               {(() => {
                 // Calculate cell size
-                const cellSizeStr = getCellSize();
+                const cellSizeStr = cellSizeConfig.size;
                 const cellSize = parseInt(cellSizeStr.replace('px', ''));
                 const gapSize = window.innerWidth >= 480 ? 4 : 2;
                 

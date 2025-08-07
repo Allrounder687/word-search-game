@@ -61,7 +61,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
       bottom: '20px',
       left: '50%',
       transform: 'translateX(-50%)',
-      backgroundColor: theme.secondary,
+      backgroundColor: 'var(--secondary)',
       color: 'white',
       padding: '10px 20px',
       borderRadius: '8px',
@@ -170,7 +170,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
           width: '48px',
           height: '48px',
           borderRadius: '50%',
-          backgroundColor: theme.secondary,
+          backgroundColor: 'var(--secondary)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -212,7 +212,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
         <RotateCcw 
           size={64} 
           style={{ 
-            color: theme.secondary,
+            color: 'var(--secondary)',
             marginBottom: '20px',
             animation: 'rotate-animation 2s ease-in-out infinite'
           }} 
@@ -221,7 +221,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
         <h2 style={{
           fontSize: '24px',
           fontWeight: 'bold',
-          color: theme.primary,
+          color: 'var(--primary)',
           marginBottom: '16px'
         }}>
           Please Rotate Your Device
@@ -229,7 +229,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
         
         <p style={{
           fontSize: '16px',
-          color: theme.primary,
+          color: 'var(--primary)',
           marginBottom: '24px',
           maxWidth: '300px',
           lineHeight: 1.5
@@ -250,7 +250,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
               style={{
                 padding: '12px 24px',
                 borderRadius: '8px',
-                backgroundColor: theme.secondary,
+                backgroundColor: 'var(--secondary)',
                 color: 'white',
                 fontWeight: 'bold',
                 border: 'none',
@@ -272,7 +272,7 @@ export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme })
             style={{
               padding: '12px 24px',
               borderRadius: '8px',
-              backgroundColor: isOrientationLockSupported ? 'rgba(255, 255, 255, 0.2)' : theme.secondary,
+              backgroundColor: isOrientationLockSupported ? 'rgba(255, 255, 255, 0.2)' : 'var(--secondary)',
               color: 'white',
               fontWeight: isOrientationLockSupported ? 'normal' : 'bold',
               border: 'none',

@@ -36,25 +36,3 @@ export const useResponsive = (): ResponsiveBreakpoints => {
     height: dimensions.height
   };
 };
-
-// Utility functions for responsive values
-export const getResponsiveValue = <T>(
-  values: {
-    mobile: T;
-    tablet?: T;
-    desktop?: T;
-    largeDesktop?: T;
-  },
-  breakpoints: ResponsiveBreakpoints
-): T => {
-  if (breakpoints.isLargeDesktop && values.largeDesktop !== undefined) {
-    return values.largeDesktop;
-  }
-  if (breakpoints.isDesktop && values.desktop !== undefined) {
-    return values.desktop;
-  }
-  if (breakpoints.isTablet && values.tablet !== undefined) {
-    return values.tablet;
-  }
-  return values.mobile;
-};

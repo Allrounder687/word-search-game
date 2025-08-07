@@ -288,7 +288,14 @@ function App() {
 
   // Apply theme to body
   useEffect(() => {
-    document.body.style.background = currentTheme.background;
+    const root = document.documentElement;
+    if (root) {
+      Object.entries(currentTheme).forEach(([key, value]) => {
+        root.style.setProperty(`--${key}`, value);
+      });
+    }
+    document.body.style.background = 'var(--background)';
+    document.body.style.color = 'var(--primary)';
   }, [currentTheme]);
 
   // Handle hint usage
@@ -345,7 +352,7 @@ function App() {
       style={{
         minHeight: '100vh',
         padding: '16px',
-        fontFamily: currentTheme.font || 'Inter, sans-serif',
+        fontFamily: 'var(--font, Inter, sans-serif)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center'
@@ -371,503 +378,109 @@ function App() {
           timeRemaining={timeRemaining}
         />
 
-        <div style={{
-          display: 'flex',
-          flexDirection: breakpoints.isDesktop ? 'row' : 'column',
-          gap: breakpoints.isDesktop ? layoutConfig.spacing.gap : '8px',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginTop: breakpoints.isDesktop ? layoutConfig.spacing.marginTop : '8px',
-          padding: breakpoints.isDesktop ? layoutConfig.spacing.padding : '8px'
-        }}>
-          {/* Create descriptions object outside of JSX */}
-
-          {/* Check if device is iPad and in landscape mode for special layout */}
-          {(() => {
-            const isIPad = /iPad/i.test(navigator.userAgent) || 
-                          (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
-            const isLandscape = window.innerWidth > window.innerHeight;
-            
-            // iPad Landscape Layout - Side by Side
-            if (isIPad && isLandscape) {
-              return (
-                <>
-                  {/* iPad Landscape Controls Bar */}
-                  <div style={{
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '12px',
-                    gap: '12px',
-                    padding: '0 8px'
-                  }}>
-                    {/* Left side: Quick Settings */}
-                    <div style={{ flex: '1' }}>
-                      <QuickSettings
-                        settings={gameState.settings}
-                        onSettingsChange={handleSettingsChange}
-                        theme={currentTheme}
-                        onReset={handleReset}
-                        onToggleZoom={onToggleZoom}
-                        isZoomed={isZoomed}
-                        isClickMode={isClickMode}
-                      />
-                    </div>
-
-                    {/* Right side: Timer and Hint System */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: '12px'
-                    }}>
-                      {/* Timer Display (for countdown mode) */}
-                      {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                          color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                          borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
-                          animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                        }}>
-                          <Clock size={16} style={{
-                            color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                          }} />
-                          <span style={{
-                            fontWeight: 'bold',
-                            fontSize: '14px'
-                          }}>
-                            {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Hint System */}
-                      <HintSystem
-                        words={gameState.words}
-                        onHintUsed={handleHintUsed}
-                        theme={currentTheme}
-                        hintsRemaining={hintsRemaining}
-                      />
-
-                      {/* Settings Button */}
-                      <button
-                        onClick={() => setShowSettings(true)}
-                        style={{
-                          padding: '8px',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s',
-                          cursor: 'pointer',
-                          border: `1px solid ${currentTheme.secondary}40`,
-                          backgroundColor: currentTheme.cellBg,
-                          color: currentTheme.primary,
-                          width: '40px',
-                          height: '40px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          WebkitTapHighlightColor: 'transparent'
-                        }}
-                        title="Settings"
-                      >
-                        <Settings size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* iPad Landscape Main Content - Side by Side */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    gap: '16px',
-                    width: '100%',
-                    height: 'calc(100vh - 180px)',
-                    overflow: 'hidden'
-                  }}>
-                    {/* Left side: Word Grid */}
-                    <div style={{
-                      flex: '1',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      minWidth: '50%'
-                    }}>
-                      <WordGrid
-                        grid={gameState.grid}
-                        words={gameState.words}
-                        onWordFound={handleWordFound}
-                        theme={currentTheme}
-                        showDescriptions={gameState.settings.showDescriptions}
-                        kidsMode={gameState.settings.kidsMode}
-                        isZoomed={isZoomed}
-                        selectionMode={selectionMode}
-                        onSelectionModeChange={setSelectionMode}
-                      />
-                    </div>
-
-                    {/* Right side: Word List */}
-                    <div style={{
-                      flex: '0 0 300px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      maxHeight: '100%',
-                      overflow: 'hidden'
-                    }}>
-                      <WordList
-                        words={gameState.words}
-                        theme={currentTheme}
-                        showDescriptions={gameState.settings.showDescriptions}
-                        kidsMode={gameState.settings.kidsMode}
-                        isMobileLayout={false}
-                        descriptions={descriptions}
-                        selectedWord={selectedDescriptionWord}
-                        setSelectedWord={setSelectedDescriptionWord}
-                      />
-                    </div>
-                  </div>
-                </>
-              );
-            }
-
-            // Regular Mobile/Tablet Portrait Layout
-            if (!breakpoints.isDesktop) {
-              return (
-                <>
-                  {/* WordList for mobile - moved to the very top */}
-                  <div style={{
-                    width: '100%',
-                    marginBottom: '16px'
-                  }}>
-                    <WordList
-                      words={gameState.words}
-                      theme={currentTheme}
-                      showDescriptions={gameState.settings.showDescriptions}
-                      kidsMode={gameState.settings.kidsMode}
-                      isMobileLayout={true}
-                      descriptions={descriptions}
-                      selectedWord={selectedDescriptionWord}
-                      setSelectedWord={setSelectedDescriptionWord}
-                    />
-                  </div>
-
-                  {/* Mobile Layout - Compact Controls Bar */}
-                  <div style={{
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '8px',
-                    gap: '8px'
-                  }}>
-                    {/* Left side: Quick Settings dropdown */}
-                    <div style={{ flex: '1' }}>
-                      <QuickSettings
-                        settings={gameState.settings}
-                        onSettingsChange={handleSettingsChange}
-                        theme={currentTheme}
-                        onReset={handleReset}
-                        onToggleZoom={onToggleZoom}
-                        isZoomed={isZoomed}
-                        isClickMode={isClickMode}
-                      />
-                    </div>
-
-                    {/* Right side: Hint System */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: '8px'
-                    }}>
-                      {/* Timer Display (for countdown mode) - more compact */}
-                      {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '6px 10px',
-                          borderRadius: '6px',
-                          backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                          color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                          borderWidth: '1px',
-                          borderStyle: 'solid',
-                          borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
-                          animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                        }}>
-                          <Clock size={14} style={{
-                            color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                          }} />
-                          <span style={{
-                            fontWeight: 'bold',
-                            fontSize: '14px'
-                          }}>
-                            {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Hint System - more compact */}
-                      <HintSystem
-                        words={gameState.words}
-                        onHintUsed={handleHintUsed}
-                        theme={currentTheme}
-                        hintsRemaining={hintsRemaining}
-                      />
-
-                      {/* Settings Button - always visible in portrait mode */}
-                      <button
-                        onClick={() => setShowSettings(true)}
-                        style={{
-                          padding: '8px',
-                          borderRadius: '8px',
-                          transition: 'all 0.2s',
-                          cursor: 'pointer',
-                          border: `1px solid ${currentTheme.secondary}40`,
-                          backgroundColor: currentTheme.cellBg,
-                          color: currentTheme.primary,
-                          width: '36px',
-                          height: '36px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          WebkitTapHighlightColor: 'transparent'
-                        }}
-                        title="Settings"
-                      >
-                        <Settings size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Mobile Word Grid */}
-                  <div className="word-grid-container" style={{
-                    flexShrink: 0,
-                    display: 'flex',
-                    justifyContent: 'center',
-                    width: '100%',
-                    maxWidth: '100%',
-                    maxHeight: (() => {
-                      const isTabletPortrait = breakpoints.isTablet && !isLandscape;
-                      
-                      if (isTabletPortrait) {
-                        return 'calc(100vh - 200px)';
-                      } else if (breakpoints.isMobile) {
-                        return isLandscape ? 'calc(100vh - 100px)' : 'calc(100vh - 220px)';
-                      } else {
-                        return 'calc(100vh - 220px)';
-                      }
-                    })(),
-                    overflow: 'hidden'
-                  }}>
-                    <WordGrid
-                      grid={gameState.grid}
-                      words={gameState.words}
-                      onWordFound={handleWordFound}
-                      theme={currentTheme}
-                      showDescriptions={gameState.settings.showDescriptions}
-                      kidsMode={gameState.settings.kidsMode}
-                      isZoomed={isZoomed}
-                      selectionMode={selectionMode}
-                      onSelectionModeChange={setSelectionMode}
-                    />
-                  </div>
-                </>
-              );
-            }
-
-            // Desktop Layout - same improved design as mobile
-            return (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: '24px',
-                width: '100%',
-                alignItems: 'flex-start'
-              }}>
-                {/* Left side: Word Grid */}
-                <div style={{
-                  flex: '1',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  maxWidth: '600px'
-                }}>
-                  <WordGrid
-                    grid={gameState.grid}
-                    words={gameState.words}
-                    onWordFound={handleWordFound}
-                    theme={currentTheme}
-                    showDescriptions={gameState.settings.showDescriptions}
-                    kidsMode={gameState.settings.kidsMode}
-                    isZoomed={isZoomed}
-                    selectionMode={selectionMode}
-                    onSelectionModeChange={setSelectionMode}
-                  />
-                </div>
-
-                {/* Right side: Controls and Word List */}
-                <div style={{
-                  flex: '0 0 350px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px'
-                }}>
-                  {/* Quick Settings */}
-                  <QuickSettings
-                    settings={gameState.settings}
-                    onSettingsChange={handleSettingsChange}
-                    theme={currentTheme}
-                    onReset={handleReset}
-                    onToggleZoom={onToggleZoom}
-                    isZoomed={isZoomed}
-                    isClickMode={isClickMode}
-                  />
-
-                  {/* Desktop Controls - Only Timer and Hint System */}
-                  <div
-                    style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                      display: 'flex',
-                      flexWrap: 'nowrap',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      backgroundColor: currentTheme.gridBg
-                    }}
-                  >
-                    {/* Hint System */}
-                    <HintSystem
-                      words={gameState.words}
-                      onHintUsed={handleHintUsed}
-                      theme={currentTheme}
-                      hintsRemaining={hintsRemaining}
-                    />
-
-                    {/* Timer Display (for countdown mode) */}
-                    {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : currentTheme.cellBg,
-                        color: timeRemaining < 30 ? '#ef4444' : currentTheme.primary,
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        borderColor: timeRemaining < 30 ? '#ef4444' : `${currentTheme.secondary}40`,
-                        animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
-                      }}>
-                        <Clock size={20} style={{
-                          color: timeRemaining < 30 ? '#ef4444' : currentTheme.secondary
-                        }} />
-                        <span style={{
-                          fontWeight: 'bold',
-                          fontSize: '16px'
-                        }}>
-                          {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Word List */}
-                  <WordList
-                    words={gameState.words}
-                    theme={currentTheme}
-                    showDescriptions={gameState.settings.showDescriptions}
-                    kidsMode={gameState.settings.kidsMode}
-                    isMobileLayout={false}
-                    descriptions={descriptions}
-                    selectedWord={selectedDescriptionWord}
-                    setSelectedWord={setSelectedDescriptionWord}
-                  />
-
-                  {/* Achievement Icons - Moved below Word List */}
-                  <div
-                    style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                      display: 'flex',
-                      flexWrap: 'nowrap',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      backgroundColor: currentTheme.gridBg
-                    }}
-                  >
-                    {/* Achievement System */}
-                    <AchievementSystem
-                      theme={currentTheme}
-                    />
-
-                    {/* Kids Achievements System */}
-                    {gameState.settings.kidsMode && (
-                      <KidsAchievements
-                        theme={currentTheme}
-                        foundWords={Array.from(gameState.foundWords)}
-                        kidsMode={gameState.settings.kidsMode}
-                      />
-                    )}
-
-                    {/* Leaderboard System */}
-                    <LeaderboardSystem
-                      theme={currentTheme}
-                    />
-
-                    {/* Level System */}
-                    <LevelSystem
-                      theme={currentTheme}
-                      onStartLevel={(currentLevel, settings) => {
-                        // Update settings with level-specific words
-                        const levelSettings = {
-                          ...settings,
-                          // Set categories based on current word category
-                          wordCategory: gameState.settings.wordCategory,
-                          // Keep user preferences
-                          theme: gameState.settings.theme,
-                          showDescriptions: gameState.settings.showDescriptions,
-                          timerMode: gameState.settings.timerMode,
-                          timerDuration: gameState.settings.timerDuration
-                        };
-
-                        // Log the current level (using the parameter to avoid the warning)
-                        console.log(`Starting level ${currentLevel}`);
-
-                        // Initialize game with the level settings
-                        handleSettingsChange(levelSettings);
-                      }}
-                      currentSettings={gameState.settings}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-center justify-center mt-4 p-4">
+        {/* Left side: Word Grid */}
+        <div className="w-full lg:w-auto lg:flex-1 flex justify-center items-center">
+          <WordGrid
+            grid={gameState.grid}
+            words={gameState.words}
+            onWordFound={handleWordFound}
+            theme={currentTheme}
+          />
         </div>
+
+        {/* Right side: Controls and Word List */}
+        <div className="w-full lg:w-[350px] flex flex-col gap-4">
+          {/* Quick Settings */}
+          <QuickSettings
+            settings={gameState.settings}
+            onSettingsChange={handleSettingsChange}
+            theme={currentTheme}
+            onReset={handleReset}
+            onToggleZoom={onToggleZoom}
+            isZoomed={isZoomed}
+            isClickMode={isClickMode}
+          />
+
+          {/* Timer and Hint System */}
+          <div className="p-4 rounded-xl shadow-lg flex items-center justify-between gap-4" style={{ backgroundColor: 'var(--gridBg)' }}>
+            <HintSystem
+              words={gameState.words}
+              onHintUsed={handleHintUsed}
+              theme={currentTheme}
+              hintsRemaining={hintsRemaining}
+            />
+            {gameState.settings.timerMode === 'countdown' && timeRemaining !== null && (
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-lg"
+                style={{
+                  backgroundColor: timeRemaining < 30 ? 'rgba(239, 68, 68, 0.2)' : 'var(--cellBg)',
+                  color: timeRemaining < 30 ? '#ef4444' : 'var(--primary)',
+                  border: `1px solid ${timeRemaining < 30 ? '#ef4444' : 'var(--secondary-40)'}`,
+                  animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none',
+                }}
+              >
+                <Clock size={20} style={{ color: timeRemaining < 30 ? '#ef4444' : 'var(--secondary)' }} />
+                <span className="font-bold text-lg">
+                  {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Word List */}
+          <WordList
+            words={gameState.words}
+            theme={currentTheme}
+            showDescriptions={gameState.settings.showDescriptions}
+            kidsMode={gameState.settings.kidsMode}
+            isMobileLayout={!breakpoints.isDesktop}
+            descriptions={descriptions}
+            selectedWord={selectedDescriptionWord}
+            setSelectedWord={setSelectedDescriptionWord}
+          />
+
+          {/* Achievement, Leaderboard, etc. */}
+          <div className="p-4 rounded-xl shadow-lg flex items-center justify-between gap-4" style={{ backgroundColor: 'var(--gridBg)' }}>
+            <AchievementSystem theme={currentTheme} />
+            {gameState.settings.kidsMode && (
+              <KidsAchievements
+                theme={currentTheme}
+                foundWords={Array.from(gameState.foundWords)}
+                kidsMode={gameState.settings.kidsMode}
+              />
+            )}
+            <LeaderboardSystem theme={currentTheme} />
+            <LevelSystem
+              theme={currentTheme}
+              onStartLevel={(currentLevel, settings) => {
+                const levelSettings = {
+                  ...settings,
+                  wordCategory: gameState.settings.wordCategory,
+                  theme: gameState.settings.theme,
+                  showDescriptions: gameState.settings.showDescriptions,
+                  timerMode: gameState.settings.timerMode,
+                  timerDuration: gameState.settings.timerDuration,
+                };
+                console.log(`Starting level ${currentLevel}`);
+                handleSettingsChange(levelSettings);
+              }}
+              currentSettings={gameState.settings}
+            />
+          </div>
+        </div>
+      </div>
 
         {/* Game Complete Celebration */}
         {gameState.isComplete && (
           <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none">
             <div className="text-center animate-float p-8 rounded-xl shadow-2xl"
               style={{
-                backgroundColor: `${currentTheme.gridBg}CC`,
+                backgroundColor: 'var(--gridBg-cc)',
                 backdropFilter: 'blur(8px)',
                 borderWidth: '2px',
                 borderStyle: 'solid',
-                borderColor: `${currentTheme.accent}40`
+                borderColor: 'var(--accent-40)'
               }}
             >
               <div className="text-6xl mb-4 flex justify-center">
@@ -882,12 +495,12 @@ function App() {
                   backgroundSize: '400% 400%',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  fontFamily: currentTheme.font
+                  fontFamily: 'var(--font)'
                 }}
               >
                 Congratulations!
               </div>
-              <div className="text-xl opacity-90 mb-2" style={{ color: currentTheme.primary }}>
+              <div className="text-xl opacity-90 mb-2" style={{ color: 'var(--primary)' }}>
                 All words found in {Math.floor(gameState.timeElapsed / 60)}:{(gameState.timeElapsed % 60).toString().padStart(2, '0')}
               </div>
 
@@ -910,12 +523,12 @@ function App() {
               <div className="flex items-center justify-center gap-4 mt-4">
                 <div className="flex items-center gap-2 p-3 rounded-lg"
                   style={{
-                    backgroundColor: currentTheme.cellBg,
-                    boxShadow: `0 0 20px ${currentTheme.accent}40`
+                    backgroundColor: 'var(--cellBg)',
+                    boxShadow: '0 0 20px var(--accent-40)'
                   }}
                 >
-                  <Trophy className="animate-pulse" style={{ color: currentTheme.accent }} />
-                  <span style={{ color: currentTheme.primary, fontWeight: 'bold', fontSize: '1.25rem' }}>
+                  <Trophy className="animate-pulse" style={{ color: 'var(--accent)' }} />
+                  <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.25rem' }}>
                     {gameState.score.toLocaleString()} points
                   </span>
                 </div>
@@ -925,7 +538,7 @@ function App() {
                 onClick={handleReset}
                 className="mt-6 px-6 py-3 rounded-lg transition-all duration-200 hover:scale-105 pointer-events-auto"
                 style={{
-                  backgroundColor: currentTheme.secondary,
+                  backgroundColor: 'var(--secondary)',
                   color: 'white',
                   fontWeight: 'bold'
                 }}
@@ -952,7 +565,7 @@ function App() {
               >
                 <Sparkles
                   size={16 + Math.random() * 16}
-                  style={{ color: currentTheme.accent }}
+                  style={{ color: 'var(--accent)' }}
                 />
               </div>
             ))}
@@ -1006,7 +619,7 @@ function App() {
                   style={{
                     padding: '12px 24px',
                     borderRadius: '8px',
-                    backgroundColor: currentTheme.secondary,
+                    backgroundColor: 'var(--secondary)',
                     color: 'white',
                     fontWeight: 'bold',
                     borderWidth: '0',
@@ -1033,7 +646,7 @@ function App() {
                     fontWeight: 'bold',
                     borderWidth: '1px',
                     borderStyle: 'solid',
-                    borderColor: currentTheme.secondary,
+                    borderColor: 'var(--secondary)',
                     cursor: 'pointer',
                     transition: 'all 0.2s'
                   }}

@@ -556,8 +556,8 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                     </div>
                 )}
                 
-                {/* Render the description box when a word is selected */}
-                {selectedWord && (
+                {/* Render the description box when a word is selected and showDescriptions is enabled */}
+                {selectedWord && showDescriptions && (
                     <DescriptionBox
                         word={selectedWord}
                         color={words.find(w => w.word === selectedWord)?.color || theme.secondary}
@@ -803,8 +803,8 @@ export const WordList: React.FC<WordListProps> = ({ words, theme, showDescriptio
                 })}
             </div>
 
-            {/* Render the description box when a word is selected */}
-            {selectedWord && (
+            {/* Render the description box when a word is selected and showDescriptions is enabled */}
+            {selectedWord && showDescriptions && (
                 <DescriptionBox
                     word={selectedWord}
                     color={words.find(w => w.word === selectedWord)?.color || theme.secondary}

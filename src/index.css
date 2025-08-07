@@ -16,11 +16,31 @@ html {
   -moz-tab-size: 4;
   tab-size: 4;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  /* Prevent iOS zoom and improve touch handling */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   line-height: inherit;
+  /* Prevent scroll bouncing and improve performance */
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Create scrollable container for game content */
+#root {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Tailwind CSS component and utility classes will be processed by the build system */
@@ -67,7 +87,6 @@ body {
 
 /* Animation keyframes */
 @keyframes pulse-glow {
-
   0%,
   100% {
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
@@ -120,7 +139,6 @@ body {
 }
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0px);
@@ -132,7 +150,6 @@ body {
 }
 
 @keyframes sparkle {
-
   0%,
   100% {
     opacity: 0;
@@ -178,7 +195,6 @@ body {
 }
 
 @keyframes shake {
-
   0%,
   100% {
     transform: translateX(0);
@@ -201,7 +217,6 @@ body {
 }
 
 @keyframes glow-pulse {
-
   0%,
   100% {
     filter: drop-shadow(0 0 5px currentColor);
@@ -235,6 +250,49 @@ body {
   }
 }
 
+/* Enhanced touch feedback classes */
+.cell-tap-feedback {
+  animation: tap-feedback 0.3s ease-out;
+}
+
+.cell-error-feedback {
+  animation: error-feedback 0.3s ease-out;
+}
+
+@keyframes tap-feedback {
+  0% {
+    transform: scale(1);
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+@keyframes error-feedback {
+  0% {
+    transform: scale(1);
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+  25% {
+    transform: scale(1.05) translateX(-2px);
+    background-color: rgba(239, 68, 68, 0.4);
+  }
+  75% {
+    transform: scale(1.05) translateX(2px);
+    background-color: rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
@@ -257,14 +315,16 @@ body {
   animation: bounce-in 0.6s ease-out forwards;
 }
 
-/* Mobile Optimizations */
-@media (max-width: 768px) {
-
-  /* Prevent text selection on mobile */
+/* Enhanced Mobile Optimizations */
+@media (max-width: 1024px) {
+  /* Prevent text selection on mobile and tablet */
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
   }
 
   /* Improve touch targets */
@@ -297,7 +357,7 @@ body {
     /* Improve touch response */
   }
 
-  /* Prevent screen dragging on word grid */
+  /* Enhanced word grid container for better touch handling */
   .word-grid-container {
     touch-action: none !important;
     -ms-touch-action: none !important;
@@ -310,20 +370,153 @@ body {
     user-select: none;
     position: relative;
     z-index: 1;
+    /* Prevent iOS Safari zoom */
+    transform-origin: center center;
+    transform: scale(1);
+    /* Ensure proper containment */
+    contain: layout style paint;
   }
   
   /* Prevent iOS Safari from showing the highlight when tapping */
   .word-grid-container * {
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Fix viewport stability */
+  .game-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
   }
   
   /* Prevent iOS Safari from zooming in */
   html {
     touch-action: manipulation;
+    /* Prevent zoom gestures */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
   }
 }
 
-/* Fix for iOS audio playback */
+/* iPad Specific Optimizations */
+@media screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+  /* iPad Portrait */
+  @media (orientation: portrait) {
+    .word-grid-container {
+      max-height: calc(100vh - 160px) !important;
+      overflow: hidden;
+    }
+    
+    .game-container {
+      padding: 12px;
+    }
+  }
+  
+  /* iPad Landscape - Enhanced for better touch handling */
+  @media (orientation: landscape) {
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+    
+    #root {
+      height: 100vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    .word-grid-container {
+      max-height: calc(100vh - 100px) !important;
+      overflow: hidden;
+      /* Prevent elastic scrolling */
+      overscroll-behavior: contain;
+      -webkit-overscroll-behavior: contain;
+      /* Enhanced touch handling for iPad */
+      touch-action: pinch-zoom;
+      -webkit-touch-action: pinch-zoom;
+    }
+    
+    .game-container {
+      padding: 8px 16px;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* Ensure grid cells are properly sized for touch */
+    .word-grid-cell {
+      min-height: 32px !important;
+      min-width: 32px !important;
+    }
+    
+    /* Prevent screen movement during selection */
+    .word-grid-container.selecting {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1000;
+      background: transparent;
+      pointer-events: none;
+    }
+    
+    .word-grid-container.selecting > * {
+      pointer-events: auto;
+    }
+  }
+}
+
+/* iPhone Landscape Optimizations */
+@media screen and (max-device-width: 768px) and (orientation: landscape) {
+  .word-grid-container {
+    max-height: calc(100vh - 80px) !important;
+    overflow: hidden;
+  }
+  
+  .game-container {
+    padding: 4px 8px !important;
+  }
+  
+  /* Compact layout for iPhone landscape */
+  .quick-settings {
+    gap: 4px !important;
+  }
+  
+  .quick-settings button {
+    padding: 6px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* General mobile landscape improvements */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .game-container {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  
+  .word-grid-container {
+    max-height: calc(100vh - 80px) !important;
+  }
+  
+  /* Optimize header for landscape */
+  .game-header {
+    padding: 8px 0 !important;
+  }
+  
+  /* Compact word list for landscape */
+  .word-list-container {
+    max-height: calc(100vh - 200px) !important;
+  }
+}
+
+/* Fix for iOS audio playbook */
 .audio-enabled {
   position: fixed;
   top: -100px;
@@ -331,4 +524,113 @@ body {
   width: 1px;
   height: 1px;
   opacity: 0;
+}
+
+/* Enhanced ripple effect for touch devices */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Improved button feedback for touch devices */
+.touch-button {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition: all 0.2s ease;
+}
+
+.touch-button:active {
+  transform: scale(0.95);
+}
+
+.touch-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.touch-button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Prevent zoom on double tap */
+* {
+  touch-action: manipulation;
+}
+
+/* Enhanced modal and dropdown positioning for touch devices */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+  touch-action: none;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  z-index: 1000;
+}
+
+/* Improved focus handling for keyboard navigation */
+.focus-trap {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Better scroll behavior for iOS */
+.ios-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Responsive font sizes for better readability */
+@media (max-width: 480px) {
+  .word-grid-cell {
+    font-size: clamp(14px, 4vw, 18px) !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .word-grid-cell {
+    font-size: clamp(16px, 3vw, 20px) !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .word-grid-cell {
+    font-size: clamp(18px, 2vw, 22px) !important;
+  }
 }

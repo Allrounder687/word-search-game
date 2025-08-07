@@ -10,7 +10,7 @@ interface OrientationWarningProps {
   theme: any;
 }
 
-export const OrientationWarning: React.FC<OrientationWarningProps> = ({ theme }) => {
+export const OrientationWarning: React.FC<OrientationWarningProps> = ({ }) => {
   const [showWarning, setShowWarning] = useState(false);
   const [orientationLocked, setOrientationLocked] = useState(false);
   

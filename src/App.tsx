@@ -372,9 +372,9 @@ function App() {
           timeRemaining={timeRemaining}
         />
 
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-center justify-center mt-4 p-4">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start justify-center mt-4 p-4">
         {/* Left side: Word Grid */}
-        <div className="w-full lg:w-auto lg:flex-1 flex justify-center items-center">
+        <div className="w-full lg:w-auto lg:flex-1 flex justify-center items-center order-2 lg:order-1">
           <WordGrid
             grid={gameState.grid}
             words={gameState.words}
@@ -384,7 +384,19 @@ function App() {
         </div>
 
         {/* Right side: Controls and Word List */}
-        <div className="w-full lg:w-[350px] flex flex-col gap-4">
+        <div className="w-full lg:w-[350px] flex flex-col gap-4 order-1 lg:order-2">
+          {/* Word List - moved to top for better visibility */}
+          <WordList
+            words={gameState.words}
+            theme={currentTheme}
+            showDescriptions={gameState.settings.showDescriptions}
+            kidsMode={gameState.settings.kidsMode}
+            isMobileLayout={!breakpoints.isDesktop}
+            descriptions={descriptions}
+            selectedWord={selectedDescriptionWord}
+            setSelectedWord={setSelectedDescriptionWord}
+          />
+
           {/* Quick Settings */}
           <QuickSettings
             settings={gameState.settings}
@@ -421,18 +433,6 @@ function App() {
               </div>
             )}
           </div>
-
-          {/* Word List */}
-          <WordList
-            words={gameState.words}
-            theme={currentTheme}
-            showDescriptions={gameState.settings.showDescriptions}
-            kidsMode={gameState.settings.kidsMode}
-            isMobileLayout={!breakpoints.isDesktop}
-            descriptions={descriptions}
-            selectedWord={selectedDescriptionWord}
-            setSelectedWord={setSelectedDescriptionWord}
-          />
 
           {/* Achievement, Leaderboard, etc. */}
           <div className="p-4 rounded-xl shadow-lg flex items-center justify-between gap-4" style={{ backgroundColor: 'var(--gridBg)' }}>

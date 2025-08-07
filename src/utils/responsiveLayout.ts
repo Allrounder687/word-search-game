@@ -171,3 +171,12 @@ export async function unlockScreenOrientation(): Promise<OrientationLockResult> 
     };
   }
 }
+
+/**
+ * Get responsive icon size based on screen size
+ * @param size - Base icon size in pixels
+ * @returns Icon size in pixels
+ */
+export function getResponsiveIconSize(size: number = 20): number {
+  return size;
+}

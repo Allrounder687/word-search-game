@@ -16,12 +16,12 @@ import { WordSearchGenerator, calculateScore } from './utils/gameLogic';
 import { initializeMobileOptimizations } from './utils/mobileOptimizations';
 import { setupMobileViewport } from './utils/responsiveLayout';
 import { useResponsive } from './hooks/useResponsive';
-import { getLayoutConfig } from './utils/layoutConfig';
+
 import type { GameState, GameSettings, WordPlacement } from './types/game';
 import { THEMES } from './types/game';
 import { getCachedDescriptions, preloadCriticalDescriptions } from './utils/lazyDataLoader';
 import { usePerformanceMonitor } from './utils/performanceMonitor';
-import { Sparkles, Trophy, Clock, Settings } from 'lucide-react';
+import { Sparkles, Trophy, Clock } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
 function App() {
@@ -54,7 +54,6 @@ function App() {
   const [gameOver, setGameOver] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isClickMode] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>('drag');
   const [selectedDescriptionWord, setSelectedDescriptionWord] = useState<string | null>(null);
 
   // Use responsive hook for better performance and maintainability
@@ -67,11 +66,6 @@ function App() {
   const currentTheme = useMemo(() =>
     THEMES[gameState.settings.theme] || THEMES.midnight,
     [gameState.settings.theme]
-  );
-
-  const layoutConfig = useMemo(() =>
-    getLayoutConfig(breakpoints, currentTheme),
-    [breakpoints, currentTheme]
   );
 
   // State for lazy-loaded descriptions

@@ -1,20 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { Position, Cell, WordPlacement } from '../types/game';
+import type { Position, Cell, WordPlacement, ThemeColors } from '../types/game';
 import { checkWordSelection } from '../utils/gameLogic';
-import { Sparkles, BookOpen, MapPin, Globe } from 'lucide-react';
-import { FIVE_PILLARS_DESCRIPTIONS } from '../types/islamicDescriptions';
-import { ISLAMIC_PLACES_DESCRIPTIONS } from '../types/islamicPlacesDescriptions';
-import { shouldUseKidsDescription, getKidsDescription } from '../types/kidsMode';
-import { provideHapticFeedback } from '../utils/mobileOptimizations';
-import { createGridMiniMap } from '../utils/responsiveLayout';
-import { AudioPronunciation } from './AudioPronunciation';
-import { VisualIllustration } from './VisualIllustration';
 
 interface WordGridProps {
   grid: Cell[][];
   words: WordPlacement[];
   onWordFound: (word: WordPlacement) => void;
-  theme: any;
+  theme: ThemeColors;
   showDescriptions?: boolean;
   kidsMode?: boolean;
   isZoomed?: boolean;
@@ -38,17 +30,11 @@ export const WordGrid: React.FC<WordGridProps> = ({
   const [isSelecting, setIsSelecting] = useState(false);
   const [currentSelection, setCurrentSelection] = useState<Position[]>([]);
   const [highlightedCells, setHighlightedCells] = useState<Set<string>>(new Set());
-  const [lastFoundWord, setLastFoundWord] = useState<WordPlacement | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
   const [selectionMode, setSelectionMode] = useState<'drag' | 'click-start-end'>(
     propSelectionMode || (isMobile ? 'click-start-end' : 'drag')
   );
   const [startCell, setStartCell] = useState<Position | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  const [showPathAnimation, setShowPathAnimation] = useState(false);
-  const [pathAnimationCells, setPathAnimationCells] = useState<Position[]>([]);
-  const [pathAnimationColor, setPathAnimationColor] = useState<string>('');
-  const [selectionArrow, setSelectionArrow] = useState<{start: Position, end: Position} | null>(null);
 
   // Update selection mode when prop changes
   useEffect(() => {
@@ -255,60 +241,6 @@ export const WordGrid: React.FC<WordGridProps> = ({
     });
   }, []);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isSelecting || currentSelection.length === 0) return;
-
-    // Enhanced touch move handling for iPad landscape
-    const isIPad = /iPad/i.test(navigator.userAgent) || 
-                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
-    const isLandscape = window.innerWidth > window.innerHeight;
-    
-    if (isIPad && isLandscape) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    const touch = e.touches[0];
-    
-    // Apply touch offset to show word above finger - larger offset for iPad
-    const offsetY = isIPad ? 40 : 30;
-    const adjustedY = touch.clientY - offsetY;
-    
-    const element = document.elementFromPoint(touch.clientX, adjustedY);
-
-    if (element && element.hasAttribute('data-cell')) {
-      const cellKey = element.getAttribute('data-cell');
-      if (cellKey) {
-        const [row, col] = cellKey.split(',').map(Number);
-
-        // Only update if we're on a different cell
-        if (!highlightedCells.has(cellKey)) {
-          const start = currentSelection[0];
-          const newSelection = getSelectionPath(start, { row, col });
-          setCurrentSelection(newSelection);
-          setHighlightedCells(new Set(newSelection.map(pos => getCellKey(pos.row, pos.col))));
-          
-          // Update selection arrow
-          setSelectionArrow({
-            start: start,
-            end: { row, col }
-          });
-
-          // Add haptic feedback for iOS and Android if available
-          if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(5); // Very short vibration
-          }
-          
-          // Add visual feedback
-          element.classList.add('cell-tap-feedback');
-          setTimeout(() => element.classList.remove('cell-tap-feedback'), 200);
-          
-          // Show floating word preview above finger - adjusted for iPad
-          showFloatingWordPreview(touch.clientX, touch.clientY - (isIPad ? 60 : 50), newSelection);
-        }
-      }
-    }
-  }, [isSelecting, currentSelection, highlightedCells]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     // Enhanced touch end handling for iPad landscape
@@ -361,7 +293,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
     return path;
   };
 
-  const getCellStyle = (row: number, col: number, _cell: Cell) => {
+  const getCellStyle = (row: number, col: number) => {
     const cellKey = getCellKey(row, col);
     const isHighlighted = highlightedCells.has(cellKey);
 
@@ -984,7 +916,6 @@ export const WordGrid: React.FC<WordGridProps> = ({
                   onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                   onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
                   onTouchStart={(e) => handleTouchStart(rowIndex, colIndex, e)}
-                  onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                   onMouseOver={(event) => {
                     if (!isSelecting) {

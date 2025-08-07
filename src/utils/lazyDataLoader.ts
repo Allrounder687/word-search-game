@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-// Utility functions for lazy loading data
-
-// Function to get cached descriptions for a category
-export const getCachedDescriptions = async (_category: string): Promise<Record<string, string>> => {
-  // For now, return an empty object as we're not implementing actual caching yet
-  return {};
-};
-
-// Function to preload critical descriptions
-export const preloadCriticalDescriptions = async (): Promise<void> => {
-  // For now, this is a no-op as we're not implementing actual preloading yet
-  return;
-}; 
-=======
 // Lazy loader for large data structures to improve initial bundle size
 import type { WordCategory } from '../types/game';
 
@@ -20,54 +5,97 @@ import type { WordCategory } from '../types/game';
 export const loadDescriptions = async (category: WordCategory) => {
   switch (category) {
     case 'fivePillars':
-      const { FIVE_PILLARS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
-      return FIVE_PILLARS_DESCRIPTIONS;
+      try {
+        const { FIVE_PILLARS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
+        return FIVE_PILLARS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicProphets':
-      const { PROPHETS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
-      return PROPHETS_DESCRIPTIONS;
+      try {
+        const { PROPHETS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
+        return PROPHETS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicMonths':
-      const { ISLAMIC_MONTHS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
-      return ISLAMIC_MONTHS_DESCRIPTIONS;
+      try {
+        const { ISLAMIC_MONTHS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
+        return ISLAMIC_MONTHS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'muslimScientists':
-      const { MUSLIM_SCIENTISTS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
-      return MUSLIM_SCIENTISTS_DESCRIPTIONS;
-    
+      try {
+        const { MUSLIM_SCIENTISTS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
+        return MUSLIM_SCIENTISTS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
 
     case 'quranicSurahs':
-      const { QURANIC_SURAHS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
-      return QURANIC_SURAHS_DESCRIPTIONS;
+      try {
+        const { QURANIC_SURAHS_DESCRIPTIONS } = await import('../types/islamicDescriptions');
+        return QURANIC_SURAHS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicValues':
-      const { ISLAMIC_VALUES_DESCRIPTIONS } = await import('../types/islamicDescriptions');
-      return ISLAMIC_VALUES_DESCRIPTIONS;
+      try {
+        const { ISLAMIC_VALUES_DESCRIPTIONS } = await import('../types/islamicDescriptions');
+        return ISLAMIC_VALUES_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicPlaces':
-      const { ISLAMIC_PLACES_DESCRIPTIONS } = await import('../types/islamicPlacesDescriptions');
-      return Object.fromEntries(
-        Object.entries(ISLAMIC_PLACES_DESCRIPTIONS).map(([key, value]) => [
-          key,
-          typeof value === 'object' ? value.description : value
-        ])
-      );
+      try {
+        const { ISLAMIC_PLACES_DESCRIPTIONS } = await import('../types/islamicPlacesDescriptions');
+        return Object.fromEntries(
+          Object.entries(ISLAMIC_PLACES_DESCRIPTIONS).map(([key, value]) => [
+            key,
+            typeof value === 'object' ? value.description : value
+          ])
+        );
+      } catch {
+        return {};
+      }
     
     case 'islamicAngels':
-      const { ISLAMIC_ANGELS_DESCRIPTIONS } = await import('../types/islamicNewCategories');
-      return ISLAMIC_ANGELS_DESCRIPTIONS;
+      try {
+        const { ISLAMIC_ANGELS_DESCRIPTIONS } = await import('../types/islamicNewCategories');
+        return ISLAMIC_ANGELS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicBooks':
-      const { ISLAMIC_BOOKS_DESCRIPTIONS } = await import('../types/islamicNewCategories');
-      return ISLAMIC_BOOKS_DESCRIPTIONS;
+      try {
+        const { ISLAMIC_BOOKS_DESCRIPTIONS } = await import('../types/islamicNewCategories');
+        return ISLAMIC_BOOKS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicEvents':
-      const { ISLAMIC_EVENTS_DESCRIPTIONS } = await import('../types/islamicNewCategories');
-      return ISLAMIC_EVENTS_DESCRIPTIONS;
+      try {
+        const { ISLAMIC_EVENTS_DESCRIPTIONS } = await import('../types/islamicNewCategories');
+        return ISLAMIC_EVENTS_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     case 'islamicVirtues':
-      const { ISLAMIC_VIRTUES_DESCRIPTIONS } = await import('../types/islamicNewCategories');
-      return ISLAMIC_VIRTUES_DESCRIPTIONS;
+      try {
+        const { ISLAMIC_VIRTUES_DESCRIPTIONS } = await import('../types/islamicNewCategories');
+        return ISLAMIC_VIRTUES_DESCRIPTIONS;
+      } catch {
+        return {};
+      }
     
     default:
       return {};
@@ -101,4 +129,3 @@ export const preloadCriticalDescriptions = async () => {
 export const clearDescriptionCache = () => {
   descriptionCache.clear();
 };
->>>>>>> 8d4b224ae37a91a468beea5f3b04ab00c229f85d

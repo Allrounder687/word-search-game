@@ -2,6 +2,14 @@ import { useEffect } from 'react';
 import { Volume2 } from 'lucide-react';
 import { getAudioFile } from '../types/kidsMode';
 
+declare global {
+  interface Window {
+    MSStream?: unknown;
+    gameAudioContext?: AudioContext;
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 interface AudioPronunciationProps {
   word: string;
   color: string;
@@ -9,34 +17,32 @@ interface AudioPronunciationProps {
 }
 
 export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, color, kidsMode }) => {
-  // Don't render if kids mode is disabled or no audio file exists
-  if (!kidsMode || !getAudioFile(word)) return null;
-
-  // Function to initialize audio on iOS
-  const initializeAudioForIOS = () => {
-    // Create a silent audio element to unlock audio on iOS
-    const silentAudio = document.createElement('audio');
-    silentAudio.setAttribute('src', 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV');
-    silentAudio.setAttribute('playsinline', 'true');
-    silentAudio.setAttribute('preload', 'auto');
-    silentAudio.className = 'audio-enabled';
-    document.body.appendChild(silentAudio);
-
-    // Play and immediately pause to enable audio
-    const playPromise = silentAudio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        silentAudio.pause();
-      }).catch(error => {
-        console.error('Audio initialization failed:', error);
-      });
-    }
-  };
-
-  // Initialize audio on component mount
   useEffect(() => {
+    if (!kidsMode || !getAudioFile(word)) return;
+
+    // Function to initialize audio on iOS
+    const initializeAudioForIOS = () => {
+      // Create a silent audio element to unlock audio on iOS
+      const silentAudio = document.createElement('audio');
+      silentAudio.setAttribute('src', 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV');
+      silentAudio.setAttribute('playsinline', 'true');
+      silentAudio.setAttribute('preload', 'auto');
+      silentAudio.className = 'audio-enabled';
+      document.body.appendChild(silentAudio);
+
+      // Play and immediately pause to enable audio
+      const playPromise = silentAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          silentAudio.pause();
+        }).catch((error: Error) => {
+          console.error('Audio initialization failed:', error);
+        });
+      }
+    };
+
     // Check if it's iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS) {
       // Add event listener for user interaction
       const handleUserInteraction = () => {
@@ -54,7 +60,10 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
         document.removeEventListener('click', handleUserInteraction);
       };
     }
-  }, []);
+  }, [kidsMode, word]);
+
+  // Don't render if kids mode is disabled or no audio file exists
+  if (!kidsMode || !getAudioFile(word)) return null;
 
   const handlePlayAudio = () => {
     try {
@@ -83,9 +92,9 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
         window.speechSynthesis.speak(utterance);
 
         // iOS requires user interaction to play audio
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         if (isIOS) {
-          initializeAudioForIOS();
+          // No need to call initializeAudioForIOS here, it's handled by the useEffect
         }
       } else {
         // Fallback to Audio API
@@ -96,14 +105,14 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
         // Play the audio
         const playPromise = audio.play();
         if (playPromise !== undefined) {
-          playPromise.catch(error => {
+          playPromise.catch((error: Error) => {
             console.error('Audio playback failed:', error);
 
             // Try one more fallback - create a beep sound using Web Audio API
             try {
               // Use the shared AudioContext if available
-              const audioContext = (window as any).gameAudioContext ||
-                new (window.AudioContext || (window as any).webkitAudioContext)();
+              const audioContext = window.gameAudioContext ||
+                new (window.AudioContext || window.webkitAudioContext)();
 
               // Resume the audio context if it's suspended
               if (audioContext.state === 'suspended') {
@@ -120,8 +129,8 @@ export const AudioPronunciation: React.FC<AudioPronunciationProps> = ({ word, co
               oscillator.stop(audioContext.currentTime + 0.2); // Short beep
 
               // Store the AudioContext for future use if we created a new one
-              if (!(window as any).gameAudioContext) {
-                (window as any).gameAudioContext = audioContext;
+              if (!window.gameAudioContext) {
+                window.gameAudioContext = audioContext;
               }
             } catch (err) {
               console.error('Web Audio API failed:', err);

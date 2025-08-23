@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Award, Star, Medal } from 'lucide-react';
 import type { KidsAchievement } from '../types/kidsMode';
 import { KIDS_ACHIEVEMENTS, checkForAchievements } from '../types/kidsMode';
+import type { ThemeColors } from '../types/game';
 
 interface KidsAchievementsProps {
-  theme: any;
+  theme: ThemeColors;
   foundWords: string[];
   kidsMode: boolean;
 }

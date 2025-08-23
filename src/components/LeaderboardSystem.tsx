@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Medal, X, ChevronDown, ChevronUp, Clock, Star, Zap } from 'lucide-react';
-import type { LeaderboardEntry, Difficulty } from '../types/game';
+import type { LeaderboardEntry, Difficulty, ThemeColors } from '../types/game';
 
 interface LeaderboardSystemProps {
-  theme: any;
+  theme: ThemeColors;
 }
 
 export const LeaderboardSystem: React.FC<LeaderboardSystemProps> = ({ theme }) => {
@@ -42,7 +42,7 @@ export const LeaderboardSystem: React.FC<LeaderboardSystemProps> = ({ theme }) =
   }, [playerName]);
 
   // Add a new entry to the leaderboard
-  const addLeaderboardEntry = (entry: Omit<LeaderboardEntry, 'id' | 'playerName' | 'date'>) => {
+  const addLeaderboardEntry = useCallback((entry: Omit<LeaderboardEntry, 'id' | 'playerName' | 'date'>) => {
     const newEntry: LeaderboardEntry = {
       id: Date.now().toString(),
       playerName,
@@ -72,7 +72,7 @@ export const LeaderboardSystem: React.FC<LeaderboardSystemProps> = ({ theme }) =
     }
     
     return isHighScore;
-  };
+  }, [leaderboard, playerName]);
 
   // Check if an entry is a high score
   const checkIfHighScore = (entry: LeaderboardEntry) => {
@@ -118,7 +118,7 @@ export const LeaderboardSystem: React.FC<LeaderboardSystemProps> = ({ theme }) =
       getLeaderboard: () => leaderboard,
       setPlayerName
     };
-  }, [leaderboard, playerName]);
+  }, [leaderboard, playerName, addLeaderboardEntry]);
 
   const isWhiteTheme = theme.primary === '#000000';
   const filteredLeaderboard = getFilteredLeaderboard();
@@ -290,7 +290,7 @@ export const LeaderboardSystem: React.FC<LeaderboardSystemProps> = ({ theme }) =
                   <div style={{ position: 'relative' }}>
                     <select
                       value={filterDifficulty}
-                      onChange={(e) => setFilterDifficulty(e.target.value as any)}
+                      onChange={(e) => setFilterDifficulty(e.target.value as Difficulty | 'all')}
                       style={{
                         padding: '8px 12px',
                         paddingRight: '32px', // Space for the dropdown arrow

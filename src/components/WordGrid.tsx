@@ -1,13 +1,17 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { MapPin, BookOpen, Globe, Sparkles } from 'lucide-react';
+import { provideHapticFeedback } from '../utils/haptics';
 import type { Position, Cell, WordPlacement, ThemeColors } from '../types/game';
-import { checkWordSelection } from '../utils/gameLogic';
+import { checkWordSelection, shouldUseKidsDescription, getKidsDescription } from '../utils/gameLogic';
+import { AudioPronunciation } from './AudioPronunciation';
+import { VisualIllustration } from './VisualIllustration';
 
 interface WordGridProps {
   grid: Cell[][];
   words: WordPlacement[];
   onWordFound: (word: WordPlacement) => void;
   theme: ThemeColors;
+  descriptions: Record<string, string>;
   showDescriptions?: boolean;
   kidsMode?: boolean;
   isZoomed?: boolean;
@@ -20,6 +24,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
   words, 
   onWordFound, 
   theme, 
+  descriptions,
   showDescriptions = true, 
   kidsMode = false, 
   isZoomed = false,
@@ -47,40 +52,13 @@ export const WordGrid: React.FC<WordGridProps> = ({
 
 
   // Mock functions for missing functionality
-  const provideHapticFeedback = (intensity: number) => {
-    // Mock haptic feedback - in a real app this would use the Vibration API
-    if ('vibrate' in navigator) {
-      navigator.vibrate(intensity);
-    }
-  };
 
-  const shouldUseKidsDescription = (word: string, kidsMode: boolean): boolean => {
-    // Mock function - implement based on your kids mode logic
-    return kidsMode && word.length < 8;
-  };
 
-  const getKidsDescription = (word: string): string => {
-    // Mock function - return simplified descriptions for kids
-    return `This is about ${word}`;
-  };
-
-  // Mock description objects - these should be imported from your data files
-  const FIVE_PILLARS_DESCRIPTIONS: Record<string, string> = {};
-  const ISLAMIC_PLACES_DESCRIPTIONS: Record<string, {description: string, urduDescription?: string}> = {};
 
   const createGridMiniMap = (_gridRef?: any, _parentElement?: any, _theme?: any) => {
     // Mock function for grid minimap
     return null;
   };
-
-  // Mock components for missing imports
-  const AudioPronunciation = ({ color }: any) => (
-    <div style={{ color, fontSize: '12px' }}>🔊</div>
-  );
-
-  const VisualIllustration = ({ theme }: any) => (
-    <div style={{ color: theme.primary, fontSize: '12px' }}>🖼️</div>
-  );
 
   // Update selection mode when prop changes
   useEffect(() => {
@@ -149,18 +127,12 @@ export const WordGrid: React.FC<WordGridProps> = ({
             foundWord.descriptionType = 'kidsMode';
           }
           // Otherwise use standard descriptions
-          else if (FIVE_PILLARS_DESCRIPTIONS[foundWord.word]) {
+          else if (descriptions[foundWord.word]) {
             // Add the description to the word
-            foundWord.description = FIVE_PILLARS_DESCRIPTIONS[foundWord.word];
-            foundWord.descriptionType = 'fivePillars';
-          }
-          // Check if this word has a description in the Islamic Places list
-          else if (ISLAMIC_PLACES_DESCRIPTIONS[foundWord.word]) {
-            // Add the description to the word
-            const placeInfo = ISLAMIC_PLACES_DESCRIPTIONS[foundWord.word];
-            foundWord.description = placeInfo.description;
-            foundWord.urduDescription = placeInfo.urduDescription;
-            foundWord.descriptionType = 'islamicPlaces';
+            foundWord.description = descriptions[foundWord.word];
+            // This is a simplification. The original code had different description types.
+            // For now, we'll just assign the description.
+            // A more robust solution would involve passing the category or a more structured description object.
           }
         }
 
@@ -629,14 +601,8 @@ export const WordGrid: React.FC<WordGridProps> = ({
             if (kidsMode && shouldUseKidsDescription(foundWord.word, kidsMode)) {
               foundWord.description = getKidsDescription(foundWord.word);
               foundWord.descriptionType = 'kidsMode';
-            } else if (FIVE_PILLARS_DESCRIPTIONS[foundWord.word]) {
-              foundWord.description = FIVE_PILLARS_DESCRIPTIONS[foundWord.word];
-              foundWord.descriptionType = 'fivePillars';
-            } else if (ISLAMIC_PLACES_DESCRIPTIONS[foundWord.word]) {
-              const placeInfo = ISLAMIC_PLACES_DESCRIPTIONS[foundWord.word];
-              foundWord.description = placeInfo.description;
-              foundWord.urduDescription = placeInfo.urduDescription;
-              foundWord.descriptionType = 'islamicPlaces';
+            } else if (descriptions[foundWord.word]) {
+              foundWord.description = descriptions[foundWord.word];
             }
           }
 

@@ -3,10 +3,12 @@ import { Lightbulb, Eye, X, Target } from 'lucide-react';
 import type { WordPlacement } from '../types/game';
 import { useResponsive } from '../hooks/useResponsive';
 
+import type { ThemeColors } from '../types/game';
+
 interface HintSystemProps {
   words: WordPlacement[];
   onHintUsed: (word: WordPlacement) => void;
-  theme: any;
+  theme: ThemeColors;
   hintsRemaining: number;
 }
 

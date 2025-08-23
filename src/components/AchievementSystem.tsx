@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Trophy, Award, X } from 'lucide-react';
-import type { Achievement } from '../types/game';
+import type { Achievement, ThemeColors } from '../types/game';
 
 interface AchievementSystemProps {
-  theme: any;
+  theme: ThemeColors;
 }
 
 export const AchievementSystem: React.FC<AchievementSystemProps> = ({ theme }) => {
@@ -74,17 +74,17 @@ export const AchievementSystem: React.FC<AchievementSystemProps> = ({ theme }) =
   };
 
   // Create achievement system methods
-  const achievementSystemMethods = {
+  const achievementSystemMethods = useMemo(() => ({
     unlockAchievement,
     updateAchievementProgress,
     getAchievements: () => achievements
-  };
+  }), [achievements]);
 
   // Initialize achievement system when component mounts
   useEffect(() => {
     // Only expose methods once on mount
     window.achievementSystem = achievementSystemMethods;
-  }, []); // Empty dependency array ensures this only runs once on mount
+  }, [achievementSystemMethods]);
 
   // Calculate total progress
   const totalProgress = achievements.length > 0 

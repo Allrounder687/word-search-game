@@ -306,3 +306,11 @@ export function calculateScore(
 
     return Math.round(baseScore * difficultyMultiplier + timeBonus);
 }
+
+export const shouldUseKidsDescription = (word: string, kidsMode: boolean): boolean => {
+  return kidsMode && word.length < 8;
+};
+
+export const getKidsDescription = (word: string): string => {
+  return `This is about ${word}`;
+};

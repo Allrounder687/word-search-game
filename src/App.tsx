@@ -139,7 +139,7 @@ function App() {
 
     // Cleanup timer on unmount or when dependencies change
     return () => clearInterval(timer);
-  }, [gameState.isComplete, gameState.settings.timerMode, gameOver]);
+  }, [gameState.isComplete, gameState.settings.timerMode, gameOver, timeRemaining]);
 
   // Initialize game - memoized with proper dependencies
   const initializeGame = useCallback((settings?: GameSettings) => {
@@ -185,7 +185,7 @@ function App() {
 
     // Setup mobile viewport for better mobile experience
     setupMobileViewport();
-  }, []);
+  }, [initializeGame]);
 
   // Save game state whenever it changes (except during initialization)
   useEffect(() => {
@@ -273,8 +273,6 @@ function App() {
         root.style.setProperty(`--${key}`, value);
       });
     }
-    document.body.style.background = 'var(--background)';
-    document.body.style.color = 'var(--primary)';
   }, [currentTheme]);
 
   // Handle hint usage
@@ -334,7 +332,9 @@ function App() {
         fontFamily: 'var(--font, Inter, sans-serif)',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center'
+        alignItems: 'center',
+        background: 'var(--background)',
+        color: 'var(--primary)'
       }}
     >
       <div style={{
@@ -359,32 +359,9 @@ function App() {
           timeRemaining={timeRemaining}
         />
 
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start justify-center mt-4 p-4">
-        {/* Left side: Word Grid */}
-        <div className="w-full lg:w-auto lg:flex-1 flex justify-center items-center order-2 lg:order-1">
-          <WordGrid
-            grid={gameState.grid}
-            words={gameState.words}
-            onWordFound={handleWordFound}
-            theme={currentTheme}
-          />
-        </div>
-
-        {/* Right side: Controls and Word List */}
-        <div className="w-full lg:w-[350px] flex flex-col gap-4 order-1 lg:order-2">
-          {/* Word List - moved to top for better visibility */}
-          <WordList
-            words={gameState.words}
-            theme={currentTheme}
-            showDescriptions={gameState.settings.showDescriptions}
-            kidsMode={gameState.settings.kidsMode}
-            isMobileLayout={!breakpoints.isDesktop}
-            descriptions={descriptions}
-            selectedWord={selectedDescriptionWord}
-            setSelectedWord={setSelectedDescriptionWord}
-          />
-
-          {/* Quick Settings */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8 mt-4 p-4">
+        {/* Left Column: Controls */}
+        <div className="w-full flex flex-col gap-4 order-2 lg:order-1">
           <QuickSettings
             settings={gameState.settings}
             onSettingsChange={handleSettingsChange}
@@ -394,8 +371,6 @@ function App() {
             isZoomed={isZoomed}
             isClickMode={isClickMode}
           />
-
-          {/* Timer and Hint System */}
           <div className="p-4 rounded-xl shadow-lg flex items-center justify-between gap-4" style={{ backgroundColor: 'var(--gridBg)' }}>
             <HintSystem
               words={gameState.words}
@@ -420,8 +395,6 @@ function App() {
               </div>
             )}
           </div>
-
-          {/* Achievement, Leaderboard, etc. */}
           <div className="p-4 rounded-xl shadow-lg flex items-center justify-between gap-4" style={{ backgroundColor: 'var(--gridBg)' }}>
             <AchievementSystem theme={currentTheme} />
             {gameState.settings.kidsMode && (
@@ -449,6 +422,31 @@ function App() {
               currentSettings={gameState.settings}
             />
           </div>
+        </div>
+
+        {/* Center Column: Word Grid */}
+        <div className="w-full flex justify-center items-center order-1 lg:order-2">
+          <WordGrid
+            grid={gameState.grid}
+            words={gameState.words}
+            onWordFound={handleWordFound}
+            theme={currentTheme}
+            descriptions={descriptions}
+          />
+        </div>
+
+        {/* Right Column: Word List */}
+        <div className="w-full lg:w-[350px] flex flex-col gap-4 order-3 lg:order-3">
+          <WordList
+            words={gameState.words}
+            theme={currentTheme}
+            showDescriptions={gameState.settings.showDescriptions}
+            kidsMode={gameState.settings.kidsMode}
+            isMobileLayout={!breakpoints.isDesktop}
+            descriptions={descriptions}
+            selectedWord={selectedDescriptionWord}
+            setSelectedWord={setSelectedDescriptionWord}
+          />
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { LevelSystem } from './components/LevelSystem';
 import { KidsAchievements } from './components/KidsAchievements';
 import { OrientationWarning } from './components/OrientationWarning';
@@ -25,6 +25,7 @@ import { Sparkles, Trophy, Clock } from 'lucide-react';
 import { saveGameState, loadGameState, clearGameState } from './utils/gameStatePersistence';
 
 function App() {
+  const timeElapsedRef = useRef(0);
   // Load saved game state on mount
   const savedState = loadGameState();
   const [gameState, setGameState] = useState<GameState>(
@@ -33,7 +34,6 @@ function App() {
       words: [],
       foundWords: new Set(),
       score: 0,
-      timeElapsed: 0,
       isComplete: false,
       currentSelection: [],
       settings: {
@@ -112,14 +112,6 @@ function App() {
     } else {
       setTimeRemaining(null);
     }
-
-    // Reset timeElapsed for countup mode or when no timer is set
-    if (gameState.settings.timerMode !== 'countdown') {
-      setGameState(prev => ({
-        ...prev,
-        timeElapsed: 0
-      }));
-    }
   }, [gameState.settings.timerMode, gameState.settings.timerDuration]);
 
   // Timer effect
@@ -129,15 +121,8 @@ function App() {
 
     // Create timer interval
     const timer = setInterval(() => {
-      // Count up timer (default or explicitly set to countup)
-      if (gameState.settings.timerMode === 'countup' || gameState.settings.timerMode === undefined || gameState.settings.timerMode === 'none') {
-        setGameState(prev => ({
-          ...prev,
-          timeElapsed: prev.timeElapsed + 1
-        }));
-      }
       // Countdown timer
-      else if (gameState.settings.timerMode === 'countdown' && timeRemaining !== null) {
+      if (gameState.settings.timerMode === 'countdown' && timeRemaining !== null) {
         setTimeRemaining(prev => {
           // Handle the case where prev might be null
           const currentTime = prev ?? 0;
@@ -158,6 +143,7 @@ function App() {
 
   // Initialize game - memoized with proper dependencies
   const initializeGame = useCallback((settings?: GameSettings) => {
+    timeElapsedRef.current = 0;
     const gameSettings = settings || gameState.settings;
     const gridSize = gameSettings.difficulty === 'custom'
       ? gameSettings.gridSize
@@ -173,7 +159,6 @@ function App() {
       words,
       foundWords: new Set(),
       score: 0,
-      timeElapsed: 0,
       isComplete: false,
       currentSelection: [],
       settings: gameSettings
@@ -222,7 +207,7 @@ function App() {
 
       const newScore = calculateScore(
         newFoundWords,
-        prev.timeElapsed,
+        timeElapsedRef.current,
         prev.settings.difficulty
       );
 
@@ -242,12 +227,12 @@ function App() {
           window.achievementSystem.unlockAchievement('first_win');
 
           // Speed demon achievement (complete easy puzzle in under 60 seconds)
-          if (prev.settings.difficulty === 'easy' && prev.timeElapsed < 60) {
+          if (prev.settings.difficulty === 'easy' && timeElapsedRef.current < 60) {
             window.achievementSystem.unlockAchievement('speed_demon');
           }
 
           // Perfect score achievement (complete medium puzzle with max score)
-          if (prev.settings.difficulty === 'medium' && prev.score === 1000) {
+          if (prev.settings.difficulty === 'medium' && newScore === 1000) {
             window.achievementSystem.unlockAchievement('perfect_score');
           }
         }
@@ -359,7 +344,9 @@ function App() {
       }}>
         <GameHeader
           score={gameState.score}
-          timeElapsed={gameState.timeElapsed}
+          timeElapsed={timeElapsedRef.current}
+          onTimeUpdate={(time) => timeElapsedRef.current = time}
+          isGameActive={!gameState.isComplete && !gameOver}
           foundWords={gameState.foundWords.size}
           totalWords={gameState.words.length}
           onReset={handleReset}
@@ -495,7 +482,7 @@ function App() {
                 Congratulations!
               </div>
               <div className="text-xl opacity-90 mb-2" style={{ color: 'var(--primary)' }}>
-                All words found in {Math.floor(gameState.timeElapsed / 60)}:{(gameState.timeElapsed % 60).toString().padStart(2, '0')}
+                All words found in {Math.floor(timeElapsedRef.current / 60)}:{(timeElapsedRef.current % 60).toString().padStart(2, '0')}
               </div>
 
               {/* Difficulty Badge */}

@@ -240,75 +240,35 @@ export const WordGrid: React.FC<WordGridProps> = ({
     return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, [isSelecting, handleMouseUp]);
 
-  // Enhanced touch support with iPad landscape fixes
-  const handleTouchStart = useCallback((row: number, col: number, e: React.TouchEvent) => {
-    // Prevent default only for iPad landscape to prevent screen movement
-    const isIPad = /iPad/i.test(navigator.userAgent) || 
-                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
-    const isLandscape = window.innerWidth > window.innerHeight;
-    
-    if (isIPad && isLandscape) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Add selecting class to prevent screen movement
-      if (gridContainerRef.current) {
-        gridContainerRef.current.classList.add('selecting');
-        document.body.style.overflow = 'hidden';
-        document.body.style.position = 'fixed';
-        document.body.style.width = '100%';
-        document.body.style.height = '100%';
-      }
-    }
-    
-    // Set state for selection
+  // Simplified touch handling
+  const handleTouchStart = useCallback((row: number, col: number) => {
     setIsSelecting(true);
     setCurrentSelection([{ row, col }]);
     setHighlightedCells(new Set([getCellKey(row, col)]));
 
-    // Add haptic feedback if available - use requestAnimationFrame for better performance
-    requestAnimationFrame(() => {
-      if (navigator.vibrate) {
-        navigator.vibrate(10); // Short vibration
-      }
-    });
-    
-    // Add visual feedback - use requestAnimationFrame for smoother animation
-    requestAnimationFrame(() => {
-      const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
-      if (cell) {
-        cell.classList.add('cell-tap-feedback');
-        setTimeout(() => {
-          if (cell) {
-            cell.classList.remove('cell-tap-feedback');
-          }
-        }, 300);
-      }
-    });
-  }, []);
+    if (gridContainerRef.current) {
+      gridContainerRef.current.classList.add('selecting');
+    }
 
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    // Enhanced touch end handling for iPad landscape
-    const isIPad = /iPad/i.test(navigator.userAgent) || 
-                  (/Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document);
-    const isLandscape = window.innerWidth > window.innerHeight;
-    
-    if (isIPad && isLandscape) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Remove selecting class and restore body styles
-      if (gridContainerRef.current) {
-        gridContainerRef.current.classList.remove('selecting');
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.height = '';
-      }
+    if (navigator.vibrate) {
+      navigator.vibrate(10);
     }
     
-    // Process the selection
+    const cell = document.querySelector(`[data-cell="${getCellKey(row, col)}"]`);
+    if (cell) {
+      cell.classList.add('cell-tap-feedback');
+      setTimeout(() => {
+        if (cell) {
+          cell.classList.remove('cell-tap-feedback');
+        }
+      }, 300);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (gridContainerRef.current) {
+      gridContainerRef.current.classList.remove('selecting');
+    }
     handleMouseUp();
   }, [handleMouseUp]);
 

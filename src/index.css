@@ -62,7 +62,7 @@ body {
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(135deg, #000000 0%, #1e1b4b 50%, #000000 100%);
+  background-color: #000000;
   color: white;
 }
 
@@ -400,22 +400,15 @@ body {
   }
 }
 
-/* iPad Specific Optimizations */
-@media screen and (min-device-width: 768px) and (max-device-width: 1024px) {
-  /* iPad Portrait */
-  @media (orientation: portrait) {
-    .word-grid-container {
-      max-height: calc(100vh - 160px) !important;
-      overflow: hidden;
-    }
-    
+/* Tablet Optimizations (768px and up) */
+@media screen and (min-width: 768px) {
     .game-container {
       padding: 12px;
     }
-  }
-  
-  /* iPad Landscape - Enhanced for better touch handling */
-  @media (orientation: landscape) {
+}
+
+/* Landscape Optimizations */
+@media (orientation: landscape) and (max-height: 600px) {
     html, body {
       height: 100%;
       overflow: hidden;
@@ -432,10 +425,8 @@ body {
     .word-grid-container {
       max-height: calc(100vh - 100px) !important;
       overflow: hidden;
-      /* Prevent elastic scrolling */
       overscroll-behavior: contain;
       -webkit-overscroll-behavior: contain;
-      /* Enhanced touch handling for iPad */
       touch-action: pinch-zoom;
       -webkit-touch-action: pinch-zoom;
     }
@@ -448,7 +439,6 @@ body {
       flex-direction: column;
     }
     
-    /* Ensure grid cells are properly sized for touch */
     .word-grid-cell {
       min-height: 32px !important;
       min-width: 32px !important;
@@ -469,11 +459,10 @@ body {
     .word-grid-container.selecting > * {
       pointer-events: auto;
     }
-  }
 }
 
-/* iPhone Landscape Optimizations */
-@media screen and (max-device-width: 768px) and (orientation: landscape) {
+/* Mobile Landscape Optimizations */
+@media screen and (max-width: 767px) and (orientation: landscape) {
   .word-grid-container {
     max-height: calc(100vh - 80px) !important;
     overflow: hidden;
@@ -491,28 +480,6 @@ body {
   .quick-settings button {
     padding: 6px !important;
     font-size: 12px !important;
-  }
-}
-
-/* General mobile landscape improvements */
-@media screen and (max-height: 600px) and (orientation: landscape) {
-  .game-container {
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
-  }
-  
-  .word-grid-container {
-    max-height: calc(100vh - 80px) !important;
-  }
-  
-  /* Optimize header for landscape */
-  .game-header {
-    padding: 8px 0 !important;
-  }
-  
-  /* Compact word list for landscape */
-  .word-list-container {
-    max-height: calc(100vh - 200px) !important;
   }
 }
 

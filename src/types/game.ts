@@ -70,7 +70,6 @@ export interface GameState {
   words: WordPlacement[];
   foundWords: Set<string>;
   score: number;
-  timeElapsed: number;
   isComplete: boolean;
   currentSelection: Position[];
   settings: GameSettings;

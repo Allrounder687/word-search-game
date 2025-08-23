@@ -1,11 +1,14 @@
 import { Clock, Trophy, Zap, Settings, RotateCcw, ZoomIn, MousePointer } from 'lucide-react';
 import { getResponsiveIconSize } from '../utils/responsiveLayout';
+import { useState, useEffect } from 'react';
 
 import type { ThemeColors } from '../types/game';
 
 interface GameHeaderProps {
   score: number;
   timeElapsed: number;
+  onTimeUpdate: (time: number) => void;
+  isGameActive: boolean;
   foundWords: number;
   totalWords: number;
   onReset: () => void;
@@ -22,6 +25,8 @@ interface GameHeaderProps {
 export const GameHeader: React.FC<GameHeaderProps> = ({
   score,
   timeElapsed,
+  onTimeUpdate,
+  isGameActive,
   foundWords,
   totalWords,
   onReset,
@@ -34,6 +39,24 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   isDesktop = false,
   timeRemaining = null
 }) => {
+  const [currentTime, setCurrentTime] = useState(timeElapsed);
+  useEffect(() => {
+    if (isGameActive) {
+      const timer = setInterval(() => {
+        setCurrentTime(prevTime => {
+          const newTime = prevTime + 1;
+          onTimeUpdate(newTime);
+          return newTime;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isGameActive, onTimeUpdate]);
+
+  useEffect(() => {
+    setCurrentTime(timeElapsed);
+  }, [timeElapsed]);
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -157,7 +180,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                   animation: timeRemaining !== null && timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
                 }}
               >
-                {timeRemaining !== null ? formatTime(timeRemaining) : formatTime(timeElapsed)}
+                {timeRemaining !== null ? formatTime(timeRemaining) : formatTime(currentTime)}
               </div>
             </div>
           </div>

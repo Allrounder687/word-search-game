@@ -857,7 +857,7 @@ export const WordGrid: React.FC<WordGridProps> = ({
                   onClick={() => handleCellClick(rowIndex, colIndex)}
                   onMouseDown={() => handleMouseDown(rowIndex, colIndex)}
                   onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-                  onTouchStart={(e) => handleTouchStart(rowIndex, colIndex, e)}
+                  onTouchStart={() => handleTouchStart(rowIndex, colIndex)}
                   onTouchEnd={handleTouchEnd}
                   onMouseOver={(event) => {
                     if (!isSelecting) {
